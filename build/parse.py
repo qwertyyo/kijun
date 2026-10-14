@@ -143,6 +143,7 @@ def parse_std(path):
         if not s:
             continue
         m = hdr_re.match(s)
+        if m and LI in GEO0 and abs(GEO0[LI][2] - 36.4) > 3: m = None   # 회차 머리는 슬라이드 왼쪽 띠(x≈36)에만 — 본문 속 '23년 제4차 … 수정' 같은 줄은 아님
         if m and len(s) < 90:
             if m.group(1).strip() != session: sub = None; subraw = None   # 회차가 바뀌면 묶음(기타안건 등)도 끝
             session = m.group(1).strip()
@@ -174,6 +175,10 @@ def parse_std(path):
                 cur = None
                 continue
         forced = False
+        if pending_num and not re.search(r'[가-힣A-Za-z]{2}', s):
+            # 왼쪽 세로 글자 칸('ISO/P RF 8100- 1 :2023')의 숫자 줄은 안건 번호가 아니다
+            if cur is not None: cur['body'].append(pending_num)
+            pending_num = None
         if pending_num:
             s = pending_num + ' ' + s
             pending_num = None
@@ -262,6 +267,8 @@ def parse_std(path):
                 TOCPG.add(pg_)
         for it in items:
             if it.get('hli'): it['hli'] = [h for h in it['hli'] if GEO.get(h, [None])[0] not in TOCPG]
+        # 같은 회차의 표지 머리('…협의 결과 2026. 3.')와 쪽 머리('…협의 결과 2026. 3. 26.')는 날짜 꼬리만 다르다
+        sesskey = lambda s_: re.sub(r'[\s_]|(\d{4}\.\s*\d{1,2}\.\s*(\d{1,2}\.)?|\d{1,2}\.\s*\d{1,2}\.)\s*$', '', re.sub(r'[\s_]*(\d{4}\.\s*)?\d{1,2}\.\s*(\d{1,2}\.|00\.)?\s*$', '', s_.replace('협의체', '협의')))
         tocmv = 0
         for it in list(items):
             if it['key'][1] == 'toc' or not isinstance(it['body'], Body): continue
@@ -295,6 +302,16 @@ def parse_std(path):
                 own = heads[j][4]
                 # 머리가 원문 줄 순서상 이 줄보다 뒤에 있는 같은 쪽 안건이면(제목 줄 위 장식 등) 건드리지 않음
                 if own is not it: moves.append((it, k, own))
+        # 회차 머리 줄(쪽마다 되풀이)이 쪽 중간에서 읽히면 그 뒤 본문이 회차 목차로 빠졌다 → 목차 쪽이 아닌 줄은
+        # 같은 회차에서 그 줄 위(앞 쪽 포함)의 가장 가까운 안건 머리 것으로 (머리 없는 이어지는 쪽·참고자료 쪽은 앞 안건에 붙음)
+        for it in items:
+            if it['key'][1] != 'toc' or not isinstance(it['body'], Body): continue
+            for k, (txt, li) in enumerate(zip(it['body'], it['body'].li)):
+                if li not in GEO or GEO[li][0] in TOCPG or txt.startswith('❏') or any(r_.match(txt) for r_, _ in SUBHDR): continue
+                pg, y = GEO[li][:2]
+                j = bisect.bisect_right(hkeys, (pg, y)) - 1
+                if j < 0 or sesskey(heads[j][4]['session']) != sesskey(it['session']): continue
+                moves.append((it, k, heads[j][4]))
         take = {}
         for it, k, own in moves: take.setdefault(id(it), set()).add(k)
         for it, k, own in moves:
@@ -367,7 +384,9 @@ def parse_std(path):
         if TAGONLY.match(it['title']) and it['body']:
             # '(기타안건) [주요내용은 …]' 처럼 꼬리표뿐인 제목은 다음 줄(실제 안건명)을 붙인다
             tag = TAGONLY.match(it['title']).group(1)
+            li_ = list(getattr(it['body'], 'li', []))[1:]
             it['title'] = f'[{tag}] ' + it['body'][0].strip(); it['body'] = it['body'][1:]
+            if li_: it['_li1'] = li_
         it['sec'] = sectionize(it['body'])
         year = re.match(r'^(20)?(\d{2})년', it['session'])
         y = ('20' + year.group(2)) if year else ''
@@ -382,6 +401,8 @@ def parse_std(path):
             'year': y,
             'text': '\n'.join(it['body']),
             'sec': it['sec'],
+            '_li': (it.get('_li1') or list(getattr(it['body'], 'li', []))) if it['body'] else [None],
+            '_hli': list(it.get('hli', [])),
         })
     # 안건 id 는 회차|번호|제목으로 고정(그림·요지가 id 로 연결되어 있으므로). 새 안건만 새 번호
     for o in out:
@@ -395,10 +416,25 @@ def parse_std(path):
         if sr:
             sr = re.sub(r'^[□\-\s]+|\[주요내용[^\]]*\]|\[단순안내[^\]]*\]?', '', sr).strip(' []')
             if sr and sr not in o['path']: o['path'] = o['path'] + ' · ' + sr
+    # 본문 줄마다 원문 줄 번호(_li)를 std_fix 단계 내내 같이 옮긴다 → std_li.json (그림 주인 정하기·원문 순서 복원용)
+    for o in out: assert len(o['_li']) == len(o['text'].split('\n')), o['id']
+    heads0 = {o['id']: o.pop('_hli') for o in out}
     out = apply_fix(out, IDS, lambda: None)
+    LI_OUT = {}
+    for o in out:
+        lis = o.pop('_li')
+        LI_OUT[o['id']] = sorted(set(list(heads0.get(o['id'], [])) + [l_ for l_ in lis if l_ is not None]))
+        # std_fix 로 옮기거나 합친 안건은 원문 순서대로 다시 늘어놓는다(덧붙인 블록이 맨 뒤에 몰리지 않게)
+        pr = [(l_, k, s_) for k, (l_, s_) in enumerate(zip(lis, o['text'].split('\n'))) if s_.strip() or l_ is not None]
+        if o['id'] in FIX_TOUCHED and all(l_ is not None for l_, _, _ in pr):
+            ls_ = sorted(pr)
+            nt = '\n'.join(s_ for _, _, s_ in ls_)
+            if nt != o['text']: o['text'] = nt; o['sec'] = sectionize(nt.split('\n'))
+    json.dump(LI_OUT, open('std_li.json', 'w'))
     json.dump(IDS, open('std_ids.json', 'w'), ensure_ascii=False, indent=0)
     return out
 
+FIX_TOUCHED = set()
 def apply_fix(out, IDS, _):
     """원문 검토로 찾은 개별 수정(std_fix.json): 섞인 블록 떼어내기·새 안건 만들기·합치기·제목/회차 고치기"""
     import os
@@ -411,39 +447,41 @@ def apply_fix(out, IDS, _):
     for c in F.get('cut', []):
         o = byid.get(c['id'])
         if not o: log.append('no ' + c['id']); continue
-        ls = L(o); st = [x.strip() for x in ls]
+        ls = L(o); st = [x.strip() for x in ls]; li = o['_li']
         if c['first'].strip() not in st: log.append('nofirst ' + c['id']); continue
         i = st.index(c['first'].strip())
         j = len(ls) - 1 if not c['last'] else next((k for k in range(i, len(ls)) if st[k] == c['last'].strip()), None)
         if j is None: log.append('nolast ' + c['id']); continue
         block = ls[i:j + 1]; o['text'] = '\n'.join(ls[:i] + ls[j + 1:]); touched.add(o['id'])
+        bli = li[i:j + 1]; o['_li'] = li[:i] + li[j + 1:]
         if c['to'] == 'drop': continue
         if c['to'] != 'new':
-            t = byid[c['to']]; t['text'] = t['text'] + '\n' + '\n'.join(block); touched.add(t['id']); continue
-        parts = [block]
+            t = byid[c['to']]; t['text'] = t['text'] + '\n' + '\n'.join(block); t['_li'] = t['_li'] + bli; touched.add(t['id']); continue
+        parts = [block]; plis = [bli]
         if c.get('split_at'):
-            bs = [x.strip() for x in block]; k = bs.index(c['split_at'].strip()); parts = [block[:k], block[k:]]
+            bs = [x.strip() for x in block]; k = bs.index(c['split_at'].strip()); parts = [block[:k], block[k:]]; plis = [bli[:k], bli[k:]]
         pos = out.index(o)
-        for n_, (part, spec) in enumerate(zip(parts, c['new'])):
+        for n_, (part, pli, spec) in enumerate(zip(parts, plis, c['new'])):
             ot = re.sub(r'^\d+\s*[▪‣]?\s*', '', part[0].strip()) if part else spec['title']   # 그림 위치 찾기용 원문 첫 줄
-            if part and spec['num'] and part[0].strip().startswith(spec['num'] + ' '): part = part[1:]
+            if part and spec['num'] and part[0].strip().startswith(spec['num'] + ' '): part = part[1:]; pli = pli[1:]
             key = f"{o['path']}|{spec['num']}|{spec['title']}"
             if key not in IDS: IDS[key] = f'std-{nxt}'; nxt += 1
-            no = dict(o, id=IDS[key], num=spec['num'], title=spec['title'], text='\n'.join(part), _ot=ot)
+            no = dict(o, id=IDS[key], num=spec['num'], title=spec['title'], text='\n'.join(part), _ot=ot, _li=list(pli))
             out.insert(pos + 1 + n_, no); byid[no['id']] = no; touched.add(no['id'])
     for m in F.get('merge', []):
         a, b = byid.get(m['from']), byid.get(m['into'])
         if not a or not b: log.append('nomerge ' + m['from']); continue
-        b['text'] = b['text'] + '\n' + a['text']; out.remove(a); touched.add(b['id'])
+        b['text'] = b['text'] + '\n' + a['text']; b['_li'] = b['_li'] + a['_li']; out.remove(a); touched.add(b['id'])
     for i, t in F.get('title', {}).items():
         if i in byid: byid[i].setdefault('_ot', byid[i]['title']); byid[i]['title'] = t
     for i in F.get('dropfirst', []):
         if i in byid:
-            ls = L(byid[i]); byid[i]['text'] = '\n'.join(ls[1:]); touched.add(i)
+            ls = L(byid[i]); byid[i]['text'] = '\n'.join(ls[1:]); byid[i]['_li'] = byid[i]['_li'][1:]; touched.add(i)
     for i, pth in F.get('path', {}).items():
         if i in byid: byid[i]['path'] = pth
     for o in out:
         if o['id'] in touched: o['sec'] = sectionize([x for x in o['text'].split('\n')])
+    FIX_TOUCHED.update(touched)
     print('std_fix applied', len(touched), 'items', log)
     return out
 

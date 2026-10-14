@@ -8,75 +8,26 @@ os.makedirs(OUT, exist_ok=True)
 def norm(s):
     return re.sub(r'[\s‣▪▸•·ㆍ\-\[\]()（）]', '', s or '')
 
-d = json.load(open('data.json'))
-items = [x for x in d['std'] if x['title'] != '목차']
-# 텍스트 파일(insp.txt)은 이 PDF에서 뽑은 것이므로, 공백을 뺀 문자열 위치로 페이지·안건을 맞춘다
-def nz(s): return re.sub(r'\s', '', s or '')
-N = nz(open('insp.txt', encoding='utf-8').read())
-# 안건 시작 위치: 파싱 순서대로 제목을 순차 검색
-item_off = []
-pos = 0
-for x in items:
-    k = nz(x.get('_ot') or x['title'])[:18]   # 제목을 고쳐 쓴 안건은 원문 제목으로 위치를 찾는다
-    if len(k) < 4: continue
-    i = -1
-    # 본문 머리는 '번호+제목'(점 없이), 목차는 '번호.제목' 이므로 번호 붙은 형태를 먼저 찾는다
-    # '[기타안건] 실제 안건명'처럼 꼬리표를 붙여 만든 제목은 꼬리표 뺀 것도 후보로(원문엔 꼬리표가 없을 수 있음)
-    k2 = nz(re.sub(r'^\[[^\]]*\]\s*', '', x.get('_ot') or x['title']))[:18]
-    keys = [k] + ([k2] if k2 != k and len(k2) >= 4 else [])
-    if x['num']:
-        for kk in keys[:1]:   # 번호+제목 형태는 원래 제목으로만(꼬리표 뺀 제목을 번호에 붙이면 다른 회차 안건과 겹침)
-            for pre in (x['num'], x['num'] + '‣', x['num'] + '▪'):
-                j = N.find(pre + kk, pos)
-                if j >= 0 and j - pos < 60000 and (i < 0 or j < i): i = j + len(pre)
-    if i < 0:
-        for kk in keys:
-            j = N.find(kk, pos)
-            if j >= 0 and j - pos < 60000 and (i < 0 or j < i): i = j
-    if i < 0: continue
-    item_off.append((i, x['id'])); pos = i + 1
-print('items located', len(item_off), '/', len(items))
-doc = pymupdf.open(PDF)
-import statistics
-# 페이지 줄 중 텍스트 파일 전체에서 딱 한 번 나오는 줄만 위치 기준으로 사용(머리글 반복·목차 혼동 방지)
-cnt_cache = {}
-def once(k):
-    if k not in cnt_cache: cnt_cache[k] = N.count(k)
-    return cnt_cache[k] == 1
-raw = []
-for pno in range(len(doc)):
-    ls = []
-    for b in doc[pno].get_text('dict')['blocks']:
-        for l in b.get('lines', []):
-            t = nz(''.join(s['text'] for s in l['spans']))
-            if len(t) >= 10 and once(t[:40]): ls.append((l['bbox'][1], N.find(t[:40])))
-    ls.sort(); raw.append(ls)
-med = [int(statistics.median([o for _, o in ls])) if ls else None for ls in raw]
-# 빈 페이지는 앞 페이지 값으로
-last = 0
-for i in range(len(med)):
-    if med[i] is None: med[i] = last
-    last = med[i]
-page_lines = []
-prev_end = 0
-for i, ls in enumerate(raw):
-    lo = med[i - 1] - 3000 if i else 0
-    hi = (med[i + 1] if i + 1 < len(med) else 10**9) + 3000
-    kept = [(y, o) for y, o in ls if lo <= o <= hi]
-    page_lines.append((prev_end, kept))
-    if kept: prev_end = max(prev_end, max(o for _, o in kept))
-def text_off(pno, y):
-    start, kept = page_lines[pno]
-    best = start
-    for ly, o in kept:
-        if ly <= y: best = max(best, o)
-    return best
+# 그림 주인: 본문과 같은 기준(쪽 배치) — 같은 쪽에서 그림 윗변 바로 위에 있는 본문 줄의 안건.
+# 그 쪽에서 그림 위에 글이 없으면(그림만 있는 쪽 등) 앞쪽의 마지막 본문 줄의 안건.
+# 줄 위치는 std_geo.json(줄번호→[쪽, y, x, 글자크기]), 안건별 줄번호는 parse.py 가 쓴 std_li.json
+import bisect
+GEO = {int(k): v for k, v in json.load(open('std_geo.json')).items()}
+OWN = {}
+for iid, lis in json.load(open('std_li.json')).items():
+    for l in lis: OWN[l] = iid
+bypg = {}
+for l, iid in OWN.items():
+    if l in GEO: bypg.setdefault(GEO[l][0], []).append((GEO[l][1], l, iid))
+for v in bypg.values(): v.sort()
+seq = sorted((GEO[l][0], GEO[l][1], l, iid) for l, iid in OWN.items() if l in GEO)
+skeys = [(a, b) for a, b, _, _ in seq]
 def owner(pno, y):
-    o = text_off(pno, y); best = None
-    for i, iid in item_off:
-        if i <= o: best = iid
-        else: break
-    return best
+    above = [x for x in bypg.get(pno, []) if x[0] <= y + 4]
+    if above: return above[-1][2]
+    j = bisect.bisect_left(skeys, (pno, -1)) - 1
+    return seq[j][3] if j >= 0 else None
+doc = pymupdf.open(PDF)
 
 # 2) 그림 위치 → 잘라내기
 res = {}

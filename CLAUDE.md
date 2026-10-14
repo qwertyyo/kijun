@@ -33,8 +33,8 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 | 단계 | 스크립트 | 입력 | 출력 |
 |---|---|---|---|
 | 표준화 쪽 위치 | `stdgeo.py` | `stdzip/std.pdf`, `insp.txt` | `std_geo.json` (줄번호→[쪽, y, x, 글자크기]) |
-| 표준화 안건 | `parse.py` | `insp.txt`, `std_geo.json`, `std_ids.json`, `std_fix.json` | `data.json` std |
-| 표준화 그림 | `std_images.py` | `std.pdf`, `data.json` | `stdimg/`, `stdimg.json` |
+| 표준화 안건 | `parse.py` | `insp.txt`, `std_geo.json`, `std_ids.json`, `std_fix.json` | `data.json` std, `std_li.json`(안건별 원문 줄번호) |
+| 표준화 그림 | `std_images.py` | `std.pdf`, `std_geo.json`, `std_li.json` | `stdimg/`, `stdimg.json` |
 | 별표22·24 | `hwp/parse_hwp.py` (+`hwplines.py`, `hwpeq.py`, `eq2text.py`, `eq2tex.py`) | `hwp/b22.hwp`, `hwp/b24.hwp` | `hwp/b22h.json`, `b24h.json`, `fig/el_*`, `fig/es_*` |
 | 연혁 | `hist_parse.py el|es`, `hist_merge.py el|es` (+`restore_eq.py`) | `hist_src/hist.pdf`(엘리베이터), `hist_es/hist.pdf`(에스컬레이터 v2.0) | `hist_final.json`, `hist_es_final.json`, `fig/hel_*`, `fig/hes_*` |
 | 요지 | (Claude가 작성) | — | `gists.json`(표준화 id→요지), `hist_gist_keyed.json`, `hist_es_gist_keyed.json`(연혁 블록 요지) |
@@ -45,9 +45,12 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - 안건 머리: `번호 제목` 줄. 회차 머리(`hdr_re`)가 바뀌면 새 회차. 같은 회차에서 번호가 겹치면: `[기타안건]`류 꼬리표·쪽마다 되풀이된 줄·슬라이드 맨 위(y 55~100)·왼쪽 큰 번호(14pt, x<50)이면 새 안건, 아니면 지금 안건 본문. 9pt 이하 작은 글자 줄은 안건 머리 아님(표의 번호 칸).
 - 묶음 머리(`□ 기타안건`, `- 기타안건`, `기타`, `제1차 기술서류 업무 표준화`, `…기술자문 간담회(n차)…`) 아래 안건은 제목에 `[기타안건]`/`[기타]` 를 붙이거나 회차 이름에 `· 묶음이름` 을 덧붙인다.
 - **쪽 배치 재배정**: 각 본문 줄은 같은 쪽에서 그 줄 바로 위(-8pt 허용)에 있는 안건 머리의 것(텍스트 추출 순서 때문에 표가 다음 안건 뒤에 붙던 문제 해결). 목차 쪽(`1. …` 목록 + `[…안건]`)의 글은 회차 목차로.
+- **목차로 빠진 본문 되찾기**: 쪽마다 되풀이되는 회차 머리 줄이 쪽 중간에서 읽히면 그 뒤 본문이 '목차'(사이트에 안 보임)로 빠졌다. 목차 쪽이 아닌 목차 줄(`❏` 줄 제외)은 같은 회차(`sesskey`: 표지 머리와 쪽 머리의 날짜 꼬리 차이 무시)에서 그 줄 위(앞 쪽 포함) 가장 가까운 안건 머리 것으로 옮긴다. 그래서 머리 없는 참고·배포자료 쪽은 앞 안건에 붙는다 — 따로 떼야 하면 `std_fix` 의 `cut`→`new`.
+- 회차 머리는 슬라이드 왼쪽 띠(x≈36)에 있는 줄만(본문 속 '23년 제4차 … 수정' 같은 줄은 아님). 왼쪽 세로 글자 칸의 숫자 줄(`1` + `:2023`)은 안건 번호 아님.
+- 검토 습관: 빌드 뒤 '목차' 항목들의 글 길이·쪽을 보고 진짜 목차(❏ 목록) 말고 본문이 숨어 있지 않은지 확인.
 - **id 고정**: `std_ids.json` 의 `회차|번호|제목 → std-N`. 그림(stdimg.json)·요지(gists.json)가 id 로 연결되므로 **이 파일을 지우거나 되돌리지 말 것**(새 안건만 새 번호). 제목을 바꿀 땐 `std_fix.json` 의 `title` 로(아래) — id 는 원래 제목으로 유지된다.
-- **개별 수정 `std_fix.json`** (원문 대조 검토로 찾은 것): `cut`(본문 블록 떼어내 drop / 다른 id로 이동 / `new` 새 안건, `split_at` 으로 여럿), `merge`(from→into), `title`, `dropfirst`(잘린 제목 꼬리가 본문 첫 줄로 간 경우), `path`(회차 이름). 줄은 본문 줄과 **정확히 같은 문자열**로 지정. 적용 결과는 빌드 로그 `std_fix applied N items []`(대괄호 안에 실패 목록).
-- 그림 위치는 안건 제목을 원문에서 순서대로 찾아 정한다. 제목을 고쳐 쓴 안건은 `_ot`(원래 제목)로 찾는다.
+- **개별 수정 `std_fix.json`** (원문 대조 검토로 찾은 것): `cut`(본문 블록 떼어내 drop / 다른 id로 이동 / `new` 새 안건, `split_at` 으로 여럿), `merge`(from→into), `title`, `dropfirst`(잘린 제목 꼬리가 본문 첫 줄로 간 경우), `path`(회차 이름). 줄은 본문 줄과 **정확히 같은 문자열**로 지정. 적용 결과는 빌드 로그 `std_fix applied N items []`(대괄호 안에 실패 목록). 줄마다 원문 줄번호(`_li`)를 같이 옮기고, 고친 안건은 원문 순서로 다시 늘어놓는다(덧붙인 블록이 맨 뒤에 몰리지 않게). 목차 항목도 `cut`/`merge` 대상이 될 수 있다.
+- **그림 주인은 본문과 같은 기준(쪽 배치)**: 같은 쪽에서 그림 윗변 바로 위에 있는 본문 줄의 안건(`std_li.json` + `std_geo.json`), 그 쪽에 그림 위 글이 없으면 앞쪽 마지막 본문 줄의 안건. 목차 쪽 그림(회차 협의결과 요약표 등)은 목차 소속이라 안 보인다. 안건 나눔(`std_fix` 포함)을 바꾸면 `build.py --images`.
 
 ### 별표22·24 (HWP)
 - 수식: HWP 수식 스크립트 → `eq2text`(검색용 한 줄) + `eq2tex`(KaTeX LaTeX). 본문에 `\x05한줄\x0eLaTeX\x06` 로 들어가고 template 의 `rich()` 가 그린다. 분수 든 긴 식은 블록(`meqb`), 짧은 식은 글 속(`meq`).
