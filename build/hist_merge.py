@@ -3,7 +3,7 @@ import json, sys, re
 sys.path.insert(0, '.')
 from restore_eq import restore   # 수식 글꼴 사설코드 복원
 MODE = sys.argv[1] if len(sys.argv) > 1 else 'el'
-SRC, BASE, OUT, GKF = {'el': ('hist.json', 'hwp/b22h.json', 'hist_final.json', 'hist_gist_keyed.json'), 'es': ('hist_es.json', 'hwp/b24h.json', 'hist_es_final.json', 'hist_es_gist_keyed.json')}[MODE]
+SRC, BASE, OUT, GKF = {'el': ('hist.json', 'base_el.json', 'hist_final.json', 'hist_gist_keyed.json'), 'es': ('hist_es.json', 'base_es.json', 'hist_es_final.json', 'hist_es_gist_keyed.json')}[MODE]
 h = json.load(open(SRC)); b = json.load(open(BASE))
 order = [e['num'] for e in b]; has = {e['num']: bool(e['text'].strip()) for e in b}; title = {e['num']: e['title'] for e in b}
 out = {}

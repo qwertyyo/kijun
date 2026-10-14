@@ -1,6 +1,6 @@
 # 검사기준 통합검색 (qwertyyo/kijun)
 
-공단 동료용 웹 도구. 엘리베이터(별표22)·에스컬레이터(별표24) 안전기준 현행 본문, 「승강기 안전기준 연혁집」의 적용 연혁, 검사방법 표준화 협의 결과를 **현장용어**로 검색한다.
+공단 동료용 웹 도구. 「승강기 안전기준 연혁집」(엘리베이터, 에스컬레이터 v2.0)의 현행 조문과 적용 연혁, 검사방법 표준화 협의 결과를 **현장용어**로 검색한다. **엘리베이터·에스컬레이터 쪽은 연혁집 하나로 만든다(별표22·24 HWP 는 2026-10-14에 뺐다 — 다시 쓰지 말 것).**
 사이트: https://qwertyyo.github.io/kijun/ (GitHub Pages, main 브랜치 루트, 공개 저장소)
 
 ## 사용자
@@ -10,7 +10,7 @@
 
 ## 폴더
 - `index.html` — 사이트 페이지(데이터 내장). **직접 고치지 말고** `build/` 에서 빌드해 덮어쓴다.
-- `fig/` — 기준 본문 그림(HWP 원본에서: `el_*`, `es_*`)과 연혁집 원문 그림·표·분수식 영역(`hel_*`, `hes_*`). 빌드 산출물.
+- `fig/` — 연혁집 원문에서 잘라 낸 그림·표·분수식 영역(`hel_*` 엘리베이터, `hes_*` 에스컬레이터; 현행 본문·연혁 모두). 빌드 산출물.
 - `stdimg/` — 표준화 그림(PDF에서 잘라 냄). `build.py --images` 일 때만 다시 만든다.
 - `katex/` — 수식 표시(KaTeX 0.16.11, 고정 파일).
 - `config.json` — `{"synApi": "<Apps Script /exec 주소>"}` 공용 현장용어 서버. 비면 기능 꺼짐. 여기서 고쳐도 됨.
@@ -19,7 +19,7 @@
 
 ## 빌드·배포 (build/ 에서)
 ```
-pip install -r requirements.txt        # pymupdf, olefile, pillow (Python 3.10+)
+pip install -r requirements.txt        # pymupdf, pillow (Python 3.10+)
 python build.py                         # → app_pkg/kijun.html (약 1~2분)
 python build.py --images                # 표준화 안건 나눔이 바뀌었을 때(그림 재연결까지, +1분)
 python publish.py "커밋 메시지"           # 빌드 → 루트 index.html/fig/stdimg 복사 → git pull --rebase → commit → push
@@ -35,8 +35,7 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 | 표준화 쪽 위치 | `stdgeo.py` | `stdzip/std.pdf`, `insp.txt` | `std_geo.json` (줄번호→[쪽, y, x, 글자크기]) |
 | 표준화 안건 | `parse.py` | `insp.txt`, `std_geo.json`, `std_ids.json`, `std_fix.json` | `data.json` std, `std_li.json`(안건별 원문 줄번호) |
 | 표준화 그림 | `std_images.py` | `std.pdf`, `std_geo.json`, `std_li.json` | `stdimg/`, `stdimg.json` |
-| 별표22·24 | `hwp/parse_hwp.py` (+`hwplines.py`, `hwpeq.py`, `eq2text.py`, `eq2tex.py`) | `hwp/b22.hwp`, `hwp/b24.hwp` | `hwp/b22h.json`, `b24h.json`, `fig/el_*`, `fig/es_*` |
-| 연혁 | `hist_parse.py el|es`, `hist_merge.py el|es` (+`restore_eq.py`) | `hist_src/hist.pdf`(엘리베이터), `hist_es/hist.pdf`(에스컬레이터 v2.0) | `hist_final.json`, `hist_es_final.json`, `fig/hel_*`, `fig/hes_*` |
+| 현행 조문 + 연혁 | `hist_parse.py el|es`, `hist_merge.py el|es` (+`restore_eq.py`) | `hist_src/hist.pdf`(엘리베이터), `hist_es/hist.pdf`(에스컬레이터 v2.0) | `base_el.json`, `base_es.json`(현행 조문 카드), `hist_final.json`, `hist_es_final.json`(연혁), `fig/hel_*`, `fig/hes_*` |
 | 요지 | (Claude가 작성) | — | `gists.json`(표준화 id→요지), `hist_gist_keyed.json`, `hist_es_gist_keyed.json`(연혁 블록 요지) |
 | 페이지 | `build.py` | `template.html` + 위 전부 | `app_pkg/kijun.html` |
 
@@ -52,9 +51,14 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - **개별 수정 `std_fix.json`** (원문 대조 검토로 찾은 것): `cut`(본문 블록 떼어내 drop / 다른 id로 이동 / `new` 새 안건, `split_at` 으로 여럿), `merge`(from→into), `title`, `dropfirst`(잘린 제목 꼬리가 본문 첫 줄로 간 경우), `path`(회차 이름). 줄은 본문 줄과 **정확히 같은 문자열**로 지정. 적용 결과는 빌드 로그 `std_fix applied N items []`(대괄호 안에 실패 목록). 줄마다 원문 줄번호(`_li`)를 같이 옮기고, 고친 안건은 원문 순서로 다시 늘어놓는다(덧붙인 블록이 맨 뒤에 몰리지 않게). 목차 항목도 `cut`/`merge` 대상이 될 수 있다.
 - **그림 주인은 본문과 같은 기준(쪽 배치)**: 같은 쪽에서 그림 윗변 바로 위에 있는 본문 줄의 안건(`std_li.json` + `std_geo.json`), 그 쪽에 그림 위 글이 없으면 앞쪽 마지막 본문 줄의 안건. 목차 쪽 그림(회차 협의결과 요약표 등)은 목차 소속이라 안 보인다. 안건 나눔(`std_fix` 포함)을 바꾸면 `build.py --images`.
 
-### 별표22·24 (HWP)
-- 수식: HWP 수식 스크립트 → `eq2text`(검색용 한 줄) + `eq2tex`(KaTeX LaTeX). 본문에 `\x05한줄\x0eLaTeX\x06` 로 들어가고 template 의 `rich()` 가 그린다. 분수 든 긴 식은 블록(`meqb`), 짧은 식은 글 속(`meq`).
-- 그림: HWP BinData(BMP→무손실 webp)를 그림 개체 자리에 `\x10파일|폭|높이\x11` 로 넣음. 표 안에 그림만 있으면 표 대신 그림 줄.
+### 연혁집 → 현행 조문 카드 + 적용 연혁 (`hist_parse.py`)
+- 현행 조문 머리: 현행 본문 글꼴(엘 H2mjsM / 에스 TT5CF94827), 왼쪽 여백(x<head_x)에서 번호로 시작하고, 번호가 앞 조문 다음으로 그럴듯할 것(`plausible` — 본문 속 '6.4.3.1 참조' 같은 줄 제외). 부속서는 가운데 '부속서 Ⅰ' 줄 + 바로 아래 가운데 제목 줄.
+- 카드 형식은 예전 HWP 때와 같다: `{src:'b22'|'b24', id:'b22-6.6.4.5.3', num, title, path, text}`. 제목은 번호 뒤가 40자 이하 머리말일 때만(문장이면 본문 첫 문단), 경로는 상위 조문 제목.
+- 문단: 들여 쓴 줄은 새 문단, 앞 줄이 오른쪽 끝까지 찼으면 이어 붙임(앞 줄 끝 공백 있을 때만 띄움). 같은 높이 오른쪽 줄('F' | ': 멈춤 쇠 …')은 한 줄로. 가운뎃점 ᆞ·･ → ㆍ.
+- 그림·선으로 그린 표·분수식(되살릴 수 없는 수식 글꼴 코드가 든 줄 포함)은 원문 영역을 200dpi 로 잘라 `\x10파일|폭|높이\x0e검색용글자\x11`. 영역 안에 가운데가 든 줄은 그 그림의 검색용 글자(연혁 제목 ➥·적용 표시 줄은 제외).
+- 연혁 블록 끝: 블록 아래 점선(작은 선분 100개 이상, 폭 300pt 넘게; 제목 띠 바로 아래·쪽 맨 위 점선은 블록 윗줄) 다음에 그림이 오면 블록이 끝난 것 → 그 그림은 현행 본문(에스컬레이터 5.10 뒤의 그림 5~11, 부속서 Ⅰ.3·Ⅰ.4 등). 단 그림 바로 다음 글이 9pt 이하 연혁 글자면 다음 쪽으로 이어진 연혁의 옛 그림.
+- 원문대로 둔 것: 엘리베이터 11.2.1.1·Ⅸ.3 이 연혁집에 두 번 나옴(뒤의 것은 앞 조문 본문으로 들어감).
+- 빌드 로그 확인: `clauses N with text M`, `rejected`(번호 순서로 버린 머리 후보), `figs after block end`(현행 본문으로 보낸 그림 쪽 목록).
 
 ### 연혁집
 - 현행 조문 머리(글꼴·x 위치로) 아래 `➥` 블록 = 연혁(제목에서 날짜·허가/시행 기준 추출, 오른쪽 '시행' 표시). 초록/빨강 글자는 `\x01…\x02`/`\x03…\x04`.
@@ -65,8 +69,7 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - **현장용어 추가**("A = B"): `build/template.html` 의 `BASE_SYN` 에서 같은 뜻 묶음에 넣거나 새 줄 추가 → `python publish.py "현장용어 추가: A = B"`. 넣은 뒤 그 말로 검색해 결과가 맞는지 확인(브라우저 콘솔 `KIJUN.search('A', 6)`).
 - **표준화 새 판(예: 26년 3차 반영본)**: `stdzip/std.pdf` 교체 → (2쪽 개인정보 있으면 빈 쪽 처리) → `python make_insp.py` → `python build.py --images` → 새 안건·바뀐 안건 목록을 data.json 과 이전 것을 비교해 뽑고, 요지를 써서 `gists.json` 에 추가 → 원문 대조 검토(섞인 내용·잘린 제목) → 필요하면 `std_fix.json` → publish.
 - **요지 쓰기 규칙**: 한 줄, ~110자, 결론 위주. 요지 속 숫자·조항·날짜는 반드시 그 안건 본문/제목에 있어야 함(스크립트로 확인). 꼬리표 제목이면 요지도 `[기타안건]` 등으로 시작. 결론이 없으면 "결론 없음(원문 참조)".
-- **연혁집 새 판**: `hist_src/hist.pdf`(또는 `hist_es/hist.pdf`) 교체 → 빌드 → `hist_parse.py` 출력의 `detected/missing/rejected` 확인 → 새 블록 요지는 `hist_*_gist_keyed.json`(키: `조문|블록제목|scope|본문앞60자`).
-- **안전기준 개정(HWP 새 판)**: `hwp/b22.hwp`·`b24.hwp` 교체 → 빌드. 연혁집 조문번호와 맞는지 `hist_parse.py` 의 missing 확인.
+- **연혁집 새 판(= 안전기준 개정 반영)**: `hist_src/hist.pdf`(또는 `hist_es/hist.pdf`) 교체 → 빌드 → 로그의 조문 수·`rejected`·`figs after block end` 확인, 조문 카드 몇 개를 원문과 대조 → 새 블록 요지는 `hist_*_gist_keyed.json`(키: `조문|블록제목|scope|본문앞60자`, 빌드 로그 `gist misses`).
 - 검증 습관: 바꾼 뒤 로컬 서버로 휴대폰 폭(390px)에서 해당 카드를 직접 보고, 대표 검색어(로프브레이크, 행거, 차단기, 포토 등) 결과 순서가 엉뚱하게 바뀌지 않았는지 본다.
 
 ## SETUP: 공용 현장용어 서버 배포 (2026-10-14 완료)
