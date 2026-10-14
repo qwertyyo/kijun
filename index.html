@@ -26,6 +26,8 @@
   --std-soft: #f1e7f8;
   --el: #1f7a4d;
   --el-soft: #e3f3ea;
+  --es: #c2410c;
+  --es-soft: #fdeee3;
   --old: #8a5a12;
   --old-soft: #f6ecdc;
   --radius: 10px;
@@ -35,11 +37,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #121820; --surface: #1b232d; --fg: #e8edf2; --muted: #98a6b5; --line: #2d3946;
   --accent: #6cb6e4; --accent-soft: #1d3345; --mark: #5a4a00; --stripe: #e6b800;
-  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark } }
+  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --es: #fb923c; --es-soft: #3d2616; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #121820; --surface: #1b232d; --fg: #e8edf2; --muted: #98a6b5; --line: #2d3946;
   --accent: #6cb6e4; --accent-soft: #1d3345; --mark: #5a4a00; --stripe: #e6b800;
-  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark }
+  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --es: #fb923c; --es-soft: #3d2616; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark }
 
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0; padding-block: 0 48px; padding-inline: 16px }
@@ -130,7 +132,18 @@ main { padding-top: 14px }
 .card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--stripe) }
 .card.std::before { background: var(--std) }
 .card.b22::before { background: var(--el) }
-.card.b22 .badge { background: var(--el-soft); color: var(--el) }
+.card.b24::before { background: var(--es) }
+/* 엘리베이터·에스컬레이터 구분: 굵은 색 띠 + 꽉 찬 색 이름표 */
+.card.b22::before, .card.b24::before { width: 6px }
+.card.b22, .card.b24 { padding-left: 18px }
+.card.b22 .badge, .card.b24 .badge { font-size: 13.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; color: var(--surface); letter-spacing: 0 }
+.card.b22 .badge { background: var(--el) }
+.card.b24 .badge { background: var(--es) }
+.card.b22 .num, .card.b24 .num { font-size: 15px }
+.chip[data-src="b22"]::before, .chip[data-src="b24"]::before, .chip[data-src="std"]::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px }
+.chip[data-src="b22"]::before { background: var(--el) }
+.chip[data-src="b24"]::before { background: var(--es) }
+.chip[data-src="std"]::before { background: var(--std) }
 .card .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 4px }
 .badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em }
 .card.std .badge { background: var(--std-soft); color: var(--std) }
@@ -215,6 +228,8 @@ main { padding-top: 14px }
 .tcap { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px }
 .toc { margin-top: 18px }
 .toc h2 { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .03em; margin: 0 0 8px }
+.toc h2.t-b22, .toc h2.t-b24, .toc h2.t-std { font-size: 16px; font-weight: 700; letter-spacing: 0 }
+.toc h2.t-b22 { color: var(--el) } .toc h2.t-b24 { color: var(--es) } .toc h2.t-std { color: var(--std) }
 .toclist { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px }
 .tocitem { font: inherit; font-size: 14px; text-align: left; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg); cursor: pointer; min-width: 0 }
 .tocitem span { min-width: 0; overflow-wrap: anywhere }
@@ -1084,7 +1099,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       return items;
     };
     const applied = () => { const vi = AV(); const gs = groupsOf('old').filter(g => g.key.startsWith(vi + '|')); return `<div class="dnote">${escHtml(applyLabel())}${APPLY.before ? ' (받은 판 중 가장 오래된 판)' : ''}</div><div class="toclist">${gs.map(g => { const ch = g.key.split('|')[1]; return `<button type="button" class="tocitem" data-view="old" data-key="${g.key}"><span>${escHtml(ch + ' ' + (OCH[vi][ch] || ''))}</span><em>${g.n}</em></button>`; }).join('')}</div>`; };
-    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2>${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
+    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
   }
   function renderView() {
     const s = view.src, gs = groupsOf(s), i = gs.findIndex(g => g.key === view.key);
@@ -1307,7 +1322,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     // 키는 CSS 토큰명(--accent-soft → accentSoft). 일부만 넘겨도 된다. theme:'dark'|'light'로 강제 테마.
     setTheme(o) {
       const r = document.documentElement; o = o || {};
-      const map = { old: '--old', oldSoft: '--old-soft', bg: '--bg', surface: '--surface', fg: '--fg', muted: '--muted', line: '--line', accent: '--accent', accentSoft: '--accent-soft', mark: '--mark', stripe: '--stripe', std: '--std', stdSoft: '--std-soft', el: '--el', elSoft: '--el-soft', fontBody: '--font-body', fontMono: '--font-mono' };
+      const map = { old: '--old', oldSoft: '--old-soft', bg: '--bg', surface: '--surface', fg: '--fg', muted: '--muted', line: '--line', accent: '--accent', accentSoft: '--accent-soft', mark: '--mark', stripe: '--stripe', std: '--std', stdSoft: '--std-soft', el: '--el', elSoft: '--el-soft', es: '--es', esSoft: '--es-soft', fontBody: '--font-body', fontMono: '--font-mono' };
       if (o.theme === 'dark' || o.theme === 'light') r.setAttribute('data-theme', o.theme);
       for (const k in map) if (o[k]) r.style.setProperty(map[k], o[k]);
       if (o.radius != null) r.style.setProperty('--radius', String(o.radius) + 'px');
