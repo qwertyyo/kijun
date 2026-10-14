@@ -70,7 +70,8 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - 시트: https://drive.google.com/open?id=1FQxh4BhWzcwN2D6OCCPx9pgs7MFwfeeZq4RxFxYsoz8
 - 스크립트 ID `14GUzpo7gzTJG9hLXiVp-mxGU7ucuEa65O8JT66MImdJ0WmbjowBflrpW`, 웹 앱 배포 ID `AKfycbw6jHKm0bHPsAqveMq3wWkQ0ejwE9W4OFCYnmBuHrhq_5af7GyiFl33UEl-VRn2GW0` (config.json 에 들어 있음)
 - 다른 PC·새 세션에서 다시 배포하려면: `clasp login` → `gas/.clasp.json` 을 `{"scriptId":"<스크립트 ID>","rootDir":""}` 로 만들고 → `gas/secret.gs` 다시 작성(비밀번호는 사용자에게) → `clasp push -f && clasp deploy -i <배포 ID>`.
-- 권한 승인 완료(시크릿 창 편집기에서 doGet 실행). 사용자 브라우저에 구글 계정이 여럿이라 일반 창에선 편집기·웹 앱이 "현재 파일을 열 수 없습니다" — **시크릿 창에서 qwertyyo119 로만 로그인**해서 열도록 안내.
+- 권한 승인 완료(시크릿 창 편집기에서 doGet 실행). 사용자 브라우저에 구글 계정이 여럿이라 일반 창에선 편집기·웹 앱 관리자 페이지가 "현재 파일을 열 수 없습니다". 그래서 **승인은 시트에서 직접**: '제안' 탭 상태(E열) 드롭다운을 승인/반려로 바꾸면 끝(onEdit 가 처리시각 기록). 시트 주소 `…/spreadsheets/d/<ID>/edit?authuser=qwertyyo119@gmail.com` 는 일반 창에서 열린다. 사이트의 fetch 는 쿠키 없이 익명이라 이 문제와 무관.
+- 웹 앱 v2(2026-10-14): 시트 직접 승인용 드롭다운·onEdit 추가.
 - 클라우드 세션은 script.google.com 이 네트워크 정책으로 막혀 있어 웹 앱 호출 확인(curl)은 못 한다(clasp 는 API 라 됨). 클라우드에서 `clasp login --no-localhost` 는 사용자가 승인 후 localhost 주소를 붙여 넣으면 된다.
 
 처음 설치 절차(기록용):

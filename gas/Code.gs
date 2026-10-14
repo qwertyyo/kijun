@@ -4,6 +4,8 @@
  *  - 사이트 → POST  (제안 접수, 상태 '대기')
  *  - 사이트 → GET ?action=list           (승인된 것만 JSON: [["가바나","조속기"], ...])
  *  - 관리자 → GET ?action=admin&key=...  (대기 목록 + 승인/반려 버튼 페이지)
+ *  - 또는 시트에서 바로: 상태 칸 드롭다운을 '승인'/'반려'로 바꾸면 처리시각이 자동 기록(onEdit)
+ *    (브라우저에 구글 계정이 여럿이면 웹 앱 관리자 페이지가 안 열리므로 이 방법을 쓴다)
  * 관리자 키: 프로젝트 설정 > 스크립트 속성에 ADMIN_KEY 로 저장
  */
 const SHEET = '제안';
@@ -31,7 +33,21 @@ function doPost(e) {
     if (!a || !b || a.length > 30) return;
     sh.appendRow([now, a, b, clean_(p.note), '대기', '']); n++;
   });
+  if (n) statusDropdown_(sh);
   return json_({ ok: true, added: n });
+}
+
+// 상태 칸(E열)을 대기/승인/반려 드롭다운으로
+function statusDropdown_(sh) {
+  const rule = SpreadsheetApp.newDataValidation().requireValueInList(['대기', '승인', '반려'], true).setAllowInvalid(false).build();
+  sh.getRange(2, 5, Math.max(sh.getLastRow() - 1, 1), 1).setDataValidation(rule);
+}
+
+// 시트에서 상태를 직접 바꾸면 처리시각 기록 (단순 트리거라 따로 설정 불필요)
+function onEdit(e) {
+  const r = e && e.range;
+  if (!r || r.getSheet().getName() !== SHEET || r.getColumn() > 5 || r.getLastColumn() < 5 || r.getRow() < 2) return;
+  r.getSheet().getRange(Math.max(r.getRow(), 2), 6, r.getLastRow() - Math.max(r.getRow(), 2) + 1, 1).setValue(new Date());
 }
 
 function doGet(e) {
