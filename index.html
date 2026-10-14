@@ -156,6 +156,7 @@ main { padding-top: 14px }
 .hn { font-size: 12px; color: var(--muted); margin: 2px 0 4px }
 .hx { font: inherit; font-size: 12px; color: var(--accent); background: none; border: 0; padding: 2px 0; cursor: pointer }
 .hfoot { font-size: 11.5px; color: var(--muted); margin-top: 2px }
+.xfer .xshare { background: var(--accent); color: #fff; border-color: var(--accent) }
 .hsum { border: 1px solid var(--line); border-left: 3px solid var(--old); border-radius: 8px; padding: 6px 10px; margin: 2px 0 8px; background: var(--surface) }
 .hst { font-size: 12px; font-weight: 700; color: var(--old); margin-bottom: 3px }
 .hst span { font-weight: 400; color: var(--muted); margin-left: 4px }
@@ -328,9 +329,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       <div class="terms" id="dlist"></div>
     </div>
     <div class="xfer">
+      <button type="button" id="xshare" class="xshare">모두가 쓰도록 공유 제안</button>
       <button type="button" id="xcopy">내 용어 복사</button>
       <button type="button" id="xpaste">다른 기기 용어 붙여넣기</button>
-      <span>이 기기 브라우저에만 저장됩니다. 다른 기기로 옮기려면 복사한 글을 그쪽에서 붙여넣으세요.</span>
+      <span>추가한 용어는 이 기기에만 저장됩니다. ‘공유 제안’으로 담당자에게 보내 주시면 확인 후 모든 사람의 기본 사전에 넣습니다.</span>
       <textarea id="xarea" hidden placeholder="가바나 = 조속기&#10;인렛 = 손잡이 인입구, 핸드레일 인입구" aria-label="붙여넣기"></textarea>
       <button type="button" id="ximport" hidden>가져오기</button>
     </div>
@@ -1164,6 +1166,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const done = () => { $('msg').textContent = '복사됨. 다른 기기의 “붙여넣기”에 넣으면 됩니다.'; };
     const fallback = () => { $('xarea').hidden = false; $('xarea').value = txt; $('xarea').select(); $('msg').textContent = '아래 글을 직접 복사하세요.'; };
     try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (e) { fallback(); }
+  });
+  // 공유 제안: 휴대폰 공유창(카카오톡·문자·메일 등)으로 내 용어 목록을 보낸다. 공유창이 없으면 복사
+  $('xshare').addEventListener('click', () => {
+    const txt = dumpSyn(); if (!txt) { $('msg').textContent = '먼저 용어를 추가해 주세요.'; return; }
+    const body = '[검사기준 통합검색 현장용어 제안]\n' + txt;
+    const copied = () => { $('msg').textContent = '복사됐어요. 담당자에게 카카오톡 등으로 붙여넣어 보내 주세요.'; };
+    const fallback = () => { $('xarea').hidden = false; $('xarea').value = body; $('xarea').select(); $('msg').textContent = '아래 글을 복사해 담당자에게 보내 주세요.'; };
+    if (navigator.share) navigator.share({ title: '현장용어 제안', text: body }).catch(() => {});
+    else try { navigator.clipboard.writeText(body).then(copied, fallback); } catch (e) { fallback(); }
   });
   $('xpaste').addEventListener('click', () => { const h = $('xarea').hidden; $('xarea').hidden = !h; $('ximport').hidden = !h; if (h) { $('xarea').value = ''; $('xarea').focus(); } });
   $('ximport').addEventListener('click', () => {
