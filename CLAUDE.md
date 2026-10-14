@@ -66,7 +66,13 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - **안전기준 개정(HWP 새 판)**: `hwp/b22.hwp`·`b24.hwp` 교체 → 빌드. 연혁집 조문번호와 맞는지 `hist_parse.py` 의 missing 확인.
 - 검증 습관: 바꾼 뒤 로컬 서버로 휴대폰 폭(390px)에서 해당 카드를 직접 보고, 대표 검색어(로프브레이크, 행거, 차단기, 포토 등) 결과 순서가 엉뚱하게 바뀌지 않았는지 본다.
 
-## SETUP: 공용 현장용어 서버 배포 (아직 안 함 — 사용자 PC에서)
+## SETUP: 공용 현장용어 서버 배포 (2026-10-14 완료)
+- 시트: https://drive.google.com/open?id=1FQxh4BhWzcwN2D6OCCPx9pgs7MFwfeeZq4RxFxYsoz8
+- 스크립트 ID `14GUzpo7gzTJG9hLXiVp-mxGU7ucuEa65O8JT66MImdJ0WmbjowBflrpW`, 웹 앱 배포 ID `AKfycbw6jHKm0bHPsAqveMq3wWkQ0ejwE9W4OFCYnmBuHrhq_5af7GyiFl33UEl-VRn2GW0` (config.json 에 들어 있음)
+- 다른 PC·새 세션에서 다시 배포하려면: `clasp login` → `gas/.clasp.json` 을 `{"scriptId":"<스크립트 ID>","rootDir":""}` 로 만들고 → `gas/secret.gs` 다시 작성(비밀번호는 사용자에게) → `clasp push -f && clasp deploy -i <배포 ID>`.
+- 클라우드 세션은 script.google.com 이 네트워크 정책으로 막혀 있어 웹 앱 호출 확인(curl)은 못 한다(clasp 는 API 라 됨). 클라우드에서 `clasp login --no-localhost` 는 사용자가 승인 후 localhost 주소를 붙여 넣으면 된다.
+
+처음 설치 절차(기록용):
 목표: 구글 시트(제안 저장) + 웹 앱(제안 접수·승인 목록·관리자 페이지)을 사용자 구글 계정(qwertyyo119@gmail.com)에 만들고, 웹 앱 주소를 `config.json`에 넣어 푸시.
 
 1. `npm i -g @google/clasp` 설치 확인.
