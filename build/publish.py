@@ -9,7 +9,7 @@ args = [a for a in sys.argv[1:] if not a.startswith('--')]
 msg = args[0] if args else '사이트 갱신'
 if '--no-build' not in sys.argv:
     subprocess.run([sys.executable, '-X', 'utf8', os.path.join(B, 'build.py')] + (['--images'] if '--images' in sys.argv else []), check=True)
-subprocess.run(['git', '-C', R, 'pull', '-q', '--rebase', 'origin', 'main'])   # config.json 등 다른 곳에서 고친 것 먼저 받기
+subprocess.run(['git', '-C', R, 'pull', '-q', '--rebase', '--autostash', 'origin', 'main'])   # config.json 등 다른 곳에서 고친 것 먼저 받기
 t = open(os.path.join(B, 'app_pkg', 'kijun.html'), encoding='utf-8').read()
 t = t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<title>검사기준 통합검색</title>\n<meta name="robots" content="noindex">', 1)
 open(os.path.join(R, 'index.html'), 'w', encoding='utf-8', newline='\n').write(t)
