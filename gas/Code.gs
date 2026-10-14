@@ -27,10 +27,14 @@ function doPost(e) {
   const p = (e && e.parameter) || {};
   const lines = (p.text || (p.a ? p.a + ' = ' + (p.b || '') : '')).split(/\n/).slice(0, 50);
   const sh = sheet_(), now = new Date(); let n = 0;
+  // 이미 대기·승인·반려된 같은 제안(현장용어|기준용어)은 다시 넣지 않는다(사이트는 '내 용어' 전체를 보내므로)
+  const key = (a, b) => (a + '|' + b).replace(/\s+/g, '');
+  const seen = new Set(sh.getDataRange().getValues().slice(1).map(r => key(String(r[1]), String(r[2]))));
   lines.forEach(line => {
     const m = line.split(/[=＝→]/); if (m.length < 2) return;
     const a = clean_(m[0]), b = clean_(m.slice(1).join(','));
-    if (!a || !b || a.length > 30) return;
+    if (!a || !b || a.length > 30 || seen.has(key(a, b))) return;
+    seen.add(key(a, b));
     sh.appendRow([now, a, b, clean_(p.note), '대기', '']); n++;
   });
   if (n) statusDropdown_(sh);

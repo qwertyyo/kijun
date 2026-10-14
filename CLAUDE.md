@@ -78,6 +78,8 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - 다른 PC·새 세션에서 다시 배포하려면: `clasp login` → `gas/.clasp.json` 을 `{"scriptId":"<스크립트 ID>","rootDir":""}` 로 만들고 → `gas/secret.gs` 다시 작성(비밀번호는 사용자에게) → `clasp push -f && clasp deploy -i <배포 ID>`.
 - 권한 승인 완료(시크릿 창 편집기에서 doGet 실행). 사용자 브라우저에 구글 계정이 여럿이라 일반 창에선 편집기·웹 앱 관리자 페이지가 "현재 파일을 열 수 없습니다". 그래서 **승인은 시트에서 직접**: '제안' 탭 상태(E열) 드롭다운을 승인/반려로 바꾸면 끝(onEdit 가 처리시각 기록). 시트 주소 `…/spreadsheets/d/<ID>/edit?authuser=qwertyyo119@gmail.com` 는 일반 창에서 열린다. 사이트의 fetch 는 쿠키 없이 익명이라 이 문제와 무관.
 - 웹 앱 v2(2026-10-14): 시트 직접 승인용 드롭다운·onEdit 추가.
+- 웹 앱 v3: 이미 시트에 있는 같은 제안(현장용어|기준용어)은 다시 넣지 않음(사이트가 '내 용어' 전체를 보내므로). 사이트는 접속할 때마다 승인 목록을 받아 검색에 쓰고, '기본 사전 보기' 맨 위에 '공용 승인'으로 보여 준다(승인 후 새로고침해야 반영).
+- 클라우드에서 시트 내용 확인: clasp 토큰으로 Drive API export(xlsx)는 된다(Sheets API 는 clasp 프로젝트에서 꺼져 있음).
 - 클라우드 세션은 script.google.com 이 네트워크 정책으로 막혀 있어 웹 앱 호출 확인(curl)은 못 한다(clasp 는 API 라 됨). 클라우드에서 `clasp login --no-localhost` 는 사용자가 승인 후 localhost 주소를 붙여 넣으면 된다.
 
 처음 설치 절차(기록용):

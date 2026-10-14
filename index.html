@@ -227,6 +227,7 @@ main { padding-top: 14px }
 .tblwrap th { background: var(--accent-soft); font-weight: 600 }
 .tcap { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px }
 .toc { margin-top: 18px }
+.shtag { font-size: 11px; font-weight: 700; color: var(--surface); background: var(--el); border-radius: 4px; padding: 0 5px; margin-left: 4px }
 .toc h2 { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .03em; margin: 0 0 8px }
 .toc h2.t-b22, .toc h2.t-b24, .toc h2.t-std { font-size: 16px; font-weight: 700; letter-spacing: 0 }
 .toc h2.t-b22 { color: var(--el) } .toc h2.t-b24 { color: var(--es) } .toc h2.t-std { color: var(--std) }
@@ -750,8 +751,19 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   let SYN_API = '';
   let sharedSyn = [];
   try { sharedSyn = JSON.parse(localStorage.getItem('kshared') || '[]'); } catch (e) { sharedSyn = []; }
-  fetch('config.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(c => { SYN_API = (c && c.synApi) || ''; if (!SYN_API) return; return fetch(SYN_API + '?action=list').then(r => r.json()).then(g => { if (Array.isArray(g)) { sharedSyn = g.filter(x => Array.isArray(x) && x.length >= 2); try { localStorage.setItem('kshared', JSON.stringify(sharedSyn)); } catch (e) {} if ($('q').value.trim()) render(); } }); }).catch(() => {});
+  fetch('config.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(c => { SYN_API = (c && c.synApi) || ''; if (!SYN_API) return; return fetch(SYN_API + '?action=list').then(r => r.json()).then(g => { if (Array.isArray(g)) { sharedSyn = g.filter(x => Array.isArray(x) && x.length >= 2); try { localStorage.setItem('kshared', JSON.stringify(sharedSyn)); } catch (e) {} if (typeof renderBase === 'function') renderBase($('bfilter').value); if ($('q').value.trim()) render(); } }); }).catch(() => {});
   function synGroups() { return BASE_SYN.concat(sharedSyn, customSyn); }
+  // '키 홀'처럼 띄어 쓴 현장용어가 사전에 있으면 두 낱말로 쪼개지 말고 한 말로 찾는다
+  function joinSynPhrases(ws) {
+    const keys = new Set(synGroups().flat().map(norm));
+    const out = [];
+    for (let i = 0; i < ws.length; ) {
+      let j = Math.min(ws.length, i + 4);
+      for (; j > i + 1; j--) if (keys.has(norm(ws.slice(i, j).join(' ')))) break;
+      out.push(ws.slice(i, j).join(' ')); i = j;
+    }
+    return out;
+  }
   function expandTerm(t) {
     const set = new Set([t]);
     const nt = norm(t);
@@ -779,7 +791,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     return e.src === 'std' || e.src === 'old' ? 0 : 3;
   }
   function search(q) {
-    const terms = q.trim().split(/\s+/).filter(Boolean);
+    const terms = joinSynPhrases(q.trim().split(/\s+/).filter(Boolean));
     if (!terms.length) return { hits: [], groups: [] };
     const groups = terms.map(t => {
       let vars = expandTerm(t);
@@ -1170,7 +1182,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 
   // ---- 용어 사전 UI
   const allBaseWords = Array.from(new Set(BASE_SYN.flat())).sort((a, b) => a.localeCompare(b, 'ko'));
-  $('bcount').textContent = BASE_SYN.length;
 
   function openPanel(term) {
     $('panel').hidden = false; $('tbtn').setAttribute('aria-expanded', 'true');
@@ -1212,8 +1223,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   function renderBase(filter) {
     const f = norm(filter || '');
-    const rows = BASE_SYN.filter(g => !f || g.some(w => norm(w).includes(f)));
-    $('blist').innerHTML = rows.map(g => `<li><b>${escHtml(g[0])}</b> · ${escHtml(g.slice(1).join(' · '))}</li>`).join('') || '<li class="none">없음</li>';
+    const ok = g => !f || g.some(w => norm(w).includes(f));
+    // 공용 서버에서 승인된 현장용어(모든 사람에게 적용)를 맨 위에
+    const sh = sharedSyn.filter(ok).map(g => `<li><b>${escHtml(g[0])}</b> · ${escHtml(g.slice(1).join(' · '))} <span class="shtag">공용 승인</span></li>`);
+    const rows = BASE_SYN.filter(ok).map(g => `<li><b>${escHtml(g[0])}</b> · ${escHtml(g.slice(1).join(' · '))}</li>`);
+    $('blist').innerHTML = sh.concat(rows).join('') || '<li class="none">없음</li>';
+    $('bcount').textContent = BASE_SYN.length + sharedSyn.length;
   }
   $('bfilter').addEventListener('input', () => renderBase($('bfilter').value));
   function saveSyn() { try { localStorage.setItem('ksyn', JSON.stringify(customSyn)); } catch (e) {} }
