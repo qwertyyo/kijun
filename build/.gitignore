@@ -1,0 +1,19 @@
+# 빌드 중간 산출물(build.py 가 매번 다시 만듦)
+app_pkg/
+kijun.html
+data.json
+hist.json
+hist_es.json
+hist_cur.json
+hist_es_cur.json
+hist_final.json
+hist_es_final.json
+geo_moves.json
+hwp/b22h.json
+hwp/b22h.txt
+hwp/b24h.json
+hwp/b24h.txt
+fig/
+stdimg/
+__pycache__/
+std_geo.json

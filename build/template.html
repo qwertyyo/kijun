@@ -1,0 +1,1328 @@
+<title>검사기준 통합검색</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: one column, sticky search bar on top, result cards below; built for a tablet in the field. */
+:root {
+  --bg: #f4f5f7;
+  --surface: #ffffff;
+  --fg: #16202b;
+  --muted: #5d6b7a;
+  --line: #d6dce3;
+  --accent: #0f5f8c;
+  --accent-soft: #e2eef6;
+  --mark: #fff0a3;
+  --stripe: #f2c400;
+  --std: #7a3e9d;
+  --std-soft: #f1e7f8;
+  --el: #1f7a4d;
+  --el-soft: #e3f3ea;
+  --old: #8a5a12;
+  --old-soft: #f6ecdc;
+  --radius: 10px;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121820; --surface: #1b232d; --fg: #e8edf2; --muted: #98a6b5; --line: #2d3946;
+  --accent: #6cb6e4; --accent-soft: #1d3345; --mark: #5a4a00; --stripe: #e6b800;
+  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121820; --surface: #1b232d; --fg: #e8edf2; --muted: #98a6b5; --line: #2d3946;
+  --accent: #6cb6e4; --accent-soft: #1d3345; --mark: #5a4a00; --stripe: #e6b800;
+  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0; padding-block: 0 48px; padding-inline: 16px }
+.wrap { max-width: 880px; margin: 0 auto }
+/* 검색창 묶음은 고정하지 않고 본문과 함께 위로 스크롤된다. 내려가 있으면 오른쪽 아래 버튼으로 바로 복귀 */
+header.top { position: relative; z-index: 5; background: var(--bg); padding-block: 14px 10px; border-bottom: 1px solid var(--line) }
+.totop { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 20; font: inherit; font-size: 14px; font-weight: 600; padding: 10px 16px; border: 0; border-radius: 999px; background: var(--accent); color: #fff; box-shadow: 0 4px 14px rgba(0,0,0,.25); cursor: pointer }
+.figs { display: flex; gap: 8px; overflow-x: auto; margin-top: 10px; padding-bottom: 4px; -webkit-overflow-scrolling: touch }
+.figs figure { margin: 0; flex: none; display: flex; flex-direction: column; gap: 3px }
+.figs button { padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: zoom-in; overflow: hidden; display: block }
+.figs img { display: block; height: 120px; width: auto; max-width: none }
+.figs figcaption { font-size: 11px; color: var(--muted) }
+.lb { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.93); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; gap: 10px }
+.lb img { max-width: 100%; max-height: calc(100% - 60px); background: #fff; border-radius: 4px; object-fit: contain }
+.lb .lbbar { display: flex; gap: 10px; align-items: center; color: #eee; font-size: 13px; flex-wrap: wrap; justify-content: center }
+.lb button { font: inherit; color: #fff; background: rgba(255,255,255,.14); border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer }
+.lb button:disabled { opacity: .35 }
+/* 본문 속 수식(KaTeX)·그림 */
+.meq { white-space: normal }
+.meq .katex { font-size: 1.08em }
+.meqb { display: block; overflow-x: auto; overflow-y: hidden; margin: 4px 0; padding: 2px 0; white-space: normal; -webkit-overflow-scrolling: touch }
+.meqb .katex { font-size: 1.08em }
+.fig { display: block; margin: 8px 0; white-space: normal }
+.fig button { padding: 0; border: 1px solid var(--line); border-radius: 6px; background: #fff; cursor: zoom-in; display: inline-block; max-width: 100%; overflow: hidden; vertical-align: top }
+.fig img { display: block; max-width: 100%; height: auto }
+.fig.h img { image-rendering: auto }
+.figrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; margin: 8px 0; white-space: normal }
+.figrow .fig { margin: 0 }
+.figtag { display: block; font-size: 11px; color: var(--muted); margin-top: 2px }
+.lb .lbscroll { flex: 1; width: 100%; overflow: auto; display: flex; align-items: center; justify-content: center; -webkit-overflow-scrolling: touch }
+.lb .lbscroll img { max-height: none }
+.brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px }
+.brand h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.01em }
+.brand .sub { font-size: 12px; color: var(--muted) }
+.searchrow { display: flex; gap: 8px }
+.searchrow input { flex: 1; min-width: 0; font: inherit; font-size: 17px; padding: 11px 14px; border: 1.5px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg) }
+.searchrow input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent) }
+.searchrow button { font: inherit; font-weight: 600; padding: 0 16px; border: 0; border-radius: var(--radius); background: var(--accent); color: #fff; cursor: pointer }
+.searchrow button:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px }
+.filters { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; align-items: center }
+.chip { font: inherit; font-size: 13px; padding: 4px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); cursor: pointer }
+.chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff }
+.ywrap { position: relative; display: inline-block }
+.ywrap[hidden] { display: none }
+.dpop { width: min(320px, calc(100vw - 32px)) }
+.drow { display: grid; grid-template-columns: 3em 1fr auto; gap: 6px; align-items: center; margin-bottom: 8px }
+.drow label { font-size: 13px; color: var(--muted) }
+.drow input { font: inherit; font-size: 15px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); min-width: 0 }
+.drow input[type=date] { grid-column: 2 / 4 }
+.dinfo { font-size: 12.5px; color: var(--muted); line-height: 1.5; border-top: 1px solid var(--line); padding-top: 8px }
+.dinfo b { color: var(--fg) }
+.dinfo .chip { font-size: 12px; padding: 2px 8px; margin: 3px 3px 0 0 }
+.dinfo .chip[aria-pressed="true"] { background: var(--old); border-color: var(--old) }
+#dbtn[data-on] { border-color: var(--old); color: var(--old); background: var(--old-soft) }
+.hd .apply { font-size: 11px; color: var(--old); background: var(--old-soft); border-radius: 4px; padding: 0 5px; font-weight: 600 }
+.after { font-size: 12.5px; font-weight: 600; color: var(--old); background: var(--old-soft); border-radius: 6px; padding: 3px 8px; margin: 2px 0 6px; display: inline-block }
+.after.new { color: var(--el); background: var(--el-soft) }
+#chgbtn[aria-pressed="true"] { background: var(--old); border-color: var(--old); color: #fff }
+#chgbtn:disabled { opacity: .45; cursor: default }
+.p09 { white-space: pre-wrap }
+.p09.dim { color: var(--muted); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--muted) 60%, transparent) }
+.n09 { font-size: 12px; margin: 1px 0 6px; white-space: normal }
+.n09.k { color: var(--el) }
+.n09.w { color: #b3541e; font-weight: 600 }
+.n09.i { color: var(--muted) }
+.o09 { white-space: pre-wrap; border-left: 3px solid var(--old); background: var(--old-soft); padding: 4px 8px; margin: 0 0 8px; border-radius: 0 6px 6px 0 }
+.o09 b { display: block; font-size: 12px; color: var(--old); margin-bottom: 2px }
+.dnote { font-size: 13px; color: var(--old); background: var(--old-soft); border-radius: 8px; padding: 7px 10px; margin: 0 0 10px }
+.ypop { position: absolute; z-index: 30; top: calc(100% + 6px); left: 0; width: min(300px, calc(100vw - 32px)); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.18); padding: 10px }
+.ygrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px }
+.yr { font: inherit; font-family: var(--font-mono); font-size: 13px; padding: 7px 0; text-align: center; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--fg); cursor: pointer }
+.yr[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff }
+.yfoot { display: flex; align-items: center; gap: 6px; margin-top: 10px }
+.yfoot .hint { margin: 0 auto 0 0; font-size: 12px; color: var(--muted) }
+.ysel { white-space: nowrap; padding-right: 26px; background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%); background-position: right 12px center, right 7px center; background-size: 5px 5px; background-repeat: no-repeat; cursor: pointer; max-width: none }
+.ysel[data-on] { border-color: var(--accent); color: var(--accent) }
+.chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.filters .sep { width: 1px; height: 18px; background: var(--line); margin-inline: 4px }
+.expand { font-size: 12.5px; color: var(--muted); margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; min-height: 18px }
+.expand .grp { display: inline-flex; gap: 4px; align-items: center; background: var(--accent-soft); border-radius: 6px; padding: 1px 7px; color: var(--fg) }
+.expand .grp b { font-weight: 600; white-space: nowrap }
+.expand .grp span { opacity: .75 }
+main { padding-top: 14px }
+.status { font-size: 13px; color: var(--muted); margin-bottom: 10px; display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap }
+.status a { color: var(--accent) }
+.results { display: flex; flex-direction: column; gap: 10px }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px 12px 16px; position: relative; overflow: hidden; min-width: 0 }
+.card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--stripe) }
+.card.std::before { background: var(--std) }
+.card.b22::before { background: var(--el) }
+.card.b22 .badge { background: var(--el-soft); color: var(--el) }
+.card .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 4px }
+.badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em }
+.card.std .badge { background: var(--std-soft); color: var(--std) }
+.card.old::before { background: var(--old) }
+.card.old .badge { background: var(--old-soft); color: var(--old) }
+.vr { font-size: 12px; color: var(--old); font-variant-numeric: tabular-nums }
+.tocver { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); margin-bottom: 6px }
+.tocver > summary { cursor: pointer; padding: 10px 12px; display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; list-style: none }
+.tocver > summary::-webkit-details-marker { display: none }
+.tocver > summary::before { content: '▸'; color: var(--muted); font-size: 12px }
+.tocver[open] > summary::before { content: '▾' }
+.tocver > summary b { font-family: var(--font-mono); font-weight: 600 }
+.tocver > summary span { color: var(--muted); font-size: 13px }
+.tocver > summary em { margin-left: auto; font-style: normal; font-size: 12px; color: var(--muted) }
+.tocver .toclist { padding: 0 10px 10px }
+.ygrid.v2 { grid-template-columns: 1fr 1fr }
+.ygrid .yr small { display: block; font-family: var(--font-body); font-size: 10.5px; color: inherit; opacity: .75; margin-top: 1px }
+.hbtn { font: inherit; font-size: 12px; color: var(--old); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; cursor: pointer }
+.hbtn[aria-expanded="true"] { background: var(--old-soft); border-color: var(--old) }
+.meta .ctx { margin-left: 0 }
+.meta .hbtn:first-of-type, .meta .ctx:first-of-type { margin-left: auto }
+.hist { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px }
+.hist h4 { margin: 0 0 6px; font-size: 13px; color: var(--old) }
+.hp { position: relative; padding: 0 0 12px 18px; border-left: 2px solid var(--line); margin-left: 5px }
+.hp:last-of-type { border-left-color: transparent }
+.hp::before { content: ''; position: absolute; left: -6px; top: 3px; width: 10px; height: 10px; border-radius: 50%; background: var(--surface); border: 2px solid var(--old) }
+.hp.now::before { background: var(--old) }
+.hd { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; margin-bottom: 4px }
+.hd b { font-family: var(--font-mono); font-size: 13.5px; font-variant-numeric: tabular-nums }
+.hd span { font-size: 12px; color: var(--muted) }
+.hd .here { font-size: 11px; color: var(--old); border: 1px solid var(--old); border-radius: 4px; padding: 0 5px }
+.hd .tag2 { font-size: 11px; color: #fff; background: var(--old); border-radius: 4px; padding: 0 5px }
+.ht { white-space: pre-wrap; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere }
+.ht.clip { max-height: 9.6em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent) ; mask-image: linear-gradient(#000 70%, transparent) }
+.ht ins { text-decoration: none; background: var(--el-soft); color: var(--el); font-weight: 600; border-radius: 3px }
+.ht del { color: var(--muted); text-decoration: line-through; text-decoration-color: #c0392b }
+.hn { font-size: 12px; color: var(--muted); margin: 2px 0 4px }
+.hx { font: inherit; font-size: 12px; color: var(--accent); background: none; border: 0; padding: 2px 0; cursor: pointer }
+.hfoot { font-size: 11.5px; color: var(--muted); margin-top: 2px }
+.xfer .xshare { background: var(--accent); color: #fff; border-color: var(--accent) }
+.hsum { border: 1px solid var(--line); border-left: 3px solid var(--old); border-radius: 8px; padding: 6px 10px; margin: 2px 0 8px; background: var(--surface) }
+.hst { font-size: 12px; font-weight: 700; color: var(--old); margin-bottom: 3px }
+.hst span { font-weight: 400; color: var(--muted); margin-left: 4px }
+.hsum ol { list-style: none; margin: 0; padding: 0 }
+.hsum li { display: grid; grid-template-columns: 9.6em 1fr; gap: 8px; font-size: 13px; line-height: 1.45; padding: 2px 0; border-top: 1px dashed var(--line) }
+.hsum li:first-child { border-top: 0 }
+.hsum .sw { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums }
+.hsum .sw i { font-style: normal; color: var(--old) }
+.hsum li.cur .sw { color: var(--el); font-weight: 600 }
+.hsum li.on { background: var(--old-soft); border-radius: 4px }
+.hsum li.on .sg { font-weight: 600 }
+.hsum li.off { opacity: .55 }
+@media (max-width: 520px) { .hsum li { grid-template-columns: 1fr; gap: 0 } }
+.hfound { font-size: 12.5px; color: var(--old); background: var(--old-soft); border-radius: 6px; padding: 4px 8px; margin: 0 0 6px; white-space: normal }
+.hban { font-size: 12.5px; font-weight: 600; color: var(--old); background: var(--old-soft); border-radius: 6px; padding: 3px 8px; margin: 0 0 6px; display: inline-block; white-space: normal }
+.hban.none { color: #b3541e }
+.hban.cur { color: var(--el); background: var(--el-soft) }
+.hbody { white-space: pre-wrap }
+.dimbody { color: var(--muted) }
+.hup { white-space: pre-wrap; border-left: 3px solid var(--old); background: var(--old-soft); padding: 4px 8px; margin: 8px 0 0; border-radius: 0 6px 6px 0; font-size: 14px }
+.hup b { display: block; font-size: 12px; color: var(--old); margin-bottom: 2px; white-space: normal }
+.hg { color: #1a8a2e; font-weight: 600 }
+.hr { color: #c62828; font-weight: 600 }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hg { color: #6fdc8c } :root:not([data-theme="light"]) .hr { color: #ff8a80 } }
+:root[data-theme="dark"] .hg { color: #6fdc8c } :root[data-theme="dark"] .hr { color: #ff8a80 }
+.hn2 { font-size: 11px; color: #b3541e }
+.weakdiv { margin: 18px 0 10px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 13px; color: var(--muted) }
+.toc h2 .h2s { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 4px }
+.oldwrap { margin-top: 8px }
+.oldwrap .oldin { padding: 0 10px 10px }
+.oldmore { margin: 6px 0 10px; font-size: 13.5px; color: var(--muted) }
+.oldmore button { font: inherit; color: var(--old); background: none; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; cursor: pointer; margin-left: 4px }
+.num { font-family: var(--font-mono); font-weight: 600; color: var(--fg); font-size: 13px }
+.card h2 { font-size: 15.5px; font-weight: 600; margin: 0 0 4px; line-height: 1.4; text-wrap: balance }
+.card .path { font-size: 12px; color: var(--muted); margin-bottom: 6px; overflow-wrap: anywhere }
+.card .body { font-size: 14.5px; white-space: pre-line; overflow-wrap: anywhere; max-height: 9.5em; overflow: hidden; position: relative }
+.card.std .body { white-space: normal; max-height: 13em }
+.tblwrap { overflow-x: auto; margin: 6px 0 8px; white-space: normal; -webkit-overflow-scrolling: touch }
+.tblwrap table { border-collapse: collapse; font-size: 13px; line-height: 1.45; min-width: 100% }
+.tblwrap th, .tblwrap td { border: 1px solid var(--line); padding: 4px 7px; vertical-align: top; text-align: left; min-width: 3.5em }
+.tblwrap th { background: var(--accent-soft); font-weight: 600 }
+.tcap { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px }
+.toc { margin-top: 18px }
+.toc h2 { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .03em; margin: 0 0 8px }
+.toclist { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px }
+.tocitem { font: inherit; font-size: 14px; text-align: left; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg); cursor: pointer; min-width: 0 }
+.tocitem span { min-width: 0; overflow-wrap: anywhere }
+.tocitem em { font-style: normal; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; flex: none }
+.tocitem:hover, .tocitem:focus-visible { border-color: var(--accent); outline: none }
+.tocyear { display: grid; grid-template-columns: 3.4em 1fr; gap: 8px; margin-bottom: 8px; align-items: start }
+.tocyear .ty { font-family: var(--font-mono); font-size: 13px; color: var(--muted); padding-top: 9px }
+.vnav { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px }
+.vnav.bottom { margin: 14px 0 0 }
+.vnav .chip { max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.ctx { margin-left: auto; font: inherit; font-size: 12px; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; cursor: pointer }
+.card.focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft) }
+@media (max-width: 520px) { .tocyear { grid-template-columns: 1fr } .tocyear .ty { padding-top: 0 } }
+.gist { display: flex; gap: 8px; align-items: flex-start; background: var(--std-soft); border-radius: 8px; padding: 8px 10px; margin: 2px 0 8px; font-size: 14.5px; line-height: 1.5; font-weight: 500 }
+.gist .tag { flex: none; font-size: 11px; font-weight: 700; color: var(--std); letter-spacing: .04em; padding-top: 3px }
+.gist .ai { flex: none; font-size: 10.5px; color: var(--muted); padding-top: 4px; margin-left: auto; white-space: nowrap }
+.bgtoggle { font: inherit; font-size: 12.5px; color: var(--muted); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; margin-top: 10px; cursor: pointer }
+.bgtoggle[aria-expanded="true"] { color: var(--fg) }
+.bg { margin-top: 6px; padding-top: 4px; border-top: 1px dashed var(--line) }
+.bg .sec h3 { color: var(--muted) }
+.sec { margin-top: 8px; display: grid; grid-template-columns: 5.5em 1fr; gap: 2px 10px }
+.sec:first-child { margin-top: 2px }
+.sec h3 { grid-column: 1; margin: 0; font-size: 11.5px; font-weight: 600; color: var(--std); letter-spacing: .03em; padding-top: 3px; line-height: 1.4 }
+.sec .ps { grid-column: 2; min-width: 0 }
+.sec.nohead .ps { grid-column: 1 / -1 }
+.sec p { margin: 0 0 5px; line-height: 1.5 }
+.sec p:last-child { margin-bottom: 0 }
+@media (max-width: 520px) { .sec { grid-template-columns: 1fr } .sec .ps { grid-column: 1 } .sec h3 { padding-top: 0 } }
+.card.open .body { max-height: none }
+.card .body::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2.5em; background: linear-gradient(transparent, var(--surface)) }
+.card.open .body::after, .card.short .body::after { display: none }
+.card .more { font: inherit; font-size: 13px; color: var(--accent); background: none; border: 0; padding: 4px 0 0; cursor: pointer }
+.card.short .more { display: none }
+.card.short .body { max-height: none }
+.card .more:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1px }
+.empty { color: var(--muted); padding: 30px 0; text-align: center; font-size: 14px }
+.empty code { font-family: var(--font-mono); font-size: 13px }
+/* 용어 패널 */
+.tbtn { font: inherit; font-size: 13px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--fg); cursor: pointer; white-space: nowrap }
+.tbtn[aria-expanded="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent) }
+.tbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px }
+.panel h2 { font-size: 15px; margin: 0 0 4px }
+.panel .hint { margin: 0 0 10px }
+.addform { display: grid; grid-template-columns: 1fr auto 1.4fr auto; gap: 6px; align-items: center }
+.addform .eq { color: var(--muted); font-weight: 600; text-align: center }
+.addform input { font: inherit; font-size: 15px; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 9px; background: var(--bg); color: var(--fg); min-width: 0; width: 100% }
+.addform input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: var(--accent) }
+.addform button { font: inherit; font-weight: 600; padding: 9px 16px; border: 0; border-radius: 9px; background: var(--accent); color: #fff; cursor: pointer }
+.addform button:disabled { opacity: .45; cursor: default }
+.sugg { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; min-height: 0 }
+.sugg .chip { font-size: 12.5px }
+.sugg .lab { font-size: 12px; color: var(--muted); align-self: center }
+.msg { font-size: 13px; margin-top: 8px; color: var(--accent); min-height: 1.2em }
+.mine { margin-top: 14px }
+.mine h3, .basedic h3 { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: .04em; margin: 0 0 6px; text-transform: uppercase }
+.terms { display: flex; flex-wrap: wrap; gap: 6px }
+.term { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; padding: 4px 6px 4px 10px; border-radius: 8px; background: var(--accent-soft); color: var(--fg); max-width: 100% }
+.term b { font-weight: 600; color: var(--accent) }
+.term .arrow { color: var(--muted) }
+.term button { font: inherit; font-size: 12px; line-height: 1; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer }
+.term button:hover, .term button:focus-visible { background: var(--surface); color: var(--fg); outline: none }
+.none { font-size: 13px; color: var(--muted) }
+.basedic { margin-top: 14px; border-top: 1px dashed var(--line); padding-top: 10px }
+.basedic summary { cursor: pointer; font-size: 13px; color: var(--muted); list-style: none; display: flex; justify-content: space-between; gap: 8px; align-items: center }
+.basedic summary::-webkit-details-marker { display: none }
+.basedic input { font: inherit; font-size: 13px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--fg); width: 100%; margin: 8px 0 }
+.basedic ul { margin: 0; padding: 0; list-style: none; columns: 2; column-gap: 24px; font-size: 13px }
+.basedic li { break-inside: avoid; margin-bottom: 3px; overflow-wrap: anywhere }
+.basedic li b { font-weight: 600 }
+.xfer { margin-top: 12px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted) }
+.xfer button, .xfer label { font: inherit; font-size: 12.5px; padding: 4px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); color: var(--fg); cursor: pointer }
+.xfer textarea { width: 100%; min-height: 70px; font: inherit; font-size: 13px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); color: var(--fg); margin-top: 6px }
+.empty .link { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline }
+@media (max-width: 600px) { .addform { grid-template-columns: 1fr 1fr } .addform .eq { display: none } .addform button { grid-column: 1 / -1 } .basedic ul { columns: 1 } }
+@media (max-width: 520px) { body { font-size: 14.5px } .searchrow input { font-size: 16px } }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color .15s } }
+/* 앱 임베드: 앱이 자체 상단바를 가지므로 제목줄 숨김 */
+.embedded .brand { display: none }
+.embedded header.top { padding-top: 8px }
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div class="brand"><h1>검사기준 통합검색</h1><span class="sub">엘리베이터·에스컬레이터 안전기준(현행) + 적용 연혁(승강기 안전기준 연혁집, 1990년대~) + 검사방법 표준화 2016~2026</span></div>
+  <form class="searchrow" id="f" autocomplete="off">
+    <input id="q" type="search" placeholder="예: 핸드레일 벽 400 / 삼각부 스펀지 / 스커트 틈새 / ㅅㅋㅌ" aria-label="검색어" enterkeyhint="search">
+    <button type="submit">검색</button>
+    <button type="button" class="tbtn" id="tbtn" aria-expanded="false" aria-controls="panel">용어 추가</button>
+  </form>
+  <div class="filters" id="filters">
+    <button class="chip" data-src="all" aria-pressed="true">전체</button>
+    <button class="chip" data-src="b22" aria-pressed="false">엘리베이터</button>
+    <button class="chip" data-src="b24" aria-pressed="false">에스컬레이터</button>
+    <button class="chip" data-src="std" aria-pressed="false">표준화</button>
+    <span class="sep"></span>
+    <span class="ywrap" id="dwrap"><button type="button" class="chip ysel" id="dbtn" aria-expanded="false" aria-controls="dpop" title="설치일 등 기준일을 넣으면 그날 시행 중이던 엘리베이터 기준으로 검색·열람">기준일: 현행</button><div class="ypop dpop" id="dpop" hidden role="group" aria-label="기준 적용일 선택">
+      <div class="drow"><label for="dyear">연도</label><input id="dyear" type="number" inputmode="numeric" min="1990" max="2099" placeholder="예: 2016"><button type="button" class="chip" id="dyok">적용</button></div>
+      <div class="drow"><label for="ddate">날짜</label><input id="ddate" type="date" min="1990-01-01" max="2099-12-31"></div>
+      <div class="dinfo" id="dinfo">설치일(또는 허가일 등) 기준일을 넣으면 그날 시행 중이던 엘리베이터 기준만 보여줍니다.</div>
+      <div class="drow"><span></span><button type="button" class="chip" id="chgbtn" aria-pressed="false" style="grid-column:2/4" title="기준일 당시 판에서 이후 바뀌거나 없어진 조문 + 그 뒤 새로 생긴 현행 조문">이 날짜 이후 바뀐 조문만 보기</button></div>
+      <div class="yfoot"><button type="button" class="chip" id="dnow">현행으로</button><button type="button" class="chip" id="dclose">닫기</button></div>
+    </div></span>
+    <span class="ywrap" id="vwrap" hidden style="display:none"><button type="button" class="chip ysel" id="vbtn" aria-expanded="false" aria-controls="vpop">판: 전체</button><div class="ypop" id="vpop" hidden role="group" aria-label="구기준 판 선택(여러 개 가능)"><div class="ygrid v2" id="vers"></div><div class="yfoot"><span class="hint">시행일 · 여러 개 선택 가능</span><button type="button" class="chip" id="vclear">전체</button><button type="button" class="chip" id="vclose">닫기</button></div></div></span><span class="ywrap" id="ywrap"><button type="button" class="chip ysel" id="ybtn" aria-expanded="false" aria-controls="ypop">연도: 전체</button><div class="ypop" id="ypop" hidden role="group" aria-label="표준화 연도 선택(여러 개 가능)"><div class="ygrid" id="years"></div><div class="yfoot"><span class="hint">여러 개 선택 가능</span><button type="button" class="chip" id="yclear">전체</button><button type="button" class="chip" id="yclose">닫기</button></div></div></span>
+    <span class="sep"></span>
+    <button class="chip" id="bgtog" aria-pressed="false" title="표준화 안건의 관련 법령·배경 인용문까지 검색 대상에 포함">인용문 포함</button>
+  </div>
+  <div class="expand" id="expand"></div>
+</header>
+
+<main>
+  <section class="panel" id="panel" hidden aria-label="현장용어 추가">
+    <h2>현장용어 연결</h2>
+    <p class="hint">현장에서 쓰는 말을 기준 원문의 말과 이어두면, 어느 쪽으로 검색해도 같이 찾습니다. 기준 용어 칸에 몇 글자 치면 사전에서 맞는 말이 아래에 뜹니다.</p>
+    <form class="addform" id="addform" autocomplete="off">
+      <input id="d1" placeholder="현장용어 (예: 가바나)" aria-label="현장용어" required>
+      <span class="eq">=</span>
+      <input id="d2" placeholder="기준 용어 (예: 조속기)" aria-label="기준 용어" autocomplete="off" required>
+      <button type="submit" id="dadd">연결</button>
+    </form>
+    <div class="sugg" id="sugg"></div>
+    <div class="msg" id="msg" aria-live="polite"></div>
+    <div class="mine">
+      <h3>내가 추가한 용어</h3>
+      <div class="terms" id="dlist"></div>
+    </div>
+    <div class="xfer">
+      <button type="button" id="xshare" class="xshare">모두가 쓰도록 공유 제안</button>
+      <button type="button" id="xcopy">내 용어 복사</button>
+      <button type="button" id="xpaste">다른 기기 용어 붙여넣기</button>
+      <span>추가한 용어는 이 기기에만 저장됩니다. ‘공유 제안’으로 담당자에게 보내 주시면 확인 후 모든 사람의 기본 사전에 넣습니다.</span>
+      <textarea id="xarea" hidden placeholder="가바나 = 조속기&#10;인렛 = 손잡이 인입구, 핸드레일 인입구" aria-label="붙여넣기"></textarea>
+      <button type="button" id="ximport" hidden>가져오기</button>
+    </div>
+    <details class="basedic">
+      <summary><span>기본 사전 보기 (<span id="bcount"></span>개 그룹)</span><span>▾</span></summary>
+      <input id="bfilter" placeholder="사전에서 찾기" aria-label="사전에서 찾기">
+      <ul id="blist"></ul>
+    </details>
+  </section>
+  <div class="status" id="status"></div>
+  <div class="results" id="results"></div>
+</main>
+</div>
+
+<link rel="stylesheet" href="katex/katex.min.css">
+<script src="katex/katex.min.js"></script>
+<script id="data" type="application/json">__DATA__</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('data').textContent);
+  // 본문 없는 제목만 있는 조문(예: '5.6 손잡이 시스템')과 회차 목차는 검색 대상에서 제외
+  // 장(章) 제목: 본문 없는 제목 조문도 목차용으로 보관
+  const CH = { b22: {}, b24: {} };
+  ['b22', 'b24'].forEach(s => (DATA[s] || []).forEach(e => { if (e.num.split('.').length <= 2) CH[s][e.num] = e.title || ''; }));
+  DATA.b24 = DATA.b24.filter(e => (e.text || '').trim());
+  DATA.b22 = (DATA.b22 || []).filter(e => (e.text || '').trim());
+  DATA.std = DATA.std.filter(e => e.title !== '목차');
+  // ---- 개정 전 판(구버전 파일)은 쓰지 않는다. 연혁은 「승강기 안전기준 연혁집」(한국승강기안전공단, 2025.10) 기준
+  const OLD = { vers: [], texts: [] }; const OV = []; const OCH = []; DATA.old = [];
+  function verRange() { return ''; }
+  const ALL = DATA.b22.concat(DATA.b24, DATA.std);
+  const HIST = DATA.hist || {}, HIST_ES = DATA.hist_es || {};
+  DATA.b22.forEach(e => { const h = HIST[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
+  DATA.b24.forEach(e => { const h = HIST_ES[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
+  const HSRC = { b22: '「승강기 안전기준 연혁집(안)」 엘리베이터(한국승강기안전공단 검사총괄실, 2025.10)', b24: '「승강기 안전기준 연혁집」 별표24 에스컬레이터 v2.0(한국승강기안전공단 안전총괄처 검사총괄실, 2026.9)' };
+  // 그림 표식 \x10파일|폭|높이(\x0e검색용 글자)\x11, 수식 표식 \x05한 줄 텍스트\x0eLaTeX\x06
+  const FIGRE = /\x10([^|\x11]+)\|(\d+)\|(\d+)(?:\x0e([^\x11]*))?\x11/g;
+  const EQRE = /\x05([^\x0e\x06]*)\x0e([^\x06]*)\x06/g;
+  const plainH = s => (s || '').replace(FIGRE, (m, f, w, h, t) => t || '').replace(EQRE, '$1').replace(/[\x01-\x04]/g, '');
+  // 검색용 본문: 표 표식 줄(JSON)은 칸 글자만, 수식은 한 줄 텍스트, 그림은 뺀다
+  function searchText(t) {
+    return (t || '').split('\n').map(l => {
+      if (!l.startsWith('⁣TBL')) return l;
+      try { return JSON.parse(l.slice(4)).map(r => r.join(' ')).join(' '); } catch (err) { return l; }
+    }).join('\n').replace(FIGRE, (m, f, w, h, t) => t || '').replace(EQRE, '$1');
+  }
+  const KCACHE = {};
+  function eqHtml(lin, tex) {
+    if (window.katex) {
+      if (!(tex in KCACHE)) { try { KCACHE[tex] = katex.renderToString(tex, { throwOnError: true, strict: 'ignore', output: 'html' }); } catch (err) { KCACHE[tex] = null; } }
+      // 분수 든 긴 식은 한 줄을 통째로(넘치면 옆으로 밀어 보기), 짧은 식은 글 속에
+      if (KCACHE[tex]) return `<span class="${/\\frac|\\sum|\\begin/.test(tex) && tex.length > 90 ? 'meqb' : 'meq'}">${KCACHE[tex]}</span>`;
+    }
+    return `<span class="meq">${escHtml(lin)}</span>`;
+  }
+  function figHtml(f, w, h) {
+    const hist = /^h(el|es)_/.test(f);   // 연혁집 원문 영역(200dpi로 잘라 냄): 화면엔 절반 크기
+    const dw = hist ? Math.round(w / 2) : +w, dh = hist ? Math.round(h / 2) : +h;
+    return `<span class="fig${hist ? ' h' : ''}"><button type="button" data-fz="fig/${f}" aria-label="그림 크게 보기"><img src="fig/${f}" loading="lazy" width="${dw}" height="${dh}" alt="${hist ? '연혁집 원문 그림·표' : '기준 본문 그림'}"></button></span>`;
+  }
+  // 글자 → HTML: 수식·그림 표식을 자리표로 뺀 뒤 검색어 강조, 다시 끼운다
+  function rich(s, re) {
+    const parts = [];
+    // 블록으로 그리는 것(긴 수식·그림)은 \x07k\x08 — 앞뒤 줄바꿈을 먹어 빈 줄이 생기지 않게
+    let t = (s || '').replace(EQRE, (m, lin, tex) => { const h = eqHtml(lin, tex); parts.push(h); return '\x07' + (parts.length - 1) + (h.startsWith('<span class="meqb"') ? '\x08' : '\x07'); })
+      .replace(FIGRE, (m, f, w, h) => { parts.push(figHtml(f, w, h)); return '\x07' + (parts.length - 1) + '\x08'; });
+    return hl(t, re).replace(/\x07(\d+)\x08/g, (m, k) => '\x0f' + parts[+k] + '\x0f').replace(/\x07(\d+)\x07/g, (m, k) => parts[+k]);
+  }
+  // 블록(\x0f…\x0f) 앞뒤의 줄바꿈·공백을 없애 빈 줄이 생기지 않게
+  const unblk = h => h.replace(/[ \t]*\n?[ \t]*\x0f([^\x0f]*)\x0f[ \t]*\n?/g, '$1');
+  // 기준일 상태: APPLY = {d:'YYYY.MM.DD', year?}. NV/AV 는 '기준일 모드' 판정용(AV() < NV 이면 기준일 모드)
+  const NV = 1; let APPLY = null; let CHG = false; const AV = () => APPLY ? 0 : NV;
+  const DEF_CUR = '2019.04.04';   // 엘리베이터
+  const DEF_CUR_ES = '2019.03.28'; // 에스컬레이터: 연혁집 안내 '2013.9.15 종전 연혁이 있으면 2019.3.28 적용 표시 생략'
+  const defCur = e => e.src === 'b24' ? DEF_CUR_ES : DEF_CUR;   // 현행 문구 적용일이 연혁집에 없는 조문: 표시된 조문 대다수(102개)의 별표22 적용일로 간주
+  const HDATES = Array.from(new Set(Object.values(HIST).concat(Object.values(HIST_ES)).flatMap(h => h.blocks.flatMap(b => [b.from, b.to]).concat(h.cur ? [h.cur.d] : [])).filter(Boolean))).sort();
+  const enacted = b => !(b.basis === '시행' && /시행/.test(b.head) && !/종전/.test(b.head) && !b.siheng);
+  function curStart(e) {
+    const h = e.h; if (!h) return null;
+    if (h.cur && h.cur.d) return { d: h.cur.d, raw: h.cur.raw, marked: true };
+    if (h.blocks.some(b => !b.scope)) return { d: defCur(e), raw: '', marked: false };
+    return null;
+  }
+  // 범위(scope) 묶음별로 기준일에 적용되던 블록: from ≤ D(< to) 인 것 중 가장 최근. 없으면 to 만 있는 종전 기준 중 D < to
+  function pickBlock(blocks, D) {
+    let best = null;
+    blocks.forEach(b => { if (!enacted(b)) return; if (b.from && b.from <= D && (!b.to || D < b.to)) { if (!best || (best.from || '') < b.from) best = b; } });
+    if (best) return best;
+    blocks.forEach(b => { if (!enacted(b) || b.from) return; if (b.to && D < b.to && (!best || b.to < best.to)) best = b; });
+    return best;
+  }
+  const ACACHE = {};
+  function applicable(e, D) {
+    const k = e.id + '|' + D; if (k in ACACHE) return ACACHE[k];
+    let r;
+    const cs = curStart(e);
+    if (!e.h) r = { kind: 'cur', nohist: true };
+    else {
+      const own = e.h.blocks.filter(b => !b.scope), up = e.h.blocks.filter(b => b.scope);
+      const upPick = up.length ? pickBlock(up, D) : null;
+      if (!cs || D >= cs.d) r = { kind: 'cur', cs, upPick };
+      else { const b = pickBlock(own, D); r = b ? { kind: 'blk', blk: b, cs, upPick } : { kind: 'none', cs, upPick }; }
+    }
+    return (ACACHE[k] = r);
+  }
+  const LCACHE = ACACHE;
+  const csLabel = cs => cs ? (cs.marked ? cs.raw.replace(/[<>]/g, '').replace(/(\d{4})년(\d{1,2})월(\d{1,2})일/, '$1.$2.$3 ').replace(/이후건축허가분부터적용/, '이후 건축허가분부터 적용') : `${DEF_CUR} 이후로 간주(연혁집에 적용일 표시 없음)`) : '';
+  function afterInfo(e) {
+    if (!APPLY || !e.h) return null;
+    const a = applicable(e, APPLY.d);
+    if (a.kind === 'blk') return { kind: 'chg', html: `기준일 당시 적용: ${escHtml(a.blk.head)} → 이후 개정 · 현행 문구는 ${escHtml(csLabel(a.cs))}` };
+    if (a.kind === 'none') return { kind: 'new', html: '' };
+    return null;
+  }
+  // 연혁집 글자: \x01…\x02 = 초록(개정으로 바뀐 내용), \x03…\x04 = 빨강(강조)
+  function histText(text, re) {
+    let out = '', mode = 0;
+    text.split(/([\x01-\x04])/).forEach(seg => {
+      if (seg === '\x01') { out += '<span class="hg">'; mode = 1; return; }
+      if (seg === '\x03') { out += '<span class="hr">'; mode = 2; return; }
+      if (seg === '\x02' || seg === '\x04') { if (mode) out += '</span>'; mode = 0; return; }
+      out += rich(seg, re);
+    });
+    if (mode) out += '</span>';
+    return unblk(out);
+  }
+  const dotD = d => d;   // 'YYYY.MM.DD'
+  function blkWhen(b) {
+    const enact = enacted(b) ? '' : ' (미시행)';
+    if (b.from && b.to) return `${b.from}~${b.to} 전${b.basis === '허가' ? ' 허가분' : ''}${enact}`;
+    if (b.from) return `${b.from}~${b.basis === '허가' ? ' 허가분' : b.basis === '시행' ? ' 시행' : ''}${enact}`;
+    if (b.to) return `${b.to} 전${b.basis === '허가' ? ' 허가분' : ''}${enact}`;
+    return b.head;
+  }
+  // 카드 상단 '적용 연혁 요약': 연혁집 블록별 요지를 오래된 순으로, 마지막 줄은 현행
+  function summaryHtml(e, re) {
+    if (!e.h || !e.h.blocks.some(b => plainH(b.text).trim())) return '';
+    const a = APPLY ? applicable(e, APPLY.d) : null;
+    const rows = sortAsc(e.h.blocks).filter(b => plainH(b.text).trim()).map(b => {
+      const on = a && (a.blk === b || a.upPick === b);
+      return `<li class="${on ? 'on' : ''}${enacted(b) ? '' : ' off'}"><span class="sw">${escHtml(blkWhen(b))}${b.scope ? ` <i>${escHtml(b.scope.split(' ')[0])}</i>` : ''}</span><span class="sg">${hl(b.g || plainH(b.text.replace(FIGRE, '')).trim().slice(0, 60) || (b.text.includes('\x10') ? '그림·표(원문)' : ''), re)}</span></li>`;
+    });
+    const cs = curStart(e);
+    rows.push(`<li class="cur${a && a.kind === 'cur' ? ' on' : ''}"><span class="sw">현행${cs && cs.marked ? ' ' + cs.d + '~ 허가분' : ''}</span><span class="sg">${hl(e.h.curg || '', re)}</span></li>`);
+    return `<div class="hsum"><div class="hst">적용 연혁 요약 <span>연혁집</span></div><ol>${rows.join('')}</ol></div>`;
+  }
+  function hasHistory(e) { return (e.src === 'b22' || e.src === 'b24') && !!e.h; }
+  // 연혁 블록을 날짜 오름차순으로: '○○ 전의 … 종전 기준'(to 만 있음)은 그 날짜에 시작하는 블록보다 앞
+  const ascKey = b => b.from ? b.from + '1' : (b.to ? b.to + '0' : '9');
+  const sortAsc = bl => bl.slice().reverse().sort((x, y) => ascKey(x) < ascKey(y) ? -1 : ascKey(x) > ascKey(y) ? 1 : 0);
+  function historyHtml(e) {
+    const a = APPLY ? applicable(e, APPLY.d) : null;
+    const cs = curStart(e);
+    const blockHtml = (b, tag) => {
+      const sih = /시행/.test(b.head) && !/종전/.test(b.head) ? (b.siheng ? '<span class="tag2">시행</span>' : '<span class="hn2">시행 표시 없음 — 해당 연도 미시행(연혁집 표기)</span>') : '';
+      return `<div class="hp${tag ? ' now' : ''}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="ht clip">${histText(b.text, null)}</div><button type="button" class="hx">펼치기</button></div>`;
+    };
+    let html = `<h4>적용 연혁 <span style="font-weight:400;color:var(--muted)">· 연혁집 기준, 오래된 순 → 현행</span></h4>`;
+    const own = sortAsc(e.h.blocks.filter(b => !b.scope)), up = sortAsc(e.h.blocks.filter(b => b.scope));
+    own.forEach(b => { html += blockHtml(b, a && a.kind === 'blk' && a.blk === b); });
+    html += `<div class="hp${a && a.kind === 'cur' ? ' now' : ''}"><div class="hd"><b>현행 ${escHtml(e.num)}</b>${cs && cs.marked ? `<span>${escHtml(csLabel(cs))}</span>` : ''}${a && a.kind === 'cur' ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="hn">위 카드 본문이 현행 문구입니다.</div></div>`;
+    if (up.length) {
+      html += `<h4 style="margin-top:8px">상위 조항 ${escHtml(up[0].scope)}의 연혁 <span style="font-weight:400;color:var(--muted)">· 오래된 순</span></h4>`;
+      up.forEach(b => { html += blockHtml(b, a && a.upPick === b); });
+    }
+    html += `<div class="hfoot">출처: ${HSRC[e.src] || ''}. <span class="hg">초록</span>은 개정으로 바뀐 내용, <span class="hr">빨강</span>은 강조. 연혁집은 참고자료이므로 해석·적용 시 고시문을 대조하세요.</div>`;
+    return html;
+  }
+
+  // 현장용어 ↔ 기준용어. 각 그룹의 어느 말로 검색해도 그룹 전체를 찾는다.
+  const BASE_SYN = [
+    ['핸드레일','손잡이','핸드 레일'],
+    ['스텝','디딤판','발판','계단'],
+    ['스커트','스커트가드','스커트 가드','스커트 디플렉터'],
+    ['콤','콤플레이트','콤 플레이트','빗살'],
+    ['삼각부','삼각부 보호판','웨지가드','막는 조치','삼각보호판'],
+    ['데크','난간데크','외측데크','내측데크','데크보드'],
+    ['뉴얼','반환부','손잡이 반환부'],
+    ['인렛','인입구','손잡이 인입구','핸드레일 인입구'],
+    ['스펀지','스폰지','탄력성','완충재','보호조치'],
+    ['유리난간','벽','장애물','건축물'],
+    ['기어오름','기어오름 방지장치','기어오름방지','클라이밍'],
+    ['미끄럼방지','미끄럼 방지장치','안티슬라이드'],
+    ['진입방지대','접근금지','접근금지장치','접근 금지'],
+    ['울타리','펜스','안내 울타리','고정 안내 울타리'],
+    ['캐노피','보호 덮개','지붕'],
+    ['무빙워크','수평보행기','워크'],
+    ['경사각','경사도'],
+    ['속도','공칭속도','정격속도'],
+    ['과속역행방지장치','과속역행','과속·역행방지','과속ㆍ역행방지','과속역행방지','과속·역전방지','과속ㆍ역전방지','과속 및 의도되지 않은 운행 방향의 역전','별표 18','별표18'],
+    ['역행방지장치','역행방지','역행','역구동방지장치','역구동방지','역구동','역주행','역전방지','역전 감지','의도되지 않은 운행방향의 역전','의도되지 않은 역전','운행 방향의 역전'],
+    ['보조브레이크','보조 브레이크','보조제동기','보조 제동','auxiliary brake','보조 브레이크의 미-작동','5.4.2.2'],
+    ['주브레이크','주 브레이크','브레이크','제동기','운전 브레이크','정지거리','제동거리'],
+    ['과속','과속 감지','1.2배','1.4배','과속감지'],
+    ['라이닝','브레이크 라이닝','제동력','마모'],
+    ['자기적합확인서','자기적합','설치매뉴얼','적용축','중공축','중실축'],
+    ['환산','환산하중','제동부하','적용하중','적용 층고'],
+    ['정밀안전검사','정밀검사','21년','세 번째','3회차','별표4'],
+    ['스텝체인','스텝 체인','체인'],
+    ['황색선','경계선','데마케이션','안전선'],
+    ['트러스','골조','골조 구조물'],
+    ['층고','상승높이','승강높이'],
+    ['수평주행','수평 구간','수평구간','수평부'],
+    ['비상정지','비상정지 스위치','비상 정지','정지스위치'],
+    ['조명','조도','lx','㏓','럭스'],
+    ['3로','삼로','3로 스위치','삼로 스위치','3로스위치','삼로스위치','3way','3-way','양쪽 점멸','각 설치된 위치에서','점멸수단','점멸','승강로 조명 스위치','승강로 조명스위치','조명 스위치','조명스위치','피트조명스위치','피트 조명 스위치'],
+    ['피트조명','피트 조명','승강로 조명','승강로조명','피트등'],
+    ['틈새','간격','클리어런스','거리','이격'],
+    ['끼임','협착','말림'],
+    ['도어락','도어록','도어잠금','잠금장치','인터락','인터록'],
+    ['홀도어','승강장문','승강장 문','승강장도어'],
+    ['카도어','카문','카 문'],
+    ['세이프티','추락방지안전장치','비상정지장치','안전기어'],
+    ['거버너','조속기','과속조절기'],
+    ['버퍼','완충기'],
+    ['카운터','균형추','카운터웨이트'],
+    ['쉬브','도르래','풀리'],
+    ['로프','매다는 장치','와이어로프','벨트'],
+    ['오버헤드','상부틈새','상부 틈새','꼭대기 틈새'],
+    ['런바이','주행여유'],
+    ['피트','하부 공간'],
+    ['기계실없는','MRL','기계실 없는'],
+    ['ARD','자동구출','자동구출운전'],
+    ['인터폰','비상벨','비상통화','비상통화장치'],
+    ['과부하','과부하감지','과부하방지'],
+    ['리미트','종단정지','파이널리미트'],
+    ['문닫힘안전장치','세이프티슈','도어센서','광전','광전장치','광전식','포토','포토센서','포토아이','멀티빔'],
+    ['삼방틀','JAMB','잼'],
+    ['정밀안전검사','정밀검사'],
+    ['휠체어리프트','휠체어 리프트','리프트'],
+    ['자유공간','자유구역','최소자유구역'],
+    ['에이프런','에이프론','apron','카 에이프런'],
+    ['토가드','토 가드','toe guard','문턱 아랫부분','문턱 아래','문턱 아래 수직면','6.5.3.2'],
+    ['페셔플레이트','패셔플레이트','페샤플레이트','파샤플레이트','페셔','패셔','파샤','페샤','fascia','fascia plate','수직면 연장','다음 문의 상인방','상인방에 연결','문턱 아랫부분'],
+    ['ARD','자동구출','자동구출운전','자동구출운전장치','정전시 구출'],
+    ['ERO','전동 비상운전','수동 비상운전','비상운전','비상운전 및 작동시험'],
+    ['NFB','차단기','배선용차단기','메인 전원','개폐기','주개폐기','주 개폐기','주전원 개폐기'],
+    ['씰','문턱','승강장 씰','문턱 끝단'],
+    ['도어슈','문 슈','가이드슈','문 가이드 슈'],
+    ['도어머신','도어 구동','문 구동','도어개폐장치','문 개폐장치'],
+    ['클로저','도어클로저','자동 닫힘'],
+    ['레일','가이드레일','가이드 레일','주행안내 레일','주행안내레일'],
+    ['레일브라켓','브라켓','브래킷'],
+    ['기계대','머신빔','빔'],
+    ['권상기','구동기','트랙션머신','모터','주전동기','전동기'],
+    ['로프브레이크','로프 브레이크','이중브레이크','이중 브레이크','상승방향 과속방지장치','상승방향과속방지장치','상승방향으로 과속','통제불능한 운행','통제 불능한 운행','통제불능한 이동','통제 불능한 이동','제어할 수 없는 동작','상승과속방지장치'],
+    ['디바이더빔','칸막이','구획'],
+    ['카상부','카 지붕','카 상부','카지붕'],
+    ['보호난간','난간대','카상부 난간'],
+    ['비상구출구','구출구','탈출구'],
+    ['삼방틀','JAMB','잼'],
+    ['인디케이터','층표시','위치표시','표시기'],
+    ['홀버튼','승강장 버튼','호출버튼'],
+    ['COP','조작반','카 조작반','운전반'],
+    ['전면교체','교체설치','리모델링','전체교체'],
+    ['덤웨이터','소형화물용'],
+    ['틈새','간격','클리어런스','거리','이격','하부틈새','상부틈새'],
+    // --- 표준화 파일 괄호 병기 및 현장 통용어 (검증 필요)
+    ['가바나','거버너','조속기','과속조절기'],
+    ['쐐기','캐처','조속기 캐처','추락방지안전장치 작동','조속기 로프 잡힘'],
+    ['플런저','브레이크 플런저','솔레노이드','브레이크 코일'],
+    ['바이패스','bypass','우회','전기안전장치 바이패스','바이패스 장치'],
+    ['리셋','재-설정','재설정','reset','복귀'],
+    ['오버밸런스','OB율','오버밸런스율','균형량','평형계수','정격하중의 균형량'],
+    ['평형추','balancing weight'],
+    ['스페이스빔','지지보빔','지지보','보빔'],
+    ['플랫벨트','플렛벨트','매다는장치','매다는 장치','벨트식','폴리우레탄 벨트'],
+    ['리테이너','Retainer','비상가이드','문이탈방지장치','문 이탈방지'],
+    ['전자인터록','전자락','전자식 잠금','도어록','도어잠금장치'],
+    ['포지클립','forged clips','새들','saddle','슬라이딩 클립','스웨이지','swage','터미널','매듭법','로프 단말','소켓'],
+    ['스트랜드','스트렌드','꼬임','소선','코드','로프 마모','마모율'],
+    ['벽보호판','추락방지판','승강로 벽 보호판'],
+    ['트래픽컬럼','traffic columns','안내 기둥','운행 안내 표시 기둥','운행안내기둥'],
+    ['라이즈','Rise','rise','층고','상승높이','승강높이'],
+    ['UCMP','UCM','개문출발','개문출발방지장치','문열림출발','문열림출발방지장치','문열림출발방지수단','의도하지 않은 움직임','카의 의도하지 않은 움직임','의도되지 않은 카 움직임'],
+    ['ACOP','상승과속','상승과속방지장치','상승 과속'],
+    ['헌치','헌치보','헌치 보'],
+    ['집수정','배수시설','배수','물빠짐','피트 배수'],
+    ['조건부합격','보완','조건부','시정'],
+    ['KETF','승강기기술서류시스템','기술서류','기술서류시스템'],
+    ['PESSRAL','전자시스템','프로그램 가능 전자 안전','전자안전시스템'],
+    ['홀드투런','hold-to-run','누름유지','누르고 있는 동안','점검운전'],
+    ['리레벨링','재착상','재-착상','바닥맞춤보정장치','착상보정','레벨링'],
+    ['서비스툴','핸디','콘솔','복귀장치','점검 툴','서비스 툴','IMS'],
+    ['리모컨','이동식','휴대용','리모컨형식'],
+    ['쉬브가드','도르래 커버','도르래 보호','회전부품 보호','로프 이탈방지','이탈방지봉'],
+    ['홀랜턴','도착예고등','홀 랜턴','운행방향표시','점등신호'],
+    ['차폐판','감지판','착상 감지','착상판','자석','마그넷'],
+    ['도어키','삼각키','특수키','비상해제','잠금해제 열쇠','삼각 열쇠','비상열쇠'],
+    ['파이널','파이널리미트','파이널 리미트','종단정지','종단정지장치','리미트','안전극한스위치','리미트스위치','리미트 스위치'],
+    ['카톱','카탑','카 지붕','카상부','카 상부','카지붕'],
+    ['착상','정지 정확도','착상 정확도','착상 정밀도','층 맞춤','자동착상'],
+    ['랜딩','승강장','승강장 바닥'],
+    ['행거','행거롤러','도어 행거','문 매달기','행거 레일'],
+    ['걸림깊이','걸림 깊이','잠금 걸림','후크','걸쇠','잠금 부품 물림'],
+    ['점검운전','인스펙션','핸디운전','점검속도','점검 운전','유지관리 운전'],
+    ['주행거리','승강행정','행정','주행 거리'],
+    ['카도어 스위치','게이트 스위치','카문 닫힘 확인','카문 스위치','카문 잠금'],
+    ['피트스위치','피트 정지스위치','정지장치','피트 스톱'],
+    ['머신룸','기계실','기계류 공간'],
+    ['기계실없는','MRL','기계실 없는','머신룸리스'],
+    ['비상정지장치','세이프티','세프티','추락방지안전장치','안전기어','비상정지'],
+    // --- 개정판에 따라 이름이 바뀐 기준 용어 (2009 승강기검사기준 → 2013~2018 별표1 → 2019 이후 별표22)
+    ['조속기로프','조속기 로프','과속조절기 로프','과속조절기로프','거버너 로프','가바나 로프'],
+    ['상부공간','승강로 상부공간','headroom'],
+    ['피난용 스위치','피난호출 스위치','피난호출스위치','피난스위치'],
+    ['주로프','현수로프','매다는 장치','메인로프'],
+    ['권동','드럼','권동식'],
+    ['도어스위치','도어 스위치','도어 인터록','인터록'],
+    ['전자브레이크','전자 브레이크','제동기','브레이크','제동장치'],
+    ['비상정지버튼','비상정지버튼스위치','비상정지 버튼','정지 스위치','정지스위치'],
+    ['로프이탈방지장치','로프 이탈방지','이탈방지봉','쉬브가드'],
+    ['파킹스위치','파킹 스위치','파킹운전','파킹 운전'],
+    ['소방운전','소방구조','소방운전 스위치','소방스위치','1차 소방스위치','2차 소방스위치'],
+    ['권상 구동식','권상 구동','권상식','트랙션'],
+    ['비상조명','비상등','정전등','예비조명','정전 시 조명'],
+    ['제어반','제어기','컨트롤러','제어 패널'],
+    ['슬링','카 슬링','카틀','카 프레임','카프레임'],
+    ['비상구출구스위치','비상구출구 스위치','구출구 스위치','비상구출문 스위치'],
+    // --- 사용자 제안 현장용어 (공유 제안으로 받은 것)
+    ['럽처밸브','럽쳐밸브','럽처','럽쳐','rupture valve'],
+    // --- 에스컬레이터 현장 통용어
+    ['스커트브러시','스커트 브러시','브러시','스커트 디플렉터','디플렉터','deflector'],
+    ['콤스위치','콤 스위치','콤플레이트 안전장치','콤 충격','콤 안전장치'],
+    ['인렛스위치','인렛 스위치','인입구 스위치','손잡이 인입구 안전장치','핸드레일 인입구 안전장치'],
+    ['핸드레일 스피드센서','핸드레일 스피드 센서','스피드센서','스피드 센서','속도센서','속도 센서','핸드레일 속도센서','핸드레일 속도감지','핸드레일 속도 감지','핸드레일 속도','손잡이 속도','손잡이 속도 감시','손잡이의 속도 편차','속도감시장치','속도 감시 장치','속도검출장치','속도 검출장치','속도 편차','핸드레일 시스템','손잡이 시스템','5.12.2.7.13'],
+    ['핸드레일 장력','손잡이 장력','450 N','450N','당겨도 정지되지','핸드레일 정지','손잡이 정지'],
+    ['스텝처짐','스텝 처짐','스텝 처짐 감지','디딤판 처짐','스텝 레벨'],
+    ['스텝체인 스위치','체인 파손','체인 늘어짐','과도한 늘어짐','구동 체인 파손'],
+    ['키스위치','시동키','기동 스위치','운전 스위치','시동 스위치','기동'],
+    ['승강장 플레이트','랜딩 플레이트','승강장판','콤 플레이트','승강장 바닥판'],
+    ['밸러스트레이드','발러스트레이드','난간','내부패널','외부패널'],
+    ['인너데크','아우터데크','내측데크','외측데크','데크'],
+    ['핸드레일 드라이브','손잡이 구동','핸드레일 구동'],
+    ['텐션캐리지','텐션 캐리지','인장장치','스텝 체인 인장'],
+    ['공칭폭','공칭 폭','스텝 폭','디딤판 폭'],
+    ['스텝롤러','스텝 롤러','롤러','체인 롤러'],
+    ['낙하물방지망','추락방지망','그물망','안전망','낙하 방지'],
+    ['층고','상승높이','승강높이'],
+    ['뉴얼','반환부','손잡이 반환부','뉴얼 끝','newel'],
+    ['승강장 울타리','울타리','펜스','안내 울타리','고정 안내 울타리','방호 울타리'],
+  ];
+  let customSyn = [];
+  try { customSyn = JSON.parse(localStorage.getItem('ksyn') || '[]'); } catch (e) { customSyn = []; }
+
+  // ---- 정규화: 공백 제거, 소문자, 단위 통일 (줄바꿈으로 갈라진 단어도 잡힘)
+  function normSp(s) {
+    return (s || '').toLowerCase().replace(/㎜/g, 'mm').replace(/㎝/g, 'cm').replace(/㎧/g, 'm/s').replace(/㎏/g, 'kg').replace(/㎡/g, 'm2').replace(/,(?=\d{3})/g, '').replace(/\s+/g, ' ');
+  }
+  function norm(s) { return normSp(s).replace(/ /g, ''); }
+  // 낱말 첫머리에서 시작하는 매치만 세는 정규식: '행거'는 '행거 롤러'·'도어 행거를'엔 걸리되 '운행거리'의 가운데는 낱말 첫머리가 아님
+  function wordStartRe(nv) { return new RegExp('(?:^|[^가-힣a-z0-9])' + Array.from(nv).map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' ?'), 'g'); }
+  function countRe(re, s, max) { re.lastIndex = 0; let n = 0; while (n < max && re.exec(s)) n++; return n; }
+  // 초성 추출
+  const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+  function cho(s) {
+    let o = '';
+    for (const ch of s) { const c = ch.charCodeAt(0); if (c >= 0xac00 && c <= 0xd7a3) o += CHO[Math.floor((c - 0xac00) / 588)]; else o += ch; }
+    return o;
+  }
+  function isChoOnly(t) { return /^[ㄱ-ㅎ]+$/.test(t); }
+
+  // 결론으로 보는 섹션 라벨 (나머지는 '근거·배경'으로 접음)
+  const CONCL = ['표준화','적용','협의내용및결과','협의결과','결과','검토의견','검토결과','업무처리','안내','검사판정','답변','회신','조치','개선방안','검사방법','변경','해석','기준적용','처리'];
+  const isConclSec = s => CONCL.some(k => (s.h || '').replace(/\s/g, '').includes(k));
+  ALL.forEach(e => {
+    if (e.src === 'std' && e.sec && e.sec.length) {
+      // 표준화: 제목·요지·결론 섹션은 본문 색인(n), 관련 법령·배경 인용문은 별도 색인(nb)
+      let concl = e.sec.filter(isConclSec), bg = e.sec.filter(s => !isConclSec(s));
+      if (!concl.length) { concl = bg; bg = []; }
+      const main = concl.map(s => s.p.join(' ')).join(' ');
+      e.s = normSp((e.title || '') + ' ' + (e.path || '') + ' ' + main + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
+      e.nb = norm(bg.map(s => s.p.join(' ')).join(' '));
+    } else {
+      e.s = normSp((e.title || '') + ' ' + (e.path || '') + ' ' + searchText(e.text) + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
+      e.nb = '';
+    }
+    e.nt = norm(e.title || ''); e.st = normSp(e.title || ''); e.c = cho(e.n);
+    if (e.h) e.nh = norm(e.h.blocks.map(b => plainH(b.text)).join(' '));
+  });
+  let withBg = false;
+  try { withBg = localStorage.getItem('kbg') === '1'; } catch (e) {}
+
+  // ---- 공용 현장용어: 관리자가 승인한 제안(구글 시트 + Apps Script 웹 앱)을 모두에게 적용
+  // 웹 앱 주소는 사이트의 config.json {"synApi": "https://script.google.com/macros/s/…/exec"} 에서 읽는다(비어 있으면 기능 꺼짐)
+  let SYN_API = '';
+  let sharedSyn = [];
+  try { sharedSyn = JSON.parse(localStorage.getItem('kshared') || '[]'); } catch (e) { sharedSyn = []; }
+  fetch('config.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(c => { SYN_API = (c && c.synApi) || ''; if (!SYN_API) return; return fetch(SYN_API + '?action=list').then(r => r.json()).then(g => { if (Array.isArray(g)) { sharedSyn = g.filter(x => Array.isArray(x) && x.length >= 2); try { localStorage.setItem('kshared', JSON.stringify(sharedSyn)); } catch (e) {} if ($('q').value.trim()) render(); } }); }).catch(() => {});
+  function synGroups() { return BASE_SYN.concat(sharedSyn, customSyn); }
+  function expandTerm(t) {
+    const set = new Set([t]);
+    const nt = norm(t);
+    const groups = synGroups();
+    // 1단계: 입력어와 같거나 거의 같은 말이 든 그룹
+    for (const g of groups) {
+      if (g.some(w => norm(w) === nt || (nt.length >= 2 && norm(w).includes(nt) && norm(w).length - nt.length <= 1))) g.forEach(w => set.add(w));
+    }
+    // 2단계 이후: 사용자가 추가한 그룹처럼 기존 그룹과 한 단어로만 이어진 경우도 따라감 (정확히 같은 말로만)
+    for (let pass = 0; pass < 3; pass++) {
+      const before = set.size;
+      const have = new Set(Array.from(set).map(norm));
+      for (const g of groups) {
+        if (g.some(w => have.has(norm(w)))) g.forEach(w => set.add(w));
+      }
+      if (set.size === before) break;
+    }
+    return Array.from(set);
+  }
+
+  // 같은 점수대에서 기준 조문을 표준화보다 앞에. 기준일이 있으면 그날 시행 중이던 엘리베이터 판이 기준 조문이고,
+  // 기준일 모드: 기준 조문(엘리베이터·에스컬레이터 당시 문구) +3, 표준화 0
+  function srcBonus(e) {
+    if (APPLY) return e.src === 'std' ? 0 : 3;
+    return e.src === 'std' || e.src === 'old' ? 0 : 3;
+  }
+  function search(q) {
+    const terms = q.trim().split(/\s+/).filter(Boolean);
+    if (!terms.length) return { hits: [], groups: [] };
+    const groups = terms.map(t => {
+      let vars = expandTerm(t);
+      // '3로'처럼 숫자가 섞인 아주 짧은 현장용어는 사전 확장어로만 찾는다 (조문번호 '…5.3로'에 걸리는 것 방지)
+      if (t.length <= 2 && /\d/.test(t) && vars.length > 1) vars = vars.filter(v => v !== t);
+      return { term: t, vars, res: vars.map(v => isChoOnly(v) || !norm(v) ? null : wordStartRe(norm(v))) };
+    });
+    const hits = [];
+    for (const e of ALL) {
+      let score = 0, ok = true, weak = false, histHit = false;
+      for (const g of groups) {
+        let best = 0, strong = false;
+        for (let vi = 0; vi < g.vars.length; vi++) {
+          const v = g.vars[vi];
+          let cnt = 0;
+          if (isChoOnly(v)) { const nv = v; let i = -1; while ((i = e.c.indexOf(nv, i + 1)) >= 0 && cnt < 20) cnt++; if (cnt) strong = true; }
+          else {
+            const nv = norm(v); if (!nv) continue;
+            let i = -1; while ((i = e.n.indexOf(nv, i + 1)) >= 0 && cnt < 20) cnt++;
+            if (cnt) {
+              // 낱말 가운데에 묻힌 매치(운행거리 속 '행거')는 0.25만 친다. 한 글자 검색어는 구분하지 않음
+              if (nv.length >= 2) { const ws = countRe(g.res[vi], e.s, cnt); if (ws) strong = true; cnt = ws + (cnt - ws) * 0.25; } else strong = true;
+            }
+            if (e.nh) { let j = -1, ch = 0; while ((j = e.nh.indexOf(nv, j + 1)) >= 0 && ch < 10) ch++; if (ch) { cnt += ch * (APPLY ? 1 : 0.6); strong = true; histHit = true; } }
+            if (withBg && e.nb) { let j = -1, cb = 0; while ((j = e.nb.indexOf(nv, j + 1)) >= 0 && cb < 10) cb++; cnt += cb * 0.3; }
+            if (e.nt.includes(nv) && (nv.length < 2 || countRe(g.res[vi], e.st, 1))) cnt += 6; if (v === g.term) cnt *= 1.3;
+          }
+          if (cnt > best) best = cnt;
+        }
+        if (!best) { ok = false; break; }
+        if (!strong) weak = true;
+        score += Math.min(best, 8);
+      }
+      // 기준 조문(별표22·24)은 근거이므로 같은 점수대에서 표준화보다 앞에 둔다
+      // 검색어가 낱말 가운데에만 묻혀 있는 조문(예: '행거' → 운행거리)은 맨 뒤로
+      if (ok) hits.push({ e, score: score + srcBonus(e) + (histHit ? 4 : 0) - (weak ? 100 : 0), weak });   // 연혁에 검색어가 있으면(옛 용어) 그 기준 조문을 앞으로
+    }
+    hits.sort((a, b) => b.score - a.score);
+    return { hits, groups };
+  }
+
+  // ---- 하이라이트: 공백 무시 정규식
+  function esc(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+  function hlRegex(groups) {
+    const parts = [];
+    for (const g of groups) for (const v of g.vars) {
+      if (isChoOnly(v)) continue;
+      const chars = Array.from(v.replace(/\s+/g, ''));
+      if (!chars.length) continue;
+      parts.push(chars.map(c => { const u = { 'mm': '(?:mm|㎜)' }[c] || esc(c); return c === 'm' ? '[m㎜]' : u; }).join('[\\s,]*'));
+    }
+    if (!parts.length) return null;
+    parts.sort((a, b) => b.length - a.length);
+    return new RegExp('(' + parts.join('|') + ')', 'gi');
+  }
+  function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function hl(s, re) { if (!re) return escHtml(s); return escHtml(s).replace(re, '<mark>$1</mark>'); }
+
+  // ---- 상태
+  let src = 'all'; const YS = new Set(); const yOK = e => !YS.size || e.src !== 'std' || YS.has(e.year);
+  const VS = new Set(); const vOK = e => e.src !== 'old' || !VS.size || e.vers.some(i => VS.has(i));
+  // 기준일이 있으면 엘리베이터 카드가 그날 적용되던 문구(연혁집)를 보여준다. '이후 바뀐 조문만'이면 기준일 이후 바뀐 엘리베이터 조문만
+  const srcOK = e => {
+    const el = src === 'all' || src === 'b22';
+    if (CHG && APPLY) { if (src === 'std') return e.src === 'std'; return (src === 'all' || e.src === src) && (e.src === 'b22' || e.src === 'b24') && !!afterInfo(e); }
+    return src === 'all' || e.src === src;
+  };
+  const pass = e => srcOK(e) && yOK(e) && vOK(e);
+  const $ = id => document.getElementById(id);
+  const years = Array.from(new Set(DATA.std.map(e => e.year).filter(Boolean))).sort();
+  $('years').innerHTML = years.slice().reverse().map(y => `<button type="button" class="yr" data-yr="${y}" aria-pressed="false">${y}</button>`).join('');
+  const yLabel = () => { const a = [...YS].sort(); return !a.length ? '' : a.length <= 3 ? a.map(y => y.slice(2)).join('·') + '년' : a.length + '개 연도'; };
+  function ySync() {
+    $('years').querySelectorAll('[data-yr]').forEach(x => x.setAttribute('aria-pressed', String(YS.has(x.dataset.yr))));
+    $('ybtn').textContent = YS.size ? '연도: ' + yLabel() : '연도: 전체'; $('ybtn').toggleAttribute('data-on', YS.size > 0);
+    if (YS.size && src !== 'all' && src !== 'std') { src = 'all'; srcSync(); }
+  }
+  function leaveView() { if (!view) return false; savePos(); clearTimeout(st); view = null; try { localStorage.setItem('kview', ''); } catch (e) {} return true; }
+  function refilter() { SHOWN = 80; for (const k in LCACHE) delete LCACHE[k]; const left = leaveView(); render(); if (left) { hold = Date.now() + 500; setY(0); } }
+  $('vers').innerHTML = OLD.vers.map((x, i) => `<button type="button" class="yr" data-vi="${i}" aria-pressed="false">${x.v}<small>${escHtml(x.doc.replace(/\s*\(.*\)$/, '').replace(/ KC .*/, '').replace('엘리베이터 안전기준', 'EL 안전기준').replace('전기식 엘리베이터의 구조', '전기식 EL 구조'))}</small></button>`).join('');
+  const vLabel = () => { const a = [...VS].sort((x, y) => x - y); return !a.length ? '' : a.length <= 2 ? a.map(i => OV[i].slice(2)).join('·') : a.length + '개 판'; };
+  function vSync() {
+    $('vers').querySelectorAll('[data-vi]').forEach(x => x.setAttribute('aria-pressed', String(VS.has(+x.dataset.vi))));
+    $('vbtn').textContent = VS.size ? '판: ' + vLabel() : '판: 전체'; $('vbtn').toggleAttribute('data-on', VS.size > 0);
+  }
+  const fmtD = d => d.replace(/-/g, '.');
+  function applyLabel() { if (!APPLY) return ''; return `기준일 ${APPLY.year ? APPLY.year + '년' : APPLY.d} → 그날 적용되던 기준 문구(연혁집)`; }
+  function dInfo() {
+    const box = $('dinfo');
+    if (!APPLY) { box.innerHTML = '건축허가일(또는 시행일 기준 항목은 그 날짜)을 넣으면, 연혁집에 따라 그날 적용되던 엘리베이터·에스컬레이터 기준 문구를 보여줍니다.'; return; }
+    let h = `<b>${APPLY.year ? APPLY.year + '년 1월 1일' : APPLY.d}</b> 기준으로 엘리베이터·에스컬레이터 조문마다 그날 적용되던 문구를 표시합니다.`;
+    if (APPLY.year) { const inYear = HDATES.filter(s => s.startsWith(APPLY.year + '.')); if (inYear.length) h += `<br>${APPLY.year}년 중 바뀐 날: ` + inYear.map(s => `<button type="button" class="chip" data-dpick="${s}">${s.slice(5)}</button>`).join(''); }
+    h += `<br><span style="font-size:11.5px">출처: 한국승강기안전공단 「승강기 안전기준 연혁집」(엘리베이터 2025.10, 에스컬레이터 v2.0 2026.9). 연혁 대부분이 ‘○○ 이후의 건축허가분부터 적용’ 기준이라 기준일은 건축허가일로 넣는 게 정확합니다. 현행 문구 적용일이 표시되지 않은 조문은 엘리베이터 ${DEF_CUR}, 에스컬레이터 ${DEF_CUR_ES}(연혁집 안내)부터로 봅니다. 표준화는 기준일과 관계없이 그대로입니다.</span>`;
+    box.innerHTML = h;
+  }
+  function setApply(d, year) {   // d: 'YYYY.MM.DD' 또는 null
+    if (!d) APPLY = null;
+    else APPLY = { d, year: year || null };
+    $('dbtn').textContent = APPLY ? '기준일: ' + (APPLY.year || APPLY.d) : '기준일: 현행'; $('dbtn').toggleAttribute('data-on', !!APPLY);
+    try { localStorage.setItem('kdate', APPLY ? JSON.stringify({ d: APPLY.d, year: APPLY.year }) : ''); } catch (e) {}
+    if (!APPLY) CHG = false; chgSync(); dInfo(); refilter();
+  }
+  const dPop = open => { $('dpop').hidden = !open; $('dbtn').setAttribute('aria-expanded', String(open)); };
+  $('dbtn').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); dPop($('dpop').hidden); if (!$('dpop').hidden) $('dyear').focus(); });
+  $('dpop').addEventListener('click', ev => { ev.stopPropagation(); const b = ev.target.closest('[data-dpick]'); if (b) { $('ddate').value = b.dataset.dpick.replace(/\./g, '-'); setApply(b.dataset.dpick); } });
+  function chgSync() { $('chgbtn').setAttribute('aria-pressed', String(CHG)); $('chgbtn').disabled = !APPLY; }
+  $('chgbtn').addEventListener('click', ev => { ev.stopPropagation(); if (!APPLY) return; CHG = !CHG; chgSync(); if (CHG && src === 'std') { src = 'all'; srcSync(); } refilter(); });
+  $('dclose').addEventListener('click', ev => { ev.stopPropagation(); dPop(false); });
+  $('dnow').addEventListener('click', ev => { ev.stopPropagation(); $('dyear').value = ''; $('ddate').value = ''; setApply(null); });
+  const yearGo = () => { const y = parseInt($('dyear').value, 10); if (y >= 1990 && y <= 2099) { $('ddate').value = ''; setApply(y + '.01.01', String(y)); } };
+  $('dyok').addEventListener('click', ev => { ev.stopPropagation(); yearGo(); });
+  $('dyear').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); yearGo(); } });
+  $('ddate').addEventListener('change', () => { const v = $('ddate').value; if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { $('dyear').value = ''; setApply(fmtD(v)); } });
+  document.addEventListener('click', () => { if (!$('dpop').hidden) dPop(false); });
+  function srcSync() {
+    $('filters').querySelectorAll('[data-src]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.src === src)));
+    $('vwrap').hidden = true; $('ywrap').hidden = !(src === 'all' || src === 'std'); $('dwrap').hidden = src === 'std';
+  }
+  const vPop = open => { $('vpop').hidden = !open; $('vbtn').setAttribute('aria-expanded', String(open)); };
+  $('vbtn').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); vPop($('vpop').hidden); });
+  $('vclose').addEventListener('click', ev => { ev.stopPropagation(); vPop(false); });
+  $('vclear').addEventListener('click', ev => { ev.stopPropagation(); VS.clear(); vSync(); refilter(); });
+  $('vpop').addEventListener('click', ev => ev.stopPropagation());
+  $('vers').addEventListener('click', ev => { const b = ev.target.closest('[data-vi]'); if (!b) return; const i = +b.dataset.vi; VS.has(i) ? VS.delete(i) : VS.add(i); vSync(); refilter(); });
+  document.addEventListener('click', () => { if (!$('vpop').hidden) vPop(false); });
+  const yPop = open => { $('ypop').hidden = !open; $('ybtn').setAttribute('aria-expanded', String(open)); };
+  $('ybtn').addEventListener('click', ev => { ev.stopPropagation(); vPop(false); yPop($('ypop').hidden); });
+  $('yclose').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); });
+  $('yclear').addEventListener('click', ev => { ev.stopPropagation(); YS.clear(); ySync(); refilter(); });
+  $('ypop').addEventListener('click', ev => ev.stopPropagation());
+  $('years').addEventListener('click', ev => { const b = ev.target.closest('[data-yr]'); if (!b) return; const y = b.dataset.yr; YS.has(y) ? YS.delete(y) : YS.add(y); ySync(); refilter(); });
+  document.addEventListener('click', () => { if (!$('ypop').hidden) yPop(false); });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { if (!$('ypop').hidden) { yPop(false); $('ybtn').focus(); } if (!$('vpop').hidden) { vPop(false); $('vbtn').focus(); } } });
+
+  let SHOWN = 80;
+  function render() {
+    const q = $('q').value;
+    const { hits, groups } = search(q);
+    const exp = groups.filter(g => g.vars.length > 1);
+    $('expand').innerHTML = exp.length ? '같이 찾음: ' + exp.map(g => `<span class="grp"><b>${escHtml(g.term)}</b><span>→ ${escHtml(g.vars.filter(v => v !== g.term).slice(0, 5).join(', '))}${g.vars.length > 6 ? ' …' : ''}</span></span>`).join('') : '';
+    let list = hits.filter(h => pass(h.e));
+    // 기준일이 있으면 묶음 순서: 그날 적용 엘리베이터 기준 → 표준화 → 현행 에스컬레이터 (묶음 안은 점수순, 낱말 가운데 매치는 맨 뒤)
+    if (APPLY) { const grp = e => e.src === 'std' ? 1 : 0; list.sort((x, y) => (x.weak - y.weak) || (grp(x.e) - grp(y.e)) || (y.score - x.score)); }
+    const total = list.length;
+    list = list.slice(0, 80);
+    const re = hlRegex(groups);
+    if (!q.trim() && CHG && APPLY && !view) {
+      const all = DATA.b22.concat(DATA.b24).filter(e => srcOK(e)); all.sort((x, y) => (afterInfo(x).kind === 'chg' ? 0 : 1) - (afterInfo(y).kind === 'chg' ? 0 : 1));
+      const nC = all.filter(e => afterInfo(e).kind === 'chg').length;
+      $('status').innerHTML = `<span>${escHtml(applyLabel())} · 이후 바뀐 조문</span><span>당시와 문구가 다름 ${nC} · 이후 생긴 조문 ${all.length - nC}</span>`;
+      const lim = SHOWN;
+      $('results').innerHTML = `<div class="dnote">기준일 당시 문구가 지금과 다른 조문을 먼저, 이어서 그 뒤에 생긴 조문입니다. 카드 본문은 기준일 당시 문구이고, 현행 문구는 ‘적용 연혁’에 있습니다.</div>` + all.slice(0, lim).map(e => card(e, null)).join('') + (all.length > lim ? `<button type="button" class="chip" data-more style="margin:10px auto;display:block">더 보기 (${all.length - lim}건 남음)</button>` : '');
+      measure(); return;
+    }
+    if (!q.trim()) {
+      if (view) { renderView(); return; }
+      $('status').innerHTML = `<span>${APPLY ? applyLabel() : `엘리베이터 ${DATA.b22.length}건 · 에스컬레이터 ${DATA.b24.length}건 · 표준화 ${DATA.std.length}건`}</span><span>목차에서 골라 쭉 읽거나, 검색어를 넣으세요</span>`;
+      $('results').innerHTML = sample() + toc();
+      return;
+    }
+    view = null;
+    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${({ all: '전체', b24: '에스컬레이터', b22: '엘리베이터', std: '표준화', old: '엘리베이터' })[src]}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${YS.size && src !== 'old' ? ' · ' + yLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
+    if (!total) { const first = q.trim().split(/\s+/)[0]; $('results').innerHTML = `<div class="empty">결과 없음. 단어를 띄어서 줄이거나 다른 말로 바꿔보세요.<br>초성 검색도 됩니다: <code>ㅅㅋㅌ</code> → 스커트<br><br>현장에서 쓰는 말이라면 <button type="button" class="link" data-addterm="${escHtml(first)}">‘${escHtml(first)}’을 기준 용어에 연결</button>하세요.</div>`; return; }
+    $('results').innerHTML = list.map((h, i) => (h.weak && (i === 0 || !list[i - 1].weak) ? `<div class="weakdiv">아래는 검색어가 다른 낱말 속에 들어 있는 경우입니다 (예: ‘${escHtml(groups[0].term)}’가 낱말 가운데에 있음)</div>` : '') + card(h.e, re)).join('');
+    measure();
+  }
+
+  // 실제 렌더 높이로 잘림 여부 판정: 안 잘리면 버튼·그라데이션 제거. 글꼴 로드·창 크기 변경 후 다시 잰다.
+  function measure() {
+    $('results').querySelectorAll('.card').forEach(c => {
+      if (c.classList.contains('open')) return;
+      const b = c.querySelector('.body'); if (!b) return;
+      c.classList.remove('short');
+      if (b.scrollHeight <= b.clientHeight + 2) c.classList.add('short');
+    });
+  }
+  try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure); } catch (e) {}
+  let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(measure, 150); });
+
+  // 기준 본문: 일반 줄은 그대로, 표 표식 줄(TBL+JSON)은 표로 그린다
+  const TBLMARK = '\u2063TBL';
+  function stdText(text, re) {
+    return unblk(text.split('\n').map(l => {
+      if (!l.startsWith(TBLMARK)) return rich(l, re);
+      let g; try { g = JSON.parse(l.slice(TBLMARK.length)); } catch (err) { return ''; }
+      // 그림만 담은 표(그림 틀)는 표 대신 그림으로
+      const cells = g.flat().filter(c => c.trim());
+      if (cells.length && cells.every(c => !c.replace(FIGRE, '').trim() || /^\[\s*그림/.test(c.replace(FIGRE, '').trim())) && cells.some(c => c.includes('\x10'))) {
+        return `<div class="figrow">${cells.map(c => { const cap = c.replace(FIGRE, '').trim(); return c.replace(cap, '').trim() ? unblk(rich(c.replace(cap, '').trim(), re)) + (cap ? `<span class="figtag">${hl(cap, re)}</span>` : '') : (cap ? `<span class="figtag">${hl(cap, re)}</span>` : ''); }).join('')}</div>`;
+      }
+      let cap = '';
+      if (g.length && g[0].filter(c => c.trim()).length === 1 && g[0][0].trim()) { cap = g[0][0]; g = g.slice(1); }
+      const cell = c => unblk(rich(c, re)).replace(/\n/g, '<br>');
+      return `<div class="tblwrap">${cap ? `<div class="tcap">${cell(cap)}</div>` : ''}<table>${g.map((r, i) => `<tr>${r.map(c => i === 0 ? `<th>${cell(c)}</th>` : `<td>${cell(c)}</td>`).join('')}</tr>`).join('')}</table></div>`;
+    }).join('\n').replace(/\n(<div class="tblwrap">)/g, '$1').replace(/(<\/table><\/div>)\n/g, '$1').replace(/\n?(<div class="figrow">)/g, '$1').replace(/(<div class="figrow">[\s\S]*?<\/div>)\n/g, '$1'));
+  }
+
+  // ---- 2009 승강기검사기준 본문 속 '< …부터 시행 >', '< … 종전 기준 - “…” >' 메모를 읽어 기준일 당시 적용 문구를 고른다
+  const pad2 = n => String(n).padStart(2, '0');
+  function notesDates(s) { const out = []; const re = /(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(\S{0,8})/g; let m; while ((m = re.exec(s))) { out.push({ d: `${m[1]}.${pad2(m[2])}.${pad2(m[3])}`, after: m[4] + s.slice(re.lastIndex, re.lastIndex + 6) }); } return out; }
+  function parseNote(n) {
+    const body = n.replace(/^<\s*|\s*>$/g, '');
+    if (/종전/.test(body)) {
+      const head = body.split(/종전\s*기준/)[0]; let from = null, to = null;
+      notesDates(head).forEach(x => { if (/^\s*전/.test(x.after)) to = x.d; else if (/^\s*(부터|이후|시행분|건축허가분부터|$)/.test(x.after)) from = from || x.d; });
+      let txt = (body.match(/[“"](.*?)(?:[”"]|$)/s) || [])[1]; if (!txt) txt = body.split(/종전\s*기준\s*-?/)[1] || '';
+      return { kind: 'old', from, to, text: txt.trim(), permit: /건축허가/.test(head) };
+    }
+    const ds = notesDates(body); const m = body.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(이후\s*)?(건축허가분)?\s*부터\s*(시행|적용)|(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일\s*(이후\s*)?건축허가분부터/);
+    if (m && ds.length) return { kind: 'eff', eff: ds[0].d, permit: /건축허가/.test(body.split(/부터/)[0]), extra: body.includes(',') ? body.slice(body.indexOf(',') + 1).trim() : '' };
+    return { kind: 'info', text: body };
+  }
+  function paras2009(text) {
+    const ps = [];
+    text.split('\n').forEach(l => { const s = l.trim(); if (/^<.*>$/.test(s) && !/^<삭제>$/.test(s)) { (ps[ps.length - 1] || (ps[0] = { t: '', notes: [] })).notes.push(parseNote(s)); } else ps.push({ t: l, notes: [] }); });
+    return ps;
+  }
+  function state2009(p, D) {
+    const olds = p.notes.filter(n => n.kind === 'old'), eff = p.notes.find(n => n.kind === 'eff');
+    const old = olds.find(o => o.to && D < o.to && (!o.from || o.from <= D));
+    if (old) return { s: 'old', old, eff };
+    if (eff && D < eff.eff) return { s: 'notyet', eff };
+    return { s: eff ? 'ok' : 'plain', eff };
+  }
+  const basis = n => n && n.permit ? '건축허가분' : '시행';
+  function body2009(text, re, D) {
+    let parent = null;   // '가.', 'a)' 같은 하위 항목은 바로 위 항목이 당시 없었으면 같이 흐리게
+    return paras2009(text).map(p => {
+      const sub = /^\s*([가-하]\.|[a-z]\)|\([가-하]\))/.test(p.t);
+      let st = state2009(p, D);
+      if (sub && !p.notes.length && parent && (parent.s === 'old' || parent.s === 'notyet')) return `<div class="p09 dim">${hl(p.t, re)}</div>`;
+      if (!sub) parent = st;
+      const line = hl(p.t, re);
+      const info = p.notes.filter(n => n.kind === 'info').map(n => `<div class="n09 i">${escHtml(n.text)}</div>`).join('');
+      if (st.s === 'old') return `<div class="p09 dim">${line}</div><div class="n09 w">기준일 당시엔 종전 기준 적용${st.eff ? ` (위 문구는 ${st.eff.eff} ${basis(st.eff)}부터)` : ''}</div><div class="o09"><b>당시 기준${st.old.from ? ' ' + st.old.from + '~' : ''}${st.old.to ? ' ' + st.old.to + ' 전' : ''}${st.old.permit ? ' · 건축허가분 기준' : ''}</b>${hl(st.old.text, re)}</div>${info}`;
+      if (st.s === 'notyet') return `<div class="p09 dim">${line}</div><div class="n09 w">${st.eff.eff} ${basis(st.eff)}부터 적용 — 기준일 당시엔 없던 항목${st.eff.extra ? ' · ' + escHtml(st.eff.extra) : ''}</div>${info}`;
+      if (st.s === 'ok') return `<div class="p09">${line}</div><div class="n09 k">✓ ${st.eff.eff} ${basis(st.eff)}부터 적용 — 기준일에 해당${st.eff.extra ? ' · ' + escHtml(st.eff.extra) : ''}</div>${info}`;
+      return `<div class="p09">${line}</div>${info}`;
+    }).join('');
+  }
+  function card(e, re) {
+    const isStd = e.src === 'std', isOld = e.src === 'old';
+    let body;
+    if (isStd && e.sec && e.sec.length) {
+      const secHtml = s => `<section class="sec ${s.h ? '' : 'nohead'}">${s.h ? `<h3>${escHtml(s.h)}</h3>` : ''}<div class="ps">${s.p.map(p => `<p>${hl(p, re)}</p>`).join('')}</div></section>`;
+      let concl = e.sec.filter(isConclSec), bg = e.sec.filter(s => !isConclSec(s));
+      if (!concl.length) { concl = bg; bg = []; }
+      const gist = e.gist ? `<div class="gist"><span class="tag">요지</span><span>${hl(e.gist, re)}</span><span class="ai" title="원문을 압축한 자동 요약입니다. 판정은 아래 원문으로 확인하세요.">자동요약</span></div>` : '';
+      body = gist + concl.map(secHtml).join('') + (bg.length ? `<button type="button" class="bgtoggle" aria-expanded="false">근거·배경 보기 (${bg.map(s => s.h || '본문').join(', ')})</button><div class="bg" hidden>${bg.map(secHtml).join('')}</div>` : '');
+    } else if ((e.src === 'b22' || e.src === 'b24') && APPLY && e.h) {
+      // 기준일 모드: 그날 적용되던 문구(연혁집)를 본문으로
+      const a = applicable(e, APPLY.d);
+      if (a.kind === 'blk') body = `<div class="hban">기준일 당시 적용 · ${escHtml(a.blk.head)}${a.blk.scope ? '' : ''}</div><div class="hbody">${histText(a.blk.text, re)}</div>`;
+      else if (a.kind === 'none') body = stdText(e.text, re);
+      else body = stdText(e.text, re);
+      if (a.upPick) body += `<div class="hup"><b>상위 조항 ${escHtml(a.upPick.scope)} — 기준일 당시 · ${escHtml(a.upPick.head)}</b>${histText(a.upPick.text, re)}</div>`;
+    } else body = stdText(e.text, re);
+    const figs = (isStd && e.img && e.img.length) ? `<div class="figs">${e.img.map((m, k) => `<figure><button type="button" data-lb="${e.id}" data-k="${k}" aria-label="그림 크게 보기"><img src="stdimg/${m[0]}" loading="lazy" width="${Math.round(m[2] * 120 / m[3])}" height="120" alt="${escHtml((e.title || '') + ' 그림 ' + (k + 1))}"></button><figcaption>${m[4] ? '배포자료 · ' : ''}원문 ${m[1]}쪽${m[5] ? ' · 원본 저해상도' : ''}</figcaption></figure>`).join('')}</div>` : '';
+    const meta = isStd
+      ? `<span class="badge">표준화</span><span>${escHtml(e.path)}</span>${e.num ? `<span class="num">#${e.num}</span>` : ''}`
+      : isOld ? `<span class="badge">엘리베이터 · ${APPLY && AV() < NV && e.vers.includes(AV()) ? '당시 기준' : '개정 전'}</span><span class="num">${escHtml(e.num)}</span><span class="vr" title="이 본문이 그대로 실린 판(시행일)">${verRange(e.vers)}</span>`
+      : `<span class="badge" title="${e.src === 'b22' ? '별표22 엘리베이터 안전기준' : '별표24 에스컬레이터 안전기준'}">${e.src === 'b22' ? '엘리베이터' : '에스컬레이터'}</span><span class="num">${escHtml(e.num)}</span>`;
+    const ai = null;
+    // 검색어가 현행 문구엔 없고 연혁에만 있으면 어디서 찾았는지 한 줄
+    let found = '';
+    if (false) { re.lastIndex = 0; const inCur = re.test((e.title || '') + e.text); if (!inCur) { const b = e.h.blocks.find(b => { re.lastIndex = 0; return re.test(plainH(b.text)); }); if (b) { const pt = plainH(b.text); re.lastIndex = 0; const m = re.exec(pt); const s0 = Math.max(0, m.index - 40); found = `<div class="hfound">연혁에서 찾음 · ${escHtml(b.head)}<br>…${hl(pt.slice(s0, m.index + 80), re)}…</div>`; } } re.lastIndex = 0; }
+    const title = (ai ? `<div class="after ${ai.kind}">${ai.html}</div>` : '') + (e.title ? `<h2>${hl(e.title, re)}</h2>` : '');
+    const path = !isStd && e.path ? `<div class="path">${hl(e.path, re)}</div>` : '';
+    const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '') + (re ? `<button type="button" class="ctx" data-open="${e.id}">앞뒤 보기</button>` : '');
+    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${e.h ? summaryHtml(e, re) : ''}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
+  }
+
+  // ---- 열람(목차 → 장·회차 단위로 쭉 읽기)
+  let view = null;   // {src:'b22'|'b24'|'std', key}
+  // 장 단위로 묶되, 조문이 80개 넘는 장(예: 별표24 5 일반사항)은 절(5.1, 5.2…) 단위로 나눈다
+  const BIG = {};
+  ['b22', 'b24'].forEach(s => { const c = {}; DATA[s].forEach(e => { const k = e.num.split('.')[0]; c[k] = (c[k] || 0) + 1; }); BIG[s] = c; });
+  const OBIG = OLD.vers.map(ver => { const c = {}; ver.list.forEach(e => { if (e.text.trim()) { const k = e.num.split(/[.(]/)[0]; c[k] = (c[k] || 0) + 1; } }); return c; });
+  function oldCh(num, vi) { const p = num.split('(')[0].split('.'); return (OBIG[vi][p[0]] > 80 && p.length > 1) ? p[0] + '.' + p[1] : p[0]; }
+  function oldVi(e) { const vs = VS.size ? e.vers.filter(i => VS.has(i)) : e.vers; return (vs.length ? vs : e.vers)[(vs.length ? vs : e.vers).length - 1]; }
+  function groupKey(e) {
+    if (e.src === 'old') { const vi = oldVi(e); return vi + '|' + oldCh(e.num, vi); }
+    if (e.src === 'std') return e.path;
+    const p = e.num.split('.');
+    return (BIG[e.src][p[0]] > 80 && p.length > 1) ? p[0] + '.' + p[1] : p[0];
+  }
+  function groupsOf(s) {
+    const order = [], seen = {};
+    if (s === 'old') {
+      OLD.vers.forEach((ver, vi) => { if (VS.size && !VS.has(vi)) return; ver.list.forEach(e => { if (!e.text.trim()) return; const k = vi + '|' + oldCh(e.num, vi); if (!(k in seen)) { seen[k] = 0; order.push(k); } seen[k]++; }); });
+      return order.map(k => ({ key: k, n: seen[k] }));
+    }
+    (s === 'std' ? DATA.std : DATA[s]).forEach(e => {
+      if (s === 'std' && !yOK(e)) return;
+      const k = groupKey(e); if (!(k in seen)) { seen[k] = 0; order.push(k); } seen[k]++;
+    });
+    return order.map(k => ({ key: k, n: seen[k] }));
+  }
+  function groupLabel(s, k) { if (s === 'old') { const [vi, ch] = k.split('|'); return OV[vi] + ' · ' + ch + ' ' + (OCH[vi][ch] || ''); } return s === 'std' ? k : (/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫX]/.test(k) ? '부속서 ' : '') + k + ' ' + (CH[s][k] || ''); }
+  const SRCNAME = { b22: '엘리베이터', b24: '에스컬레이터', std: '표준화', old: '엘리베이터 · 개정 전 판' };
+  function toc() {
+    const srcs = src === 'all' ? ['b22', 'b24', 'std'] : [src === 'old' ? 'b22' : src];
+    const sec = s => {
+      const gs = groupsOf(s);
+      let items;
+      if (s === 'old') {
+        const byV = {}; gs.forEach(g => { const vi = g.key.split('|')[0]; (byV[vi] = byV[vi] || []).push(g); });
+        const vis = Object.keys(byV).map(Number).sort((a, b) => b - a);   // 최신 판부터
+        items = `<p class="hint">판을 펼쳐 장을 고르면 그 판 본문을 쭉 읽을 수 있습니다. 조문별 변천은 현행 카드의 ‘적용 연혁’에서 보세요.</p>` + vis.map(vi => `<details class="tocver"${vis.length === 1 || (view && view.src === 'old' && view.key.startsWith(vi + '|')) ? ' open' : ''}><summary><b>${OV[vi]}</b><span>${escHtml(OLD.vers[vi].doc)}</span><em>${byV[vi].reduce((a, g) => a + g.n, 0)}조</em></summary><div class="toclist">${byV[vi].map(g => `<button type="button" class="tocitem" data-view="old" data-key="${g.key}"><span>${escHtml(g.key.split('|')[1] + ' ' + (OCH[vi][g.key.split('|')[1]] || ''))}</span><em>${g.n}</em></button>`).join('')}</div></details>`).join('');
+      } else if (s === 'std') {
+        const byY = {};
+        gs.forEach(g => { const y = (g.key.match(/^(20)?(\d{2})년/) || [])[2] || '기타'; (byY[y] = byY[y] || []).push(g); });
+        items = Object.keys(byY).map(y => `<div class="tocyear"><span class="ty">${y === '기타' ? y : '20' + y}</span><div class="toclist">${byY[y].map(g => `<button type="button" class="tocitem" data-view="std" data-key="${escHtml(g.key)}"><span>${escHtml(g.key.replace(/^(20)?\d{2}년\s*/, ''))}</span><em>${g.n}</em></button>`).join('')}</div></div>`).join('');
+      } else {
+        items = `<div class="toclist">${gs.map(g => `<button type="button" class="tocitem" data-view="${s}" data-key="${escHtml(g.key)}"><span>${escHtml(groupLabel(s, g.key))}</span><em>${g.n}</em></button>`).join('')}</div>`;
+      }
+      return items;
+    };
+    const applied = () => { const vi = AV(); const gs = groupsOf('old').filter(g => g.key.startsWith(vi + '|')); return `<div class="dnote">${escHtml(applyLabel())}${APPLY.before ? ' (받은 판 중 가장 오래된 판)' : ''}</div><div class="toclist">${gs.map(g => { const ch = g.key.split('|')[1]; return `<button type="button" class="tocitem" data-view="old" data-key="${g.key}"><span>${escHtml(ch + ' ' + (OCH[vi][ch] || ''))}</span><em>${g.n}</em></button>`; }).join('')}</div>`; };
+    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2>${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
+  }
+  function renderView() {
+    const s = view.src, gs = groupsOf(s), i = gs.findIndex(g => g.key === view.key);
+    const list = s === 'old' ? (() => { const [vi, ch] = view.key.split('|'); return (OLD.vers[vi] ? OLD.vers[vi].list : []).filter(e => e.text.trim() && oldCh(e.num, +vi) === ch); })()
+      : (s === 'std' ? DATA.std : DATA[s]).filter(e => groupKey(e) === view.key);
+    const nav = (pos) => `<div class="vnav ${pos}">${i > 0 ? `<button type="button" class="chip" data-view="${s}" data-key="${escHtml(gs[i - 1].key)}">← ${escHtml(groupLabel(s, gs[i - 1].key)).slice(0, 26)}</button>` : '<span></span>'}<button type="button" class="chip" data-totoc>목차</button>${i < gs.length - 1 ? `<button type="button" class="chip" data-view="${s}" data-key="${escHtml(gs[i + 1].key)}">${escHtml(groupLabel(s, gs[i + 1].key)).slice(0, 26)} →</button>` : '<span></span>'}</div>`;
+    $('status').innerHTML = `<span><b>${SRCNAME[s]}</b> › ${escHtml(groupLabel(s, view.key))}</span><span>${list.length}건</span>`;
+    $('results').innerHTML = nav('top') + list.map(e => card(e, null)).join('') + nav('bottom');
+    measure();
+  }
+  // ---- 읽던 위치 기억: 목차·각 장/회차별 스크롤 위치를 저장했다가 돌아오면 복원(기기에 저장되어 다시 열어도 유지)
+  const SC = () => document.scrollingElement || document.documentElement;
+  const getY = () => Math.max(window.scrollY || 0, SC().scrollTop || 0);
+  const setY = y => { window.scrollTo(0, y); SC().scrollTop = y; };
+  let POS = {};
+  try { POS = JSON.parse(localStorage.getItem('kpos') || '{}'); } catch (e) { POS = {}; }
+  const curKey = () => (view ? view.src + '|' + view.key : ($('q').value.trim() ? null : 'toc'));
+  let hold = 0;   // 화면 전환·복원 직후에는 저장하지 않음
+  function savePos() {
+    if (Date.now() < hold) return;
+    const k = curKey(); if (!k) return;
+    POS[k] = getY();
+    try { localStorage.setItem('kpos', JSON.stringify(POS)); localStorage.setItem('kview', view ? JSON.stringify(view) : ''); } catch (e) {}
+  }
+  function restorePos(k) { clearTimeout(st); hold = Date.now() + 500; const y = POS[k] || 0; setY(y); requestAnimationFrame(() => setY(y)); setTimeout(() => setY(y), 120); }
+  var st; window.addEventListener('scroll', () => { clearTimeout(st); st = setTimeout(savePos, 250); }, { passive: true });
+  document.addEventListener('scroll', () => { clearTimeout(st); st = setTimeout(savePos, 250); }, { passive: true, capture: true });
+
+  function openView(s, key, focusId) {
+    savePos(); clearTimeout(st); hold = Date.now() + 500;
+    view = { src: s, key };
+    $('q').value = ''; try { localStorage.setItem('kq', ''); localStorage.setItem('kview', JSON.stringify(view)); } catch (e) {}
+    $('expand').innerHTML = '';
+    renderView();
+    const el = focusId && document.getElementById(focusId);
+    if (el) { el.scrollIntoView({ block: 'start' }); el.classList.add('focus'); setTimeout(() => el.classList.remove('focus'), 1600); }
+    else restorePos(s + '|' + key);
+  }
+  document.addEventListener('click', ev => {
+    const v = ev.target.closest('[data-view]'); if (v) { openView(v.dataset.view, v.dataset.key); return; }
+    if (ev.target.closest('[data-totoc]')) { savePos(); clearTimeout(st); view = null; try { localStorage.setItem('kview', ''); } catch (e) {} render(); restorePos('toc'); return; }
+    const o = ev.target.closest('[data-open]'); if (o) { const e = byId[o.dataset.open]; if (e) openView(e.src, groupKey(e), e.id); }
+  });
+
+  function sample() {
+    const picks = ['핸드레일 벽 400', '삼각부 스펀지', '역구동', '보조브레이크', '토가드', '에이프런', '피트 틈새', 'UCMP', '조속기', '기어오름', '스커트 틈새'];
+    return `<div class="empty">자주 찾는 검색: ${picks.map(p => `<button class="chip" data-q="${p}">${p}</button>`).join(' ')}</div>`;
+  }
+
+  $('f').addEventListener('submit', ev => { ev.preventDefault(); render(); $('q').blur(); });
+  let timer; $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 160); });
+  $('bgtog').setAttribute('aria-pressed', String(withBg));
+  $('filters').addEventListener('click', ev => {
+    const b = ev.target.closest('button.chip'); if (!b) return;
+    if (b.id === 'bgtog') { withBg = !withBg; b.setAttribute('aria-pressed', String(withBg)); try { localStorage.setItem('kbg', withBg ? '1' : '0'); } catch (e) {} render(); return; }
+    if (b.dataset.src) { src = b.dataset.src; srcSync(); refilter(); return; }
+    render();
+  });
+  $('results').addEventListener('click', ev => {
+    if (ev.target.closest('[data-more]')) { SHOWN += 80; const y = getY(); render(); setY(y); return; }
+    const q = ev.target.closest('[data-q]'); if (q) { $('q').value = q.dataset.q; render(); return; }
+    const gs = ev.target.closest('[data-gosrc]'); if (gs) { src = gs.dataset.gosrc; srcSync(); render(); setY(0); return; }
+    const hb = ev.target.closest('[data-hist]'); if (hb) { const c = hb.closest('.card'), box = c.querySelector('.hist'); const open = box.hidden; box.hidden = !open; if (open && !box.innerHTML) { box.innerHTML = historyHtml(byId[hb.dataset.hist]); box.querySelectorAll('.ht').forEach(x => { if (x.scrollHeight <= x.clientHeight + 4) { x.classList.remove('clip'); x.nextElementSibling.remove(); } }); } box.hidden = !open; hb.setAttribute('aria-expanded', String(open)); return; }
+    const hx = ev.target.closest('.hx'); if (hx) { const ht = hx.previousElementSibling; const cl = ht.classList.toggle('clip'); hx.textContent = cl ? '펼치기' : '접기'; return; }
+    const bt = ev.target.closest('.bgtoggle'); if (bt) { const bg = bt.nextElementSibling; const open = bg.hidden; bg.hidden = !open; bt.setAttribute('aria-expanded', String(open)); bt.textContent = (open ? '근거·배경 접기' : bt.textContent.replace('접기', '보기')); const c = bt.closest('.card'); if (open) { c.classList.add('open'); const mm = c.querySelector('.more'); if (mm) mm.textContent = '접기'; } return; }
+    const m = ev.target.closest('.more'); if (m) { const c = m.closest('.card'); c.classList.toggle('open'); m.textContent = c.classList.contains('open') ? '접기' : '전체 보기'; }
+  });
+
+  // ---- 용어 사전 UI
+  const allBaseWords = Array.from(new Set(BASE_SYN.flat())).sort((a, b) => a.localeCompare(b, 'ko'));
+  $('bcount').textContent = BASE_SYN.length;
+
+  function openPanel(term) {
+    $('panel').hidden = false; $('tbtn').setAttribute('aria-expanded', 'true');
+    if (term) { $('d1').value = term; suggest(term); $('d2').focus(); } else { $('d1').focus(); }
+    $('panel').scrollIntoView({ block: 'start', behavior: 'smooth' });
+  }
+  function closePanel() { $('panel').hidden = true; $('tbtn').setAttribute('aria-expanded', 'false'); }
+  $('tbtn').addEventListener('click', () => $('panel').hidden ? openPanel() : closePanel());
+
+  // 현장용어를 치면 비슷한 기존 그룹을 추천
+  function suggest(term) {
+    const nt = norm(term); const box = $('sugg'); box.innerHTML = '';
+    if (!nt || nt.length < 1) return;
+    const c = cho(nt);
+    const cands = [];
+    for (const g of BASE_SYN) {
+      const hit = g.find(w => { const nw = norm(w); return nw.includes(nt) || nt.includes(nw) || (c.length >= 2 && cho(nw).includes(c)); });
+      if (hit) cands.push(g[0] === hit ? g[1] || g[0] : g[0]);
+    }
+    const uniq = Array.from(new Set(cands)).slice(0, 8);
+    if (uniq.length) box.innerHTML = `<span class="lab">이 그룹에 넣을까요?</span>` + uniq.map(w => `<button type="button" class="chip" data-pick="${escHtml(w)}">${escHtml(w)}</button>`).join('');
+  }
+  $('d1').addEventListener('input', () => suggest($('d1').value));
+  // 기준 용어 칸: 글자를 쳐야만 사전에서 맞는 말 몇 개를 칩으로 보여준다(긴 드롭다운 목록 대신)
+  $('d2').addEventListener('input', () => {
+    const nt = norm($('d2').value), box = $('sugg');
+    if (!nt) { suggest($('d1').value); return; }
+    const c = cho(nt);
+    const hits = allBaseWords.filter(w => { const nw = norm(w); return nw.startsWith(nt) || nw.includes(nt) || (isChoOnly(nt) && cho(nw).includes(c)); })
+      .sort((a, b) => (norm(a).startsWith(nt) ? 0 : 1) - (norm(b).startsWith(nt) ? 0 : 1) || a.length - b.length).slice(0, 8);
+    box.innerHTML = hits.length ? `<span class="lab">기준 용어:</span>` + hits.map(w => `<button type="button" class="chip" data-pick="${escHtml(w)}">${escHtml(w)}</button>`).join('') : '';
+  });
+  $('sugg').addEventListener('click', ev => { const b = ev.target.closest('[data-pick]'); if (!b) return; $('d2').value = b.dataset.pick; $('sugg').innerHTML = ''; $('dadd').focus(); });
+
+  function renderDict() {
+    const list = $('dlist');
+    if (!customSyn.length) { list.innerHTML = '<span class="none">아직 없음. 위에서 현장용어 = 기준 용어로 연결하면 여기 쌓입니다.</span>'; return; }
+    list.innerHTML = customSyn.map((g, i) => `<span class="term"><b>${escHtml(g[0])}</b><span class="arrow">→</span><span>${escHtml(g.slice(1).join(', '))}</span><button type="button" data-del="${i}" aria-label="${escHtml(g[0])} 삭제">✕</button></span>`).join('');
+  }
+  function renderBase(filter) {
+    const f = norm(filter || '');
+    const rows = BASE_SYN.filter(g => !f || g.some(w => norm(w).includes(f)));
+    $('blist').innerHTML = rows.map(g => `<li><b>${escHtml(g[0])}</b> · ${escHtml(g.slice(1).join(' · '))}</li>`).join('') || '<li class="none">없음</li>';
+  }
+  $('bfilter').addEventListener('input', () => renderBase($('bfilter').value));
+  function saveSyn() { try { localStorage.setItem('ksyn', JSON.stringify(customSyn)); } catch (e) {} }
+  function addPair(a, bs) {
+    a = a.trim(); bs = bs.map(s => s.trim()).filter(s => s && norm(s) !== norm(a));
+    if (!a || !bs.length) return false;
+    const ex = customSyn.find(g => norm(g[0]) === norm(a));
+    if (ex) { for (const b of bs) if (!ex.some(w => norm(w) === norm(b))) ex.push(b); }
+    else customSyn.push([a].concat(bs));
+    return true;
+  }
+  $('addform').addEventListener('submit', ev => {
+    ev.preventDefault();
+    let a = $('d1').value, b = $('d2').value;
+    if (!b.trim() && /[=＝→]/.test(a)) { const p = a.split(/[=＝→]/); a = p[0]; b = p.slice(1).join(','); }
+    if (!addPair(a, b.split(/[,，/]/))) { $('msg').textContent = '현장용어와 기준 용어를 둘 다 넣어주세요.'; return; }
+    saveSyn(); renderDict(); render();
+    $('msg').textContent = `연결됨: ${a.trim()} → ${b.trim()}. 이제 ‘${a.trim()}’으로 검색하면 같이 찾습니다.`;
+    $('d1').value = ''; $('d2').value = ''; $('sugg').innerHTML = ''; $('d1').focus();
+  });
+  $('dlist').addEventListener('click', ev => { const d = ev.target.closest('[data-del]'); if (!d) return; customSyn.splice(+d.dataset.del, 1); saveSyn(); renderDict(); render(); });
+  $('results').addEventListener('click', ev => { const a = ev.target.closest('[data-addterm]'); if (a) openPanel(a.dataset.addterm); });
+
+  // 복사 / 가져오기 (기기 간 이동)
+  function dumpSyn() { return customSyn.map(g => g[0] + ' = ' + g.slice(1).join(', ')).join('\n'); }
+  $('xcopy').addEventListener('click', () => {
+    const txt = dumpSyn(); if (!txt) { $('msg').textContent = '복사할 용어가 없습니다.'; return; }
+    const done = () => { $('msg').textContent = '복사됨. 다른 기기의 “붙여넣기”에 넣으면 됩니다.'; };
+    const fallback = () => { $('xarea').hidden = false; $('xarea').value = txt; $('xarea').select(); $('msg').textContent = '아래 글을 직접 복사하세요.'; };
+    try { navigator.clipboard.writeText(txt).then(done, fallback); } catch (e) { fallback(); }
+  });
+  // 공유 제안: 휴대폰 공유창(카카오톡·문자·메일 등)으로 내 용어 목록을 보낸다. 공유창이 없으면 복사
+  $('xshare').addEventListener('click', () => {
+    const txt = dumpSyn(); if (!txt) { $('msg').textContent = '먼저 용어를 추가해 주세요.'; return; }
+    const body = '[검사기준 통합검색 현장용어 제안]\n' + txt;
+    const copied = () => { $('msg').textContent = '복사됐어요. 담당자에게 카카오톡 등으로 붙여넣어 보내 주세요.'; };
+    const fallback = () => { $('xarea').hidden = false; $('xarea').value = body; $('xarea').select(); $('msg').textContent = '아래 글을 복사해 담당자에게 보내 주세요.'; };
+    if (SYN_API) {   // 공용 사전 서버로 바로 제안 → 관리자 승인 후 모두에게 반영
+      fetch(SYN_API, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ text: txt }) })
+        .then(() => { $('msg').textContent = '제안을 보냈어요. 관리자가 승인하면 모든 사람에게 반영됩니다.'; })
+        .catch(() => { $('msg').textContent = '보내지 못했어요. 인터넷 연결을 확인해 주세요.'; });
+      return;
+    }
+    if (navigator.share) navigator.share({ title: '현장용어 제안', text: body }).catch(() => {});
+    else try { navigator.clipboard.writeText(body).then(copied, fallback); } catch (e) { fallback(); }
+  });
+  $('xpaste').addEventListener('click', () => { const h = $('xarea').hidden; $('xarea').hidden = !h; $('ximport').hidden = !h; if (h) { $('xarea').value = ''; $('xarea').focus(); } });
+  $('ximport').addEventListener('click', () => {
+    let n = 0;
+    for (const line of $('xarea').value.split(/\n/)) { const p = line.split(/[=＝→]/); if (p.length >= 2 && addPair(p[0], p.slice(1).join(',').split(/[,，/]/))) n++; }
+    saveSyn(); renderDict(); render(); $('xarea').hidden = true; $('ximport').hidden = true;
+    $('msg').textContent = n ? `${n}개 가져옴.` : '가져올 줄이 없습니다. “현장용어 = 기준 용어” 형식으로 한 줄에 하나씩.';
+  });
+  renderDict(); renderBase('');
+
+  // ---- 그림 확대 보기
+  const byId = {}; ALL.forEach(e => { byId[e.id] = e; });
+  let lbState = null;
+  function openLb(id, k) {
+    const e = byId[id]; if (!e || !e.img) return;
+    lbState = { e, k };
+    let el = document.getElementById('lb');
+    if (!el) { el = document.createElement('div'); el.id = 'lb'; el.className = 'lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
+    const m = e.img[k];
+    el.innerHTML = `<img src="stdimg/${m[0]}" alt=""><div class="lbbar"><button type="button" data-lbnav="-1" ${k ? '' : 'disabled'}>이전</button><span>${k + 1} / ${e.img.length} · ${m[4] ? '배포자료 · ' : ''}원문 ${m[1]}쪽${m[5] ? ' · 원본 PDF 자체가 저해상도' : ''}</span><button type="button" data-lbnav="1" ${k < e.img.length - 1 ? '' : 'disabled'}>다음</button><button type="button" data-lbclose>닫기</button></div>`;
+    el.hidden = false;
+  }
+  function openFz(src) {
+    let el = document.getElementById('lb');
+    if (!el) { el = document.createElement('div'); el.id = 'lb'; el.className = 'lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
+    lbState = null;
+    el.innerHTML = `<div class="lbscroll"><img src="${src}" alt=""></div><div class="lbbar"><span>${/fig\/h(el|es)_/.test(src) ? '연혁집 원문' : '기준 원문(HWP) 그림'} · 두 손가락으로 확대</span><button type="button" data-lbclose>닫기</button></div>`;
+    el.hidden = false;
+  }
+  function closeLb() { const el = document.getElementById('lb'); if (el) el.hidden = true; lbState = null; }
+  document.addEventListener('click', ev => {
+    const fz = ev.target.closest('[data-fz]'); if (fz) { ev.preventDefault(); openFz(fz.dataset.fz); return; }
+    const t = ev.target.closest('[data-lb]'); if (t) { openLb(t.dataset.lb, +t.dataset.k); return; }
+    const nav = ev.target.closest('[data-lbnav]'); if (nav && lbState) { const k = lbState.k + (+nav.dataset.lbnav); if (k >= 0 && k < lbState.e.img.length) openLb(lbState.e.id, k); return; }
+    if (ev.target.closest('[data-lbclose]') || ev.target.id === 'lb') closeLb();
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') closeLb(); });
+
+  // ---- 검색창이 화면 밖으로 나가면 '검색' 버튼 표시 (스크롤 주체와 무관하게 IntersectionObserver 사용)
+  (function () {
+    const hd = document.querySelector('header.top');
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'totop'; btn.textContent = '↑ 검색'; btn.hidden = true;
+    btn.setAttribute('aria-label', '맨 위 검색창으로');
+    document.body.appendChild(btn);
+    btn.addEventListener('click', () => { hd.scrollIntoView({ block: 'start' }); setTimeout(() => $('q').focus({ preventScroll: true }), 250); });
+    try {
+      new IntersectionObserver(es => { btn.hidden = es[0].isIntersecting; }).observe(hd);
+    } catch (e) { btn.hidden = false; }
+  })();
+
+  // ---- 앱 연동용 API (WebView 등에서 호출): window.KIJUN
+  window.KIJUN = {
+    // 검색어를 넣고 화면을 갱신. 반환: 상위 n건 [{src,num,title,gist,text,path}]
+    search(q, n) { $('q').value = q || ''; render(); return this.results(n); },
+    results(n) { const q = $('q').value; const { hits } = search(q); return hits.filter(h => pass(h.e)).slice(0, n || 20).map(h => ({ src: h.e.src, num: h.e.num, title: h.e.title || '', gist: h.e.gist || '', path: h.e.path || '', text: h.e.text, vers: h.e.vers ? h.e.vers.map(i => OV[i]) : undefined })); },
+    setSource(s) { src = ['all', 'b22', 'b24', 'std'].includes(s) ? s : 'all'; srcSync(); refilter(); },
+    addTerm(a, bs) { if (addPair(a, Array.isArray(bs) ? bs : String(bs).split(/[,，/]/))) { saveSyn(); renderDict(); render(); return true; } return false; },
+    expand(t) { return expandTerm(t); },
+    // 앱 테마 주입: KIJUN.setTheme({bg:'#0b0f14', surface:'#141a22', fg:'#e8edf2', muted:'#8a97a6', line:'#263140', accent:'#5ec8ff', accentSoft:'#102a3a', mark:'#4a3f00', stripe:'#ffd400', std:'#c79be3', stdSoft:'#33243f', el:'#6fcf97', elSoft:'#1d3a2a', fontBody:'...', fontMono:'...'})
+    // 키는 CSS 토큰명(--accent-soft → accentSoft). 일부만 넘겨도 된다. theme:'dark'|'light'로 강제 테마.
+    setTheme(o) {
+      const r = document.documentElement; o = o || {};
+      const map = { old: '--old', oldSoft: '--old-soft', bg: '--bg', surface: '--surface', fg: '--fg', muted: '--muted', line: '--line', accent: '--accent', accentSoft: '--accent-soft', mark: '--mark', stripe: '--stripe', std: '--std', stdSoft: '--std-soft', el: '--el', elSoft: '--el-soft', fontBody: '--font-body', fontMono: '--font-mono' };
+      if (o.theme === 'dark' || o.theme === 'light') r.setAttribute('data-theme', o.theme);
+      for (const k in map) if (o[k]) r.style.setProperty(map[k], o[k]);
+      if (o.radius != null) r.style.setProperty('--radius', String(o.radius) + 'px');
+      if (o.fontSize) document.body.style.fontSize = o.fontSize;
+    },
+    // 앱 안에 심을 때: 제목줄 숨김, 상단 여백 제거 등. KIJUN.embed({hideHeader:true, hideSub:true})
+    embed(o) {
+      o = o || {};
+      document.documentElement.classList.toggle('embedded', o.hideHeader !== false);
+      if (o.hideSub) document.querySelector('.brand .sub').hidden = true;
+    },
+    version: '2026-10-13'
+  };
+  // 주소 해시로 초기 검색어 전달: kijun.html#q=토가드 (브라우저/WebView 공통)
+  try { const h = decodeURIComponent(location.hash || ''); const m = h.match(/^#q=(.+)$/); if (m) { $('q').value = m[1]; } } catch (e) {}
+  window.addEventListener('hashchange', () => { try { const m = decodeURIComponent(location.hash || '').match(/^#q=(.+)$/); if (m) { $('q').value = m[1]; render(); } } catch (e) {} });
+
+  try { const last = localStorage.getItem('kq'); if (last && !$('q').value) $('q').value = last; } catch (e) {}
+  // 마지막으로 읽던 장/회차로 복귀
+  try { const v = JSON.parse(localStorage.getItem('kview') || 'null'); if (v && !$('q').value.trim() && !location.hash) view = v; } catch (e) {}
+  $('q').addEventListener('change', () => { try { localStorage.setItem('kq', $('q').value); } catch (e) {} });
+  chgSync();
+  try { const k = JSON.parse(localStorage.getItem('kdate') || 'null'); if (k && k.d) { APPLY = { d: k.d, year: k.year }; $('dbtn').textContent = '기준일: ' + (k.year || k.d); $('dbtn').toggleAttribute('data-on', true); chgSync(); if (k.year) $('dyear').value = k.year; else $('ddate').value = k.d.replace(/\./g, '-'); dInfo(); } } catch (e) {}
+  srcSync();
+  render();
+  if (view) restorePos(view.src + '|' + view.key); else if (!$('q').value.trim()) restorePos('toc');
+})();
+</script>

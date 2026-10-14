@@ -4,3 +4,11 @@
 
 - 페이지: index.html (데이터 내장, 오프라인 동작)
 - 그림: stdimg/
+
+## 다시 만들기
+원본 자료와 빌드 스크립트는 `build/` 에 있습니다. 자세한 방법은 `CLAUDE.md`.
+```
+cd build
+pip install -r requirements.txt
+python publish.py "변경 내용"
+```
