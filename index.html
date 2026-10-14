@@ -680,7 +680,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   let withBg = false;
   try { withBg = localStorage.getItem('kbg') === '1'; } catch (e) {}
 
-  function synGroups() { return BASE_SYN.concat(customSyn); }
+  // ---- 공용 현장용어: 관리자가 승인한 제안(구글 시트 + Apps Script 웹 앱)을 모두에게 적용
+  const SYN_API = '';   // Apps Script 웹 앱 주소(…/exec). 비어 있으면 공용 사전 기능 꺼짐
+  let sharedSyn = [];
+  try { sharedSyn = JSON.parse(localStorage.getItem('kshared') || '[]'); } catch (e) { sharedSyn = []; }
+  if (SYN_API) fetch(SYN_API + '?action=list').then(r => r.json()).then(g => { if (Array.isArray(g)) { sharedSyn = g.filter(x => Array.isArray(x) && x.length >= 2); try { localStorage.setItem('kshared', JSON.stringify(sharedSyn)); } catch (e) {} if ($('q').value.trim()) render(); } }).catch(() => {});
+  function synGroups() { return BASE_SYN.concat(sharedSyn, customSyn); }
   function expandTerm(t) {
     const set = new Set([t]);
     const nt = norm(t);
@@ -1175,6 +1180,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const body = '[검사기준 통합검색 현장용어 제안]\n' + txt;
     const copied = () => { $('msg').textContent = '복사됐어요. 담당자에게 카카오톡 등으로 붙여넣어 보내 주세요.'; };
     const fallback = () => { $('xarea').hidden = false; $('xarea').value = body; $('xarea').select(); $('msg').textContent = '아래 글을 복사해 담당자에게 보내 주세요.'; };
+    if (SYN_API) {   // 공용 사전 서버로 바로 제안 → 관리자 승인 후 모두에게 반영
+      fetch(SYN_API, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ text: txt }) })
+        .then(() => { $('msg').textContent = '제안을 보냈어요. 관리자가 승인하면 모든 사람에게 반영됩니다.'; })
+        .catch(() => { $('msg').textContent = '보내지 못했어요. 인터넷 연결을 확인해 주세요.'; });
+      return;
+    }
     if (navigator.share) navigator.share({ title: '현장용어 제안', text: body }).catch(() => {});
     else try { navigator.clipboard.writeText(body).then(copied, fallback); } catch (e) { fallback(); }
   });
