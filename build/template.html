@@ -124,9 +124,10 @@ main { padding-top: 14px }
 .card.b22::before { background: var(--el) }
 .card.b24::before { background: var(--es) }
 /* 엘리베이터·에스컬레이터 구분: 굵은 색 띠 + 꽉 찬 색 이름표 */
-.card.b22::before, .card.b24::before { width: 6px }
-.card.b22, .card.b24 { padding-left: 18px }
-.card.b22 .badge, .card.b24 .badge { font-size: 13.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; color: var(--surface); letter-spacing: 0 }
+.card.b22::before, .card.b24::before, .card.std::before { width: 6px }
+.card.b22, .card.b24, .card.std { padding-left: 18px }
+.card.b22 .badge, .card.b24 .badge, .card.std .badge { font-size: 13.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; color: var(--surface); letter-spacing: 0 }
+.card.std .badge { background: var(--std) }
 .card.b22 .badge { background: var(--el) }
 .card.b24 .badge { background: var(--es) }
 .card.b22 .num, .card.b24 .num { font-size: 15px }
@@ -136,7 +137,6 @@ main { padding-top: 14px }
 .chip[data-src="std"]::before { background: var(--std) }
 .card .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 4px }
 .badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em }
-.card.std .badge { background: var(--std-soft); color: var(--std) }
 .card.old::before { background: var(--old) }
 .card.old .badge { background: var(--old-soft); color: var(--old) }
 .vr { font-size: 12px; color: var(--old); font-variant-numeric: tabular-nums }
