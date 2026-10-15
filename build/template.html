@@ -217,7 +217,14 @@ main { padding-top: 14px }
 .tblwrap th { background: var(--accent-soft); font-weight: 600 }
 .tcap { font-size: 12.5px; font-weight: 600; color: var(--muted); margin-bottom: 4px }
 .toc { margin-top: 18px }
-.shtag { font-size: 11px; font-weight: 700; color: var(--surface); background: var(--el); border-radius: 4px; padding: 0 5px; margin-left: 4px }
+.shtag, .edtag { font-size: 11px; font-weight: 700; color: var(--surface); background: var(--el); border-radius: 4px; padding: 0 5px; margin-left: 4px; white-space: nowrap }
+.edtag { background: var(--accent) } .edtag.wait { background: var(--old) }
+.dbtn { font: inherit; font-size: 12px; padding: 1px 8px; margin-left: 4px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--accent); cursor: pointer }
+.dbtn.pri { background: var(--accent); color: var(--surface); border-color: var(--accent) }
+#blist li.gone { color: var(--muted) }
+.edrow { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 }
+.edin { font: inherit; resize: vertical; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--fg) }
+.edbtns .dbtn:first-child { margin-left: 0 }
 .toc h2 { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .03em; margin: 0 0 8px }
 .toc h2.t-b22, .toc h2.t-b24, .toc h2.t-std { font-size: 16px; font-weight: 700; letter-spacing: 0 }
 .toc h2.t-b22 { color: var(--el) } .toc h2.t-b24 { color: var(--es) } .toc h2.t-std { color: var(--std) }
@@ -352,12 +359,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       <button type="button" id="xshare" class="xshare">모두가 쓰도록 공유 제안</button>
       <button type="button" id="xcopy">내 용어 복사</button>
       <button type="button" id="xpaste">다른 기기 용어 붙여넣기</button>
-      <span>추가한 용어는 이 기기에만 저장됩니다. ‘공유 제안’으로 담당자에게 보내 주시면 확인 후 모든 사람의 기본 사전에 넣습니다.</span>
+      <span>추가한 용어는 이 기기에만 저장됩니다. ‘모두가 쓰도록 공유 제안’을 누르면 관리자에게 가고, 승인되면 모든 사람에게 적용됩니다. 사전에 잘못된 말은 아래 ‘사전 보기·고치기’에서 고치거나 지울 수 있습니다(승인 후 모두에게 적용).</span>
       <textarea id="xarea" hidden placeholder="가바나 = 조속기&#10;인렛 = 손잡이 인입구, 핸드레일 인입구" aria-label="붙여넣기"></textarea>
       <button type="button" id="ximport" hidden>가져오기</button>
     </div>
     <details class="basedic">
-      <summary><span>기본 사전 보기 (<span id="bcount"></span>개 그룹)</span><span>▾</span></summary>
+      <summary><span>사전 보기·고치기 (<span id="bcount"></span>개 그룹)</span><span>▾</span></summary>
       <input id="bfilter" placeholder="사전에서 찾기" aria-label="사전에서 찾기">
       <ul id="blist"></ul>
     </details>
@@ -741,8 +748,31 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   let SYN_API = '';
   let sharedSyn = [];
   try { sharedSyn = JSON.parse(localStorage.getItem('kshared') || '[]'); } catch (e) { sharedSyn = []; }
-  fetch('config.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(c => { SYN_API = (c && c.synApi) || ''; if (!SYN_API) return; return fetch(SYN_API + '?action=list').then(r => r.json()).then(g => { if (Array.isArray(g)) { sharedSyn = g.filter(x => Array.isArray(x) && x.length >= 2); try { localStorage.setItem('kshared', JSON.stringify(sharedSyn)); } catch (e) {} if (typeof renderBase === 'function') renderBase($('bfilter').value); if ($('q').value.trim()) render(); } }); }).catch(() => {});
-  function synGroups() { return BASE_SYN.concat(sharedSyn, customSyn); }
+  // 사전 묶음 수정·삭제: {o: 원래 묶음, n: 고친 묶음(빈 배열이면 삭제)}. editSyn = 이 기기에서 고친 것(승인 대기), srvEdit = 관리자가 승인한 것(모두에게 적용)
+  let editSyn = [], srvEdit = [];
+  try { editSyn = JSON.parse(localStorage.getItem('kedit') || '[]'); } catch (e) { editSyn = []; }
+  try { srvEdit = JSON.parse(localStorage.getItem('ksedit') || '[]'); } catch (e) { srvEdit = []; }
+  const gkey = g => g.map(norm).filter(Boolean).sort().join('|');
+  fetch('config.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : {}).then(c => {
+    SYN_API = (c && c.synApi) || ''; if (!SYN_API) return;
+    return fetch(SYN_API + '?action=list2').then(r => r.json()).then(j => {
+      if (!j || !Array.isArray(j.add)) return;
+      sharedSyn = j.add.filter(x => Array.isArray(x) && x.length >= 2);
+      srvEdit = (j.edit || []).filter(e => Array.isArray(e) && e.length === 2).map(e => ({ o: e[0], n: e[1] }));
+      // 승인된 수정과 같은 내 기기 수정은 정리
+      editSyn = editSyn.filter(e => !srvEdit.some(s => gkey(s.o) === gkey(e.o) && gkey(s.n) === gkey(e.n)));
+      try { localStorage.setItem('kshared', JSON.stringify(sharedSyn)); localStorage.setItem('ksedit', JSON.stringify(srvEdit)); localStorage.setItem('kedit', JSON.stringify(editSyn)); } catch (e) {}
+      if (typeof renderBase === 'function') renderBase($('bfilter').value); if ($('q').value.trim()) render();
+    });
+  }).catch(() => {});
+  function editFor(g) { const k = gkey(g); let r = null; for (const e of srvEdit.concat(editSyn)) if (gkey(e.o) === k) r = e; return r; }
+  // 기본 사전 + 공용 승인 묶음에 수정·삭제를 적용한 목록
+  function dictRows() {
+    return sharedSyn.map(g => ({ o: g, src: 'shared' })).concat(BASE_SYN.map(g => ({ o: g, src: 'base' }))).map(r => {
+      const e = editFor(r.o); r.g = e ? e.n : r.o; r.ed = e ? (editSyn.includes(e) ? 'local' : 'srv') : null; return r;
+    });
+  }
+  function synGroups() { return dictRows().map(r => r.g).filter(g => g.length >= 2).concat(customSyn); }
   // '키 홀'처럼 띄어 쓴 현장용어가 사전에 있으면 두 낱말로 쪼개지 말고 한 말로 찾는다
   function joinSynPhrases(ws) {
     const keys = new Set(synGroups().flat().map(norm));
@@ -1171,7 +1201,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   });
 
   // ---- 용어 사전 UI
-  const allBaseWords = Array.from(new Set(BASE_SYN.flat())).sort((a, b) => a.localeCompare(b, 'ko'));
+  const baseWords = () => Array.from(new Set(dictRows().flatMap(r => r.g))).sort((a, b) => a.localeCompare(b, 'ko'));
 
   function openPanel(term) {
     $('panel').hidden = false; $('tbtn').setAttribute('aria-expanded', 'true');
@@ -1187,7 +1217,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (!nt || nt.length < 1) return;
     const c = cho(nt);
     const cands = [];
-    for (const g of BASE_SYN) {
+    for (const g of dictRows().map(r => r.g).filter(g => g.length >= 2)) {
       const hit = g.find(w => { const nw = norm(w); return nw.includes(nt) || nt.includes(nw) || (c.length >= 2 && cho(nw).includes(c)); });
       if (hit) cands.push(g[0] === hit ? g[1] || g[0] : g[0]);
     }
@@ -1200,7 +1230,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const nt = norm($('d2').value), box = $('sugg');
     if (!nt) { suggest($('d1').value); return; }
     const c = cho(nt);
-    const hits = allBaseWords.filter(w => { const nw = norm(w); return nw.startsWith(nt) || nw.includes(nt) || (isChoOnly(nt) && cho(nw).includes(c)); })
+    const hits = baseWords().filter(w => { const nw = norm(w); return nw.startsWith(nt) || nw.includes(nt) || (isChoOnly(nt) && cho(nw).includes(c)); })
       .sort((a, b) => (norm(a).startsWith(nt) ? 0 : 1) - (norm(b).startsWith(nt) ? 0 : 1) || a.length - b.length).slice(0, 8);
     box.innerHTML = hits.length ? `<span class="lab">기준 용어:</span>` + hits.map(w => `<button type="button" class="chip" data-pick="${escHtml(w)}">${escHtml(w)}</button>`).join('') : '';
   });
@@ -1209,17 +1239,54 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function renderDict() {
     const list = $('dlist');
     if (!customSyn.length) { list.innerHTML = '<span class="none">아직 없음. 위에서 현장용어 = 기준 용어로 연결하면 여기 쌓입니다.</span>'; return; }
-    list.innerHTML = customSyn.map((g, i) => `<span class="term"><b>${escHtml(g[0])}</b><span class="arrow">→</span><span>${escHtml(g.slice(1).join(', '))}</span><button type="button" data-del="${i}" aria-label="${escHtml(g[0])} 삭제">✕</button></span>`).join('');
+    list.innerHTML = customSyn.map((g, i) => `<span class="term"><b>${escHtml(g[0])}</b><span class="arrow">→</span><span>${escHtml(g.slice(1).join(', '))}</span><button type="button" data-edit="${i}" aria-label="${escHtml(g[0])} 수정">✎</button><button type="button" data-del="${i}" aria-label="${escHtml(g[0])} 삭제">✕</button></span>`).join('');
   }
+  let DROWS = [];
   function renderBase(filter) {
     const f = norm(filter || '');
-    const ok = g => !f || g.some(w => norm(w).includes(f));
-    // 공용 서버에서 승인된 현장용어(모든 사람에게 적용)를 맨 위에
-    const sh = sharedSyn.filter(ok).map(g => `<li><b>${escHtml(g[0])}</b> · ${escHtml(g.slice(1).join(' · '))} <span class="shtag">공용 승인</span></li>`);
-    const rows = BASE_SYN.filter(ok).map(g => `<li><b>${escHtml(g[0])}</b> · ${escHtml(g.slice(1).join(' · '))}</li>`);
-    $('blist').innerHTML = sh.concat(rows).join('') || '<li class="none">없음</li>';
-    $('bcount').textContent = BASE_SYN.length + sharedSyn.length;
+    const ok = r => !f || (r.g.length ? r.g : r.o).some(w => norm(w).includes(f));
+    DROWS = dictRows();
+    const tag = r => (r.src === 'shared' ? ' <span class="shtag">공용 승인</span>' : '') + (r.ed === 'srv' ? ' <span class="edtag">수정됨</span>' : r.ed === 'local' ? ' <span class="edtag wait">수정 · 승인 대기</span>' : '');
+    const li = DROWS.map((r, i) => {
+      if (!ok(r) || (!r.g.length && r.ed !== 'local')) return '';
+      if (!r.g.length) return `<li class="gone"><s><b>${escHtml(r.o[0])}</b> · ${escHtml(r.o.slice(1).join(' · '))}</s> <span class="edtag wait">삭제 · 승인 대기</span> <button type="button" class="dbtn" data-undo="${i}">되돌리기</button></li>`;
+      return `<li><b>${escHtml(r.g[0])}</b> · ${escHtml(r.g.slice(1).join(' · '))}${tag(r)} <button type="button" class="dbtn" data-ed="${i}">수정</button>${r.ed === 'local' ? ` <button type="button" class="dbtn" data-undo="${i}">되돌리기</button>` : ''}</li>`;
+    }).filter(Boolean);
+    $('blist').innerHTML = li.join('') || '<li class="none">없음</li>';
+    $('bcount').textContent = DROWS.filter(r => r.g.length >= 2).length;
   }
+  // 사전 묶음 고치기: 이 기기엔 바로 적용, 공용 서버로 수정 요청(관리자 승인 후 모두에게)
+  const fmtG = g => g.length ? g[0] + ' = ' + g.slice(1).join(', ') : '(삭제)';
+  function submitEdit(r, n) {
+    editSyn = editSyn.filter(e => gkey(e.o) !== gkey(r.o));
+    const back = gkey(n) === gkey(r.o) && !srvEdit.some(e => gkey(e.o) === gkey(r.o));
+    if (!back) editSyn.push({ o: r.o, n });
+    try { localStorage.setItem('kedit', JSON.stringify(editSyn)); } catch (e) {}
+    renderBase($('bfilter').value); render();
+    if (back) { $('msg').textContent = '원래대로 되돌렸어요.'; return; }
+    if (!SYN_API) { $('msg').textContent = '이 기기에만 적용됐어요(공용 서버 연결 안 됨).'; return; }
+    fetch(SYN_API, { method: 'POST', mode: 'no-cors', body: new URLSearchParams({ op: 'edit', orig: fmtG(r.o), next: fmtG(n) }) })
+      .then(() => { $('msg').textContent = `${n.length ? '수정' : '삭제'} 요청을 보냈어요. 이 기기에는 바로 적용됐고, 관리자가 승인하면 모든 사람에게 반영됩니다.`; })
+      .catch(() => { $('msg').textContent = '이 기기에는 적용됐지만 요청을 보내지 못했어요. 인터넷 연결을 확인해 주세요.'; });
+  }
+  $('blist').addEventListener('click', ev => {
+    const b = ev.target.closest('button'); if (!b) return;
+    const li = b.closest('li');
+    if (b.dataset.ed != null) {
+      const r = DROWS[+b.dataset.ed];
+      li.innerHTML = `<div class="edrow"><textarea class="edin" rows="3" aria-label="묶음 고치기 (대표어 = 다른 말, 다른 말)">${escHtml(fmtG(r.g))}</textarea><div class="edbtns"><button type="button" class="dbtn pri" data-save="${b.dataset.ed}">저장</button><button type="button" class="dbtn" data-rm="${b.dataset.ed}">이 묶음 삭제</button><button type="button" class="dbtn" data-cancel>취소</button></div><span class="hint">쉼표로 나눠 고치세요. 맨 앞 말이 대표어입니다.</span></div>`;
+      li.querySelector('.edin').focus(); return;
+    }
+    if (b.dataset.save != null) {
+      const r = DROWS[+b.dataset.save];
+      const seen = new Set(); const n = li.querySelector('.edin').value.split(/[=＝→,，/]/).map(s => s.trim()).filter(s => s && !seen.has(norm(s)) && seen.add(norm(s)));
+      if (n.length < 2) { if (!confirm('말이 두 개보다 적으면 묶음이 지워집니다. 지울까요?')) return; submitEdit(r, []); return; }
+      submitEdit(r, n); return;
+    }
+    if (b.dataset.rm != null) { const r = DROWS[+b.dataset.rm]; if (confirm(`‘${r.g[0]}’ 묶음을 사전에서 지울까요?`)) submitEdit(r, []); return; }
+    if (b.dataset.undo != null) { const r = DROWS[+b.dataset.undo]; editSyn = editSyn.filter(e => gkey(e.o) !== gkey(r.o)); try { localStorage.setItem('kedit', JSON.stringify(editSyn)); } catch (e) {} renderBase($('bfilter').value); render(); $('msg').textContent = '이 기기의 수정을 되돌렸어요. 이미 보낸 요청은 관리자가 반려하면 됩니다.'; return; }
+    if (b.dataset.cancel != null) renderBase($('bfilter').value);
+  });
   $('bfilter').addEventListener('input', () => renderBase($('bfilter').value));
   function saveSyn() { try { localStorage.setItem('ksyn', JSON.stringify(customSyn)); } catch (e) {} }
   function addPair(a, bs) {
@@ -1239,7 +1306,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     $('msg').textContent = `연결됨: ${a.trim()} → ${b.trim()}. 이제 ‘${a.trim()}’으로 검색하면 같이 찾습니다.`;
     $('d1').value = ''; $('d2').value = ''; $('sugg').innerHTML = ''; $('d1').focus();
   });
-  $('dlist').addEventListener('click', ev => { const d = ev.target.closest('[data-del]'); if (!d) return; customSyn.splice(+d.dataset.del, 1); saveSyn(); renderDict(); render(); });
+  $('dlist').addEventListener('click', ev => {
+    const ed = ev.target.closest('[data-edit]');
+    if (ed) { const g = customSyn.splice(+ed.dataset.edit, 1)[0]; saveSyn(); renderDict(); render(); $('d1').value = g[0]; $('d2').value = g.slice(1).join(', '); $('d2').focus(); $('msg').textContent = '고친 뒤 ‘연결’을 누르세요.'; return; }
+    const d = ev.target.closest('[data-del]'); if (!d) return; customSyn.splice(+d.dataset.del, 1); saveSyn(); renderDict(); render();
+  });
   $('results').addEventListener('click', ev => { const a = ev.target.closest('[data-addterm]'); if (a) openPanel(a.dataset.addterm); });
 
   // 복사 / 가져오기 (기기 간 이동)

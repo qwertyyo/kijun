@@ -2,7 +2,9 @@
  * 검사기준 통합검색 — 현장용어 제안·승인 서버 (Google Apps Script 웹 앱)
  * 시트 '제안' 열: 시각 | 현장용어 | 기준용어 | 메모 | 상태(대기/승인/반려) | 처리시각
  *  - 사이트 → POST  (제안 접수, 상태 '대기')
- *  - 사이트 → GET ?action=list           (승인된 것만 JSON: [["가바나","조속기"], ...])
+ *  - 사이트 → GET ?action=list           (승인된 추가만 JSON: [["가바나","조속기"], ...])
+ *  - 사이트 → GET ?action=list2          (승인된 추가 + 사전 묶음 수정·삭제: {add:[...], edit:[[원래 묶음],[고친 묶음(빈 배열=삭제)]]})
+ *  - 사이트 → POST op=edit orig=… next=… (사전 묶음 수정·삭제 요청: B=원래 묶음, C=고친 묶음 또는 '(삭제)', D='수정 요청')
  *  - 관리자 → GET ?action=admin&key=...  (대기 목록 + 승인/반려 버튼 페이지)
  *  - 또는 시트에서 바로: 상태 칸 드롭다운을 '승인'/'반려'로 바꾸면 처리시각이 자동 기록(onEdit)
  *    (브라우저에 구글 계정이 여럿이면 웹 앱 관리자 페이지가 안 열리므로 이 방법을 쓴다)
@@ -23,13 +25,25 @@ const adminKey_ = () => PropertiesService.getScriptProperties().getProperty('ADM
 const isAdmin_ = key => !!key && key === adminKey_();
 
 // 제안 접수: 본문은 "현장용어 = 기준용어1, 기준용어2" 줄들(text) 또는 a/b 필드
+const EDIT = '수정 요청';
+const words_ = s => String(s || '').split(/[=＝→,，/]/).map(x => x.trim()).filter(Boolean);
+const isEdit_ = r => String(r[3]) === EDIT;
+
 function doPost(e) {
   const p = (e && e.parameter) || {};
+  if (p.op === 'edit') {   // 사전 묶음 고치기·지우기 요청
+    const sh = sheet_(), o = String(p.orig || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 300), n = String(p.next || '').replace(/[\r\n\t]/g, ' ').trim().slice(0, 300);
+    if (words_(o).length < 2 || !n) return json_({ ok: false });
+    const dup = sh.getDataRange().getValues().slice(1).some(r => isEdit_(r) && String(r[1]) === o && String(r[2]) === n && r[4] === '대기');
+    if (!dup) sh.appendRow([new Date(), o, n, EDIT, '대기', '']);
+    statusDropdown_(sh);
+    return json_({ ok: true, added: dup ? 0 : 1 });
+  }
   const lines = (p.text || (p.a ? p.a + ' = ' + (p.b || '') : '')).split(/\n/).slice(0, 50);
   const sh = sheet_(), now = new Date(); let n = 0;
   // 이미 대기·승인·반려된 같은 제안(현장용어|기준용어)은 다시 넣지 않는다(사이트는 '내 용어' 전체를 보내므로)
   const key = (a, b) => (a + '|' + b).replace(/\s+/g, '');
-  const seen = new Set(sh.getDataRange().getValues().slice(1).map(r => key(String(r[1]), String(r[2]))));
+  const seen = new Set(sh.getDataRange().getValues().slice(1).filter(r => !isEdit_(r)).map(r => key(String(r[1]), String(r[2]))));
   lines.forEach(line => {
     const m = line.split(/[=＝→]/); if (m.length < 2) return;
     const a = clean_(m[0]), b = clean_(m.slice(1).join(','));
@@ -56,9 +70,12 @@ function onEdit(e) {
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
-  if (p.action === 'list') {
+  if (p.action === 'list' || p.action === 'list2') {
     const rows = sheet_().getDataRange().getValues().slice(1).filter(r => r[4] === '승인');
-    return json_(rows.map(r => [String(r[1])].concat(String(r[2]).split(/[,，/]/).map(s => s.trim()).filter(Boolean))));
+    const add = rows.filter(r => !isEdit_(r)).map(r => [String(r[1])].concat(String(r[2]).split(/[,，/]/).map(s => s.trim()).filter(Boolean)));
+    if (p.action === 'list') return json_(add);
+    const edit = rows.filter(isEdit_).map(r => [words_(r[1]), String(r[2]).trim() === '(삭제)' ? [] : words_(r[2])]);
+    return json_({ add: add, edit: edit });
   }
   if (p.action === 'admin') {
     if (!isAdmin_(p.key)) return HtmlService.createHtmlOutput('<p style="font:16px sans-serif;padding:20px">관리자 키가 맞지 않습니다.</p>');
