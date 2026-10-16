@@ -159,8 +159,7 @@ main { padding-top: 14px }
 .ygrid .yr small { display: block; font-family: var(--font-body); font-size: 10.5px; color: inherit; opacity: .75; margin-top: 1px }
 .hbtn { font: inherit; font-size: 12px; color: var(--old); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; cursor: pointer }
 .hbtn[aria-expanded="true"] { background: var(--old-soft); border-color: var(--old) }
-.meta .ctx { margin-left: 0 }
-.meta .hbtn:first-of-type, .meta .ctx:first-of-type { margin-left: auto }
+.meta .hbtn:first-of-type { margin-left: auto }
 .hist { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px }
 .hist h4 { margin: 0 0 6px; font-size: 13px; color: var(--old) }
 .hp { position: relative; padding: 0 0 12px 18px; border-left: 2px solid var(--line); margin-left: 5px }
@@ -251,7 +250,6 @@ main { padding-top: 14px }
 .vnav { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 10px }
 .vnav.bottom { margin: 14px 0 0 }
 .vnav .chip { max-width: 46%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
-.ctx { margin-left: auto; font: inherit; font-size: 12px; color: var(--accent); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; cursor: pointer }
 .card.focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft) }
 @media (max-width: 520px) { .tocyear { grid-template-columns: 1fr } .tocyear .ty { padding-top: 0 } }
 .gist { display: flex; gap: 8px; align-items: flex-start; background: var(--std-soft); border-radius: 8px; padding: 8px 10px; margin: 2px 0 8px; font-size: 14.5px; line-height: 1.5; font-weight: 500 }
@@ -1115,7 +1113,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (false) { re.lastIndex = 0; const inCur = re.test((e.title || '') + e.text); if (!inCur) { const b = e.h.blocks.find(b => { re.lastIndex = 0; return re.test(plainH(b.text)); }); if (b) { const pt = plainH(b.text); re.lastIndex = 0; const m = re.exec(pt); const s0 = Math.max(0, m.index - 40); found = `<div class="hfound">연혁에서 찾음 · ${escHtml(b.head)}<br>…${hl(pt.slice(s0, m.index + 80), re)}…</div>`; } } re.lastIndex = 0; }
     const title = (ai ? `<div class="after ${ai.kind}">${ai.html}</div>` : '') + (e.title ? `<h2>${hl(e.title, re)}</h2>` : '');
     const path = !isStd && e.path ? `<div class="path">${hl(e.path, re)}</div>` : '';
-    const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '') + (re ? `<button type="button" class="ctx" data-open="${e.id}">앞뒤 보기</button>` : '');
+    const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '');
     return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
   }
 
@@ -1208,7 +1206,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   document.addEventListener('click', ev => {
     const v = ev.target.closest('[data-view]'); if (v) { openView(v.dataset.view, v.dataset.key); return; }
     if (ev.target.closest('[data-totoc]')) { savePos(); clearTimeout(st); view = null; try { localStorage.setItem('kview', ''); } catch (e) {} render(); restorePos('toc'); return; }
-    const o = ev.target.closest('[data-open]'); if (o) { const e = byId[o.dataset.open]; if (e) openView(e.src, groupKey(e), e.id); }
   });
 
   function sample() {
