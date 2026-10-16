@@ -18,6 +18,8 @@
   --el-soft: #e3f3ea;
   --es: #c2410c;
   --es-soft: #fdeee3;
+  --fail: #be123c;
+  --fail-soft: #fde8ec;
   --old: #8a5a12;
   --old-soft: #f6ecdc;
   --radius: 10px;
@@ -27,11 +29,11 @@
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #121820; --surface: #1b232d; --fg: #e8edf2; --muted: #98a6b5; --line: #2d3946;
   --accent: #6cb6e4; --accent-soft: #1d3345; --mark: #5a4a00; --stripe: #e6b800;
-  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --es: #fb923c; --es-soft: #3d2616; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark } }
+  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --es: #fb923c; --es-soft: #3d2616; --fail: #fb7185; --fail-soft: #3f1d26; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark } }
 :root[data-theme="dark"] {
   --bg: #121820; --surface: #1b232d; --fg: #e8edf2; --muted: #98a6b5; --line: #2d3946;
   --accent: #6cb6e4; --accent-soft: #1d3345; --mark: #5a4a00; --stripe: #e6b800;
-  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --es: #fb923c; --es-soft: #3d2616; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark }
+  --std: #c79be3; --std-soft: #33243f; --el: #6fcf97; --el-soft: #1d3a2a; --es: #fb923c; --es-soft: #3d2616; --fail: #fb7185; --fail-soft: #3f1d26; --old: #e0b46a; --old-soft: #3a2c16; color-scheme: dark }
 
 * { box-sizing: border-box }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0; padding-block: 0 48px; padding-inline: 16px }
@@ -123,17 +125,21 @@ main { padding-top: 14px }
 .card.std::before { background: var(--std) }
 .card.b22::before { background: var(--el) }
 .card.b24::before { background: var(--es) }
+.card.fail::before { background: var(--fail) }
 /* 엘리베이터·에스컬레이터 구분: 굵은 색 띠 + 꽉 찬 색 이름표 */
-.card.b22::before, .card.b24::before, .card.std::before { width: 6px }
-.card.b22, .card.b24, .card.std { padding-left: 18px }
-.card.b22 .badge, .card.b24 .badge, .card.std .badge { font-size: 13.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; color: var(--surface); letter-spacing: 0 }
+.card.b22::before, .card.b24::before, .card.std::before, .card.fail::before { width: 6px }
+.card.b22, .card.b24, .card.std, .card.fail { padding-left: 18px }
+.card.b22 .badge, .card.b24 .badge, .card.std .badge, .card.fail .badge { font-size: 13.5px; font-weight: 700; padding: 3px 10px; border-radius: 6px; color: var(--surface); letter-spacing: 0 }
 .card.std .badge { background: var(--std) }
 .card.b22 .badge { background: var(--el) }
 .card.b24 .badge { background: var(--es) }
+.card.fail .badge { background: var(--fail) }
+.card.fail .num { font-size: 15px }
 .card.b22 .num, .card.b24 .num { font-size: 15px }
-.chip[data-src="b22"]::before, .chip[data-src="b24"]::before, .chip[data-src="std"]::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px }
+.chip[data-src="b22"]::before, .chip[data-src="b24"]::before, .chip[data-src="std"]::before, .chip[data-src="fail"]::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: 1px }
 .chip[data-src="b22"]::before { background: var(--el) }
 .chip[data-src="b24"]::before { background: var(--es) }
+.chip[data-src="fail"]::before { background: var(--fail) }
 .chip[data-src="std"]::before { background: var(--std) }
 .card .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 4px }
 .badge { font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 5px; background: var(--accent-soft); color: var(--accent); letter-spacing: .02em }
@@ -226,8 +232,8 @@ main { padding-top: 14px }
 .edin { font: inherit; resize: vertical; width: 100%; box-sizing: border-box; padding: 6px 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--bg); color: var(--fg) }
 .edbtns .dbtn:first-child { margin-left: 0 }
 .toc h2 { font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: .03em; margin: 0 0 8px }
-.toc h2.t-b22, .toc h2.t-b24, .toc h2.t-std { font-size: 16px; font-weight: 700; letter-spacing: 0 }
-.toc h2.t-b22 { color: var(--el) } .toc h2.t-b24 { color: var(--es) } .toc h2.t-std { color: var(--std) }
+.toc h2.t-b22, .toc h2.t-b24, .toc h2.t-std, .toc h2.t-fail { font-size: 16px; font-weight: 700; letter-spacing: 0 }
+.toc h2.t-b22 { color: var(--el) } .toc h2.t-b24 { color: var(--es) } .toc h2.t-std { color: var(--std) } .toc h2.t-fail { color: var(--fail) }
 .toclist { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 6px }
 .tocitem { font: inherit; font-size: 14px; text-align: left; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--fg); cursor: pointer; min-width: 0 }
 .tocitem span { min-width: 0; overflow-wrap: anywhere }
@@ -313,7 +319,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 
 <div class="wrap">
 <header class="top">
-  <div class="brand"><h1>검사기준 통합검색</h1><span class="sub">엘리베이터·에스컬레이터 안전기준(현행) + 적용 연혁(승강기 안전기준 연혁집, 1990년대~) + 검사방법 표준화 2016~2026</span></div>
+  <div class="brand"><h1>검사기준 통합검색</h1><span class="sub">엘리베이터·에스컬레이터 안전기준(현행) + 적용 연혁(승강기 안전기준 연혁집, 1990년대~) + 검사방법 표준화 2016~2026 + 불합격 내용(검사결과 판정 지침)</span></div>
   <form class="searchrow" id="f" autocomplete="off">
     <input id="q" type="search" placeholder="예: 핸드레일 벽 400 / 삼각부 스펀지 / 스커트 틈새 / ㅅㅋㅌ" aria-label="검색어" enterkeyhint="search">
     <button type="submit">검색</button>
@@ -324,6 +330,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     <button class="chip" data-src="b22" aria-pressed="false">엘리베이터</button>
     <button class="chip" data-src="b24" aria-pressed="false">에스컬레이터</button>
     <button class="chip" data-src="std" aria-pressed="false">표준화</button>
+    <button class="chip" data-src="fail" aria-pressed="false">불합격</button>
     <span class="sep"></span>
     <span class="ywrap" id="dwrap"><button type="button" class="chip ysel" id="dbtn" aria-expanded="false" aria-controls="dpop" title="설치일 등 기준일을 넣으면 그날 시행 중이던 엘리베이터 기준으로 검색·열람">기준일: 현행</button><div class="ypop dpop" id="dpop" hidden role="group" aria-label="기준 적용일 선택">
       <div class="drow"><label for="dyear">연도</label><input id="dyear" type="number" inputmode="numeric" min="1990" max="2099" placeholder="예: 2016"><button type="button" class="chip" id="dyok">적용</button></div>
@@ -390,7 +397,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // ---- 개정 전 판(구버전 파일)은 쓰지 않는다. 연혁은 「승강기 안전기준 연혁집」(한국승강기안전공단, 2025.10) 기준
   const OLD = { vers: [], texts: [] }; const OV = []; const OCH = []; DATA.old = [];
   function verRange() { return ''; }
-  const ALL = DATA.b22.concat(DATA.b24, DATA.std);
+  DATA.fail = DATA.fail || [];   // 불합격 내용(검사결과 판정 및 확인검사 지침 별표2 + 지침 본문)
+  const ALL = DATA.b22.concat(DATA.b24, DATA.std, DATA.fail);
   const HIST = DATA.hist || {}, HIST_ES = DATA.hist_es || {};
   DATA.b22.forEach(e => { const h = HIST[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
   DATA.b24.forEach(e => { const h = HIST_ES[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
@@ -734,7 +742,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       e.s = normSp((e.title || '') + ' ' + (e.path || '') + ' ' + main + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
       e.nb = norm(bg.map(s => s.p.join(' ')).join(' '));
     } else {
-      e.s = normSp((e.title || '') + ' ' + (e.path || '') + ' ' + searchText(e.text) + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
+      e.s = normSp((e.src === 'fail' ? e.num + ' ' : '') + (e.title || '') + ' ' + (e.path || '') + ' ' + searchText(e.text) + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
       e.nb = '';
     }
     e.nt = norm(e.title || ''); e.st = normSp(e.title || ''); e.c = cho(e.n);
@@ -807,8 +815,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 같은 점수대에서 기준 조문을 표준화보다 앞에. 기준일이 있으면 그날 시행 중이던 엘리베이터 판이 기준 조문이고,
   // 기준일 모드: 기준 조문(엘리베이터·에스컬레이터 당시 문구) +3, 표준화 0
   function srcBonus(e) {
-    if (APPLY) return e.src === 'std' ? 0 : 3;
-    return e.src === 'std' || e.src === 'old' ? 0 : 3;
+    if (APPLY) return e.src === 'std' || e.src === 'fail' ? 0 : 3;
+    return e.src === 'std' || e.src === 'old' || e.src === 'fail' ? 0 : 3;
   }
   function search(q) {
     const terms = joinSynPhrases(q.trim().split(/\s+/).filter(Boolean));
@@ -876,7 +884,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 기준일이 있으면 엘리베이터 카드가 그날 적용되던 문구(연혁집)를 보여준다. '이후 바뀐 조문만'이면 기준일 이후 바뀐 엘리베이터 조문만
   const srcOK = e => {
     const el = src === 'all' || src === 'b22';
-    if (CHG && APPLY) { if (src === 'std') return e.src === 'std'; return (src === 'all' || e.src === src) && (e.src === 'b22' || e.src === 'b24') && !!afterInfo(e); }
+    if (CHG && APPLY) { if (src === 'std' || src === 'fail') return e.src === src; return (src === 'all' || e.src === src) && (e.src === 'b22' || e.src === 'b24') && !!afterInfo(e); }
     return src === 'all' || e.src === src;
   };
   const pass = e => srcOK(e) && yOK(e) && vOK(e);
@@ -928,7 +936,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   document.addEventListener('click', () => { if (!$('dpop').hidden) dPop(false); });
   function srcSync() {
     $('filters').querySelectorAll('[data-src]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.src === src)));
-    $('vwrap').hidden = true; $('ywrap').hidden = !(src === 'all' || src === 'std'); $('dwrap').hidden = src === 'std';
+    $('vwrap').hidden = true; $('ywrap').hidden = !(src === 'all' || src === 'std'); $('dwrap').hidden = src === 'std' || src === 'fail';
   }
   const vPop = open => { $('vpop').hidden = !open; $('vbtn').setAttribute('aria-expanded', String(open)); };
   $('vbtn').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); vPop($('vpop').hidden); });
@@ -954,7 +962,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     $('expand').innerHTML = exp.length ? '같이 찾음: ' + exp.map(g => `<span class="grp"><b>${escHtml(g.term)}</b><span>→ ${escHtml(g.vars.filter(v => v !== g.term).slice(0, 5).join(', '))}${g.vars.length > 6 ? ' …' : ''}</span></span>`).join('') : '';
     let list = hits.filter(h => pass(h.e));
     // 기준일이 있으면 묶음 순서: 그날 적용 엘리베이터 기준 → 표준화 → 현행 에스컬레이터 (묶음 안은 점수순, 낱말 가운데 매치는 맨 뒤)
-    if (APPLY) { const grp = e => e.src === 'std' ? 1 : 0; list.sort((x, y) => (x.weak - y.weak) || (grp(x.e) - grp(y.e)) || (y.score - x.score)); }
+    if (APPLY) { const grp = e => e.src === 'std' || e.src === 'fail' ? 1 : 0; list.sort((x, y) => (x.weak - y.weak) || (grp(x.e) - grp(y.e)) || (y.score - x.score)); }
     const total = list.length;
     list = list.slice(0, 80);
     const re = hlRegex(groups);
@@ -968,12 +976,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     }
     if (!q.trim()) {
       if (view) { renderView(); return; }
-      $('status').innerHTML = `<span>${APPLY ? applyLabel() : `엘리베이터 ${DATA.b22.length}건 · 에스컬레이터 ${DATA.b24.length}건 · 표준화 ${DATA.std.length}건`}</span><span>목차에서 골라 쭉 읽거나, 검색어를 넣으세요</span>`;
+      $('status').innerHTML = `<span>${APPLY ? applyLabel() : `엘리베이터 ${DATA.b22.length}건 · 에스컬레이터 ${DATA.b24.length}건 · 표준화 ${DATA.std.length}건 · 불합격 ${DATA.fail.length}건`}</span><span>목차에서 골라 쭉 읽거나, 검색어를 넣으세요</span>`;
       $('results').innerHTML = sample() + toc();
       return;
     }
     view = null;
-    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${({ all: '전체', b24: '에스컬레이터', b22: '엘리베이터', std: '표준화', old: '엘리베이터' })[src]}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${YS.size && src !== 'old' ? ' · ' + yLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
+    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${({ all: '전체', b24: '에스컬레이터', b22: '엘리베이터', std: '표준화', fail: '불합격', old: '엘리베이터' })[src]}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${YS.size && src !== 'old' ? ' · ' + yLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
     if (!total) { const first = q.trim().split(/\s+/)[0]; $('results').innerHTML = `<div class="empty">결과 없음. 단어를 띄어서 줄이거나 다른 말로 바꿔보세요.<br>초성 검색도 됩니다: <code>ㅅㅋㅌ</code> → 스커트<br><br>현장에서 쓰는 말이라면 <button type="button" class="link" data-addterm="${escHtml(first)}">‘${escHtml(first)}’을 기준 용어에 연결</button>하세요.</div>`; return; }
     $('results').innerHTML = list.map((h, i) => (h.weak && (i === 0 || !list[i - 1].weak) ? `<div class="weakdiv">아래는 검색어가 다른 낱말 속에 들어 있는 경우입니다 (예: ‘${escHtml(groups[0].term)}’가 낱말 가운데에 있음)</div>` : '') + card(h.e, re)).join('');
     measure();
@@ -1070,7 +1078,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       if (a.upPick) body += `<div class="hup"><b>상위 조항 ${escHtml(a.upPick.scope)} — 기준일 당시 · ${escHtml(a.upPick.head)}</b>${histText(a.upPick.text, re)}</div>`;
     } else body = stdText(e.text, re);
     const figs = (isStd && e.img && e.img.length) ? `<div class="figs">${e.img.map((m, k) => `<figure><button type="button" data-lb="${e.id}" data-k="${k}" aria-label="그림 크게 보기"><img src="stdimg/${m[0]}" loading="lazy" width="${Math.round(m[2] * 120 / m[3])}" height="120" alt="${escHtml((e.title || '') + ' 그림 ' + (k + 1))}"></button><figcaption>${m[4] ? '배포자료 · ' : ''}원문 ${m[1]}쪽${m[5] ? ' · 원본 저해상도' : ''}</figcaption></figure>`).join('')}</div>` : '';
-    const meta = isStd
+    const meta = e.src === 'fail'
+      ? `<span class="badge" title="승강기 설치검사 및 안전검사 결과 판정 및 확인검사 지침">불합격</span>${e.num ? `<span class="num">${escHtml(e.num)}</span>` : ''}`
+      : isStd
       ? `<span class="badge">표준화</span><span>${escHtml(e.path)}</span>${e.num ? `<span class="num">#${e.num}</span>` : ''}`
       : isOld ? `<span class="badge">엘리베이터 · ${APPLY && AV() < NV && e.vers.includes(AV()) ? '당시 기준' : '개정 전'}</span><span class="num">${escHtml(e.num)}</span><span class="vr" title="이 본문이 그대로 실린 판(시행일)">${verRange(e.vers)}</span>`
       : `<span class="badge" title="${e.src === 'b22' ? '별표22 엘리베이터 안전기준' : '별표24 에스컬레이터 안전기준'}">${e.src === 'b22' ? '엘리베이터' : '에스컬레이터'}</span><span class="num">${escHtml(e.num)}</span>`;
@@ -1094,7 +1104,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function oldVi(e) { const vs = VS.size ? e.vers.filter(i => VS.has(i)) : e.vers; return (vs.length ? vs : e.vers)[(vs.length ? vs : e.vers).length - 1]; }
   function groupKey(e) {
     if (e.src === 'old') { const vi = oldVi(e); return vi + '|' + oldCh(e.num, vi); }
-    if (e.src === 'std') return e.path;
+    if (e.src === 'std' || e.src === 'fail') return e.path;
     const p = e.num.split('.');
     return (BIG[e.src][p[0]] > 80 && p.length > 1) ? p[0] + '.' + p[1] : p[0];
   }
@@ -1110,10 +1120,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     });
     return order.map(k => ({ key: k, n: seen[k] }));
   }
-  function groupLabel(s, k) { if (s === 'old') { const [vi, ch] = k.split('|'); return OV[vi] + ' · ' + ch + ' ' + (OCH[vi][ch] || ''); } return s === 'std' ? k : (/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫX]/.test(k) ? '부속서 ' : '') + k + ' ' + (CH[s][k] || ''); }
-  const SRCNAME = { b22: '엘리베이터', b24: '에스컬레이터', std: '표준화', old: '엘리베이터 · 개정 전 판' };
+  function groupLabel(s, k) { if (s === 'old') { const [vi, ch] = k.split('|'); return OV[vi] + ' · ' + ch + ' ' + (OCH[vi][ch] || ''); } return s === 'std' || s === 'fail' ? k : (/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫX]/.test(k) ? '부속서 ' : '') + k + ' ' + (CH[s][k] || ''); }
+  const SRCNAME = { b22: '엘리베이터', b24: '에스컬레이터', std: '표준화', fail: '불합격', old: '엘리베이터 · 개정 전 판' };
   function toc() {
-    const srcs = src === 'all' ? ['b22', 'b24', 'std'] : [src === 'old' ? 'b22' : src];
+    const srcs = src === 'all' ? ['b22', 'b24', 'std', 'fail'] : [src === 'old' ? 'b22' : src];
     const sec = s => {
       const gs = groupsOf(s);
       let items;
@@ -1131,7 +1141,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       return items;
     };
     const applied = () => { const vi = AV(); const gs = groupsOf('old').filter(g => g.key.startsWith(vi + '|')); return `<div class="dnote">${escHtml(applyLabel())}${APPLY.before ? ' (받은 판 중 가장 오래된 판)' : ''}</div><div class="toclist">${gs.map(g => { const ch = g.key.split('|')[1]; return `<button type="button" class="tocitem" data-view="old" data-key="${g.key}"><span>${escHtml(ch + ' ' + (OCH[vi][ch] || ''))}</span><em>${g.n}</em></button>`; }).join('')}</div>`; };
-    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
+    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : s === 'fail' ? ' <span class="h2s">검사결과 판정 및 확인검사 지침(2019.9.27) 별표2</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
   }
   function renderView() {
     const s = view.src, gs = groupsOf(s), i = gs.findIndex(g => g.key === view.key);
@@ -1391,14 +1401,14 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     // 검색어를 넣고 화면을 갱신. 반환: 상위 n건 [{src,num,title,gist,text,path}]
     search(q, n) { $('q').value = q || ''; render(); return this.results(n); },
     results(n) { const q = $('q').value; const { hits } = search(q); return hits.filter(h => pass(h.e)).slice(0, n || 20).map(h => ({ src: h.e.src, num: h.e.num, title: h.e.title || '', gist: h.e.gist || '', path: h.e.path || '', text: h.e.text, vers: h.e.vers ? h.e.vers.map(i => OV[i]) : undefined })); },
-    setSource(s) { src = ['all', 'b22', 'b24', 'std'].includes(s) ? s : 'all'; srcSync(); refilter(); },
+    setSource(s) { src = ['all', 'b22', 'b24', 'std', 'fail'].includes(s) ? s : 'all'; srcSync(); refilter(); },
     addTerm(a, bs) { if (addPair(a, Array.isArray(bs) ? bs : String(bs).split(/[,，/]/))) { saveSyn(); renderDict(); render(); return true; } return false; },
     expand(t) { return expandTerm(t); },
     // 앱 테마 주입: KIJUN.setTheme({bg:'#0b0f14', surface:'#141a22', fg:'#e8edf2', muted:'#8a97a6', line:'#263140', accent:'#5ec8ff', accentSoft:'#102a3a', mark:'#4a3f00', stripe:'#ffd400', std:'#c79be3', stdSoft:'#33243f', el:'#6fcf97', elSoft:'#1d3a2a', fontBody:'...', fontMono:'...'})
     // 키는 CSS 토큰명(--accent-soft → accentSoft). 일부만 넘겨도 된다. theme:'dark'|'light'로 강제 테마.
     setTheme(o) {
       const r = document.documentElement; o = o || {};
-      const map = { old: '--old', oldSoft: '--old-soft', bg: '--bg', surface: '--surface', fg: '--fg', muted: '--muted', line: '--line', accent: '--accent', accentSoft: '--accent-soft', mark: '--mark', stripe: '--stripe', std: '--std', stdSoft: '--std-soft', el: '--el', elSoft: '--el-soft', es: '--es', esSoft: '--es-soft', fontBody: '--font-body', fontMono: '--font-mono' };
+      const map = { old: '--old', oldSoft: '--old-soft', bg: '--bg', surface: '--surface', fg: '--fg', muted: '--muted', line: '--line', accent: '--accent', accentSoft: '--accent-soft', mark: '--mark', stripe: '--stripe', std: '--std', stdSoft: '--std-soft', el: '--el', elSoft: '--el-soft', es: '--es', esSoft: '--es-soft', fail: '--fail', failSoft: '--fail-soft', fontBody: '--font-body', fontMono: '--font-mono' };
       if (o.theme === 'dark' || o.theme === 'light') r.setAttribute('data-theme', o.theme);
       for (const k in map) if (o[k]) r.style.setProperty(map[k], o[k]);
       if (o.radius != null) r.style.setProperty('--radius', String(o.radius) + 'px');
