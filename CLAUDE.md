@@ -75,6 +75,7 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 
 ## 자주 하는 일
 - **현장용어 추가**("A = B"): `build/template.html` 의 `BASE_SYN` 에서 같은 뜻 묶음에 넣거나 새 줄 추가 → `python publish.py "현장용어 추가: A = B"`. 넣은 뒤 그 말로 검색해 결과가 맞는지 확인(브라우저 콘솔 `KIJUN.search('A', 6)`).
+- 검색은 띄어쓰기 뺀 글자열 포함 검사라 한 글자 현장용어는 긴 말 속에도 걸린다. '잠'(jamb)처럼 그러면 안 되는 말은 template 의 `WHOLE` 집합에 넣으면 따로 쓴 낱말('잠', '(잠)')로만 찾는다('잠금'·'잠김'엔 안 걸림, 하이라이트도 같음).
 - **표준화 새 판(예: 26년 3차 반영본)**: `stdzip/std.pdf` 교체 → (2쪽 개인정보 있으면 빈 쪽 처리) → `python make_insp.py` → `python build.py --images` → 새 안건·바뀐 안건 목록을 data.json 과 이전 것을 비교해 뽑고, 요지를 써서 `gists.json` 에 추가 → 원문 대조 검토(섞인 내용·잘린 제목) → 필요하면 `std_fix.json` → publish.
 - **요지 쓰기 규칙**: 한 줄, ~110자, 결론 위주. 요지 속 숫자·조항·날짜는 반드시 그 안건 본문/제목에 있어야 함(스크립트로 확인). 꼬리표 제목이면 요지도 `[기타안건]` 등으로 시작. 결론이 없으면 "결론 없음(원문 참조)".
 - **연혁집 새 판(= 안전기준 개정 반영)**: `hist_src/hist.pdf`(또는 `hist_es/hist.pdf`) 교체 → 빌드 → 로그의 조문 수·`rejected`·`figs after block end` 확인, 조문 카드 몇 개를 원문과 대조 → 새 블록 요지는 `hist_*_gist_keyed.json`(키: `조문|블록제목|scope|본문앞60자`, 빌드 로그 `gist misses`).
