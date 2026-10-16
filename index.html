@@ -202,6 +202,13 @@ main { padding-top: 14px }
 .hsum li.on { background: var(--old-soft); border-radius: 4px }
 .hsum li.on .sg { font-weight: 600 }
 .hsum li.off { opacity: .55 }
+.fsum { border: 1px solid var(--line); border-left: 3px solid var(--fail); border-radius: 8px; padding: 6px 10px; margin: 2px 0 8px; background: var(--fail-soft) }
+.fsum .fst { font-size: 12px; font-weight: 700; color: var(--fail); margin-bottom: 3px }
+.fsum .fst span { font-weight: 400; color: var(--muted); margin-left: 4px }
+.fsum .fi { font-size: 13px; line-height: 1.5; padding: 3px 0; border-top: 1px dashed var(--line) }
+.fsum .fi:first-of-type { border-top: 0 }
+.fsum .fi b { color: var(--fail); font-weight: 700 }
+.fsum .fi div { padding-left: .9em; text-indent: -.9em }
 @media (max-width: 520px) { .hsum li { grid-template-columns: 1fr; gap: 0 } }
 .hfound { font-size: 12.5px; color: var(--old); background: var(--old-soft); border-radius: 6px; padding: 4px 8px; margin: 0 0 6px; white-space: normal }
 .hban { font-size: 12.5px; font-weight: 600; color: var(--old); background: var(--old-soft); border-radius: 6px; padding: 3px 8px; margin: 0 0 6px; display: inline-block; white-space: normal }
@@ -523,6 +530,24 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const cs = curStart(e);
     rows.push(`<li class="cur${a && a.kind === 'cur' ? ' on' : ''}"><span class="sw">현행${cs && cs.marked ? ' ' + cs.d + '~ 허가분' : ''}</span><span class="sg">${hl(e.h.curg || '', re)}</span></li>`);
     return `<div class="hsum"><div class="hst">적용 연혁 요약 <span>연혁집</span></div><ol>${rows.join('')}</ol></div>`;
+  }
+  // 조문 카드 안 '불합격 내용': 판정 지침 별표2 행 중 조항 번호가 같은 것(별표22→엘리베이터, 별표24→에스컬레이터)
+  const FAILBY = {};
+  const romanA = { I: 'Ⅰ', II: 'Ⅱ', III: 'Ⅲ', IV: 'Ⅳ', V: 'Ⅴ', VI: 'Ⅵ', VII: 'Ⅶ', VIII: 'Ⅷ', IX: 'Ⅸ', X: 'Ⅹ' };
+  DATA.fail.forEach(f => {
+    const src = /^별표22/.test(f.path) ? 'b22' : /^별표24/.test(f.path) ? 'b24' : null;
+    if (!src || !f.num) return;
+    f.num.split(' · ').forEach(n => {
+      n = n.trim().replace(/^부속서\s*/, '').replace(/^([IVX]+)(?=\.|$)/, m => romanA[m] || m).replace(/\.$/, '');
+      const k = src + '-' + n;
+      (FAILBY[k] = FAILBY[k] || []).includes(f) || FAILBY[k].push(f);
+    });
+  });
+  function failHtml(e, re) {
+    const fs = FAILBY[e.id];
+    if (!fs) return '';
+    const items = fs.map(f => `<div class="fi"><b>${hl(f.title || '', re)}</b>${f.text.split('\n').filter(Boolean).map(l => `<div>${hl(l, re)}</div>`).join('')}</div>`).join('');
+    return `<div class="fsum"><div class="fst">불합격 내용 <span>판정 지침 별표2</span></div>${items}</div>`;
   }
   function hasHistory(e) { return (e.src === 'b22' || e.src === 'b24') && !!e.h; }
   // 연혁 블록을 날짜 오름차순으로: '○○ 전의 … 종전 기준'(to 만 있음)은 그 날짜에 시작하는 블록보다 앞
@@ -1101,7 +1126,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const title = (ai ? `<div class="after ${ai.kind}">${ai.html}</div>` : '') + (e.title ? `<h2>${hl(e.title, re)}</h2>` : '');
     const path = !isStd && e.path ? `<div class="path">${hl(e.path, re)}</div>` : '';
     const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '') + (re ? `<button type="button" class="ctx" data-open="${e.id}">앞뒤 보기</button>` : '');
-    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${e.h ? summaryHtml(e, re) : ''}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
+    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
   }
 
   // ---- 열람(목차 → 장·회차 단위로 쭉 읽기)
