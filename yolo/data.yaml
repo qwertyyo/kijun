@@ -1,0 +1,80 @@
+# 엘리베이터 객체 탐지 클래스 1차(1·2순위) — 검사기준 통합검색 데이터 기준
+# path/train/val 은 데이터셋에 맞게 채우세요
+path: .
+train: images/train
+val: images/val
+names:
+  0: traction_machine   # 권상기(구동기)
+  1: brake   # 브레이크(제동기)
+  2: traction_sheave   # 구동 도르래(권상도르래)
+  3: suspension_rope   # 주로프(매다는 장치)
+  4: rope_termination   # 로프 단말(소켓·클립)
+  5: governor   # 과속조절기(조속기)
+  6: rope_brake   # 상승과속방지장치(로프브레이크)
+  7: access_door   # 출입문·비상문·점검문(기계실·승강로·피트)
+  8: hydraulic_power_unit   # 유압 파워유니트(탱크·펌프·밸브)
+  9: hydraulic_pipe   # 압력배관·호스
+  10: hand_pump   # 수동펌프
+  11: governor_rope   # 과속조절기 로프
+  12: guide_rail   # 주행안내 레일
+  13: guide_shoe   # 카·균형추 가이드슈(가이드롤러)
+  14: safety_gear   # 추락방지안전장치(세이프티)
+  15: slack_rope_switch   # 로프·체인 이완감지 스위치
+  16: limit_switch   # 리미트 스위치(파이널 포함)
+  17: hydraulic_jack   # 유압잭(실린더·램)
+  18: rupture_valve   # 럽처밸브
+  19: pawl_device   # 멈춤쇠 장치(유압)
+  20: landing_door_lock   # 승강장문 잠금장치(도어록·인터록)
+  21: door_hanger   # 행거·행거롤러
+  22: door_link_rope   # 도어 연동로프
+  23: door_closer   # 도어클로저
+  24: toe_guard   # 승강장문 문턱 아랫부분 수직면(페셔플레이트·토가드)
+  25: inspection_box   # 점검운전 조작반
+  26: stop_switch   # 정지장치(정지스위치)
+  27: door_operator   # 도어머신(문 개폐장치)
+  28: car_door_lock   # 카문 잠금장치
+  29: car_door_switch   # 카문 닫힘 스위치(게이트 스위치)
+  30: buffer   # 완충기
+  31: landing_door   # 승강장문
+  32: door_shoe   # 문 가이드슈(도어슈)
+  33: apron   # 에이프런
+  34: vision_panel   # 전망창(방범창)
+  35: load_weighing_device   # 과부하감지장치(하중검출)
+  36: car_door   # 카문
+  37: cop   # 카 조작반(COP)
+  38: door_open_button   # 문열림 버튼
+  39: emergency_call   # 비상통화장치(인터폰·비상버튼)
+  40: door_safety_device   # 문닫힘안전장치(광전센서·세이프티슈)
+  41: emergency_test_panel   # 비상운전·작동시험 패널
+  42: glass_panel   # 유리(문짝·카 벽·승강로 벽)
+  43: pulley   # 풀리(전향·편향 도르래)
+  44: sheave_guard   # 도르래 보호수단(쉬브가드·로프이탈방지)
+  45: suspension_belt   # 현수 벨트(플랫벨트)
+  46: controller   # 제어반
+  47: main_switch   # 주개폐기(차단기)
+  48: manual_handwheel   # 수동 비상운전 핸들(휠)
+  49: machine_beam   # 기계대(머신빔)
+  50: warning_sign   # 안내·경고 표지
+  51: shutoff_valve   # 차단밸브
+  52: rail_bracket   # 레일 브라켓
+  53: counterweight   # 균형추
+  54: leveling_device   # 착상장치(차폐판·착상센서)
+  55: travelling_cable   # 이동케이블
+  56: compensation   # 보상수단(보상체인·보상로프)
+  57: car_top_balustrade   # 카 지붕 보호난간
+  58: emergency_trap_door   # 비상구출문(카 지붕)
+  59: counterweight_screen   # 균형추 칸막이(피트 스크린)
+  60: pit_ladder   # 피트 사다리
+  61: sump   # 집수정(피트 배수)
+  62: unlocking_keyhole   # 비상잠금해제 장치(삼각키 구멍)
+  63: door_frame   # 삼방틀(JAMB·문설주·문틀)
+  64: hall_button   # 승강장 호출버튼
+  65: fire_switch   # 소방운전 스위치
+  66: sill   # 문턱(씰)
+  67: indicator   # 위치·운행방향 표시기(인디케이터·홀랜턴)
+  68: capacity_plate   # 정격하중·정원 표시
+  69: car_handrail   # 카 손잡이
+  70: light_fixture   # 조명기구(기계실·승강로·피트·카)
+  71: light_switch   # 조명 스위치
+  72: socket_outlet   # 콘센트
+  73: ventilation   # 환기설비(환풍기·환기구)
