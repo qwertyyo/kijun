@@ -16,7 +16,7 @@
 - `config.json` — `{"synApi": "<Apps Script /exec 주소>"}` 공용 현장용어 서버. 비면 기능 꺼짐. 여기서 고쳐도 됨.
 - `gas/` — 공용 현장용어 서버(Google Apps Script). 아래 SETUP.
 - `build/` — **원본 자료 + 빌드 스크립트 전부.**
-- `yolo/` — 사용자의 다른 프로젝트(객체인식 AI 엘리베이터 검사보조)용 YOLO 클래스 1차 확정본(74개, 2026-10-19). 사이트와 무관. `data.yaml` 번호는 바꾸지 말 것(추가는 맨 뒤에). 자세한 건 `yolo/README.md`.
+- `yolo/` — 사용자의 다른 프로젝트(객체인식 AI 엘리베이터 검사보조)용 YOLO 클래스 1차 확정본(75개, 2026-10-20: 74 점형블록 추가). 사이트와 무관. `data.yaml` 번호는 바꾸지 말 것(`build_xlsx.py` 의 `FIXED` 로 고정, 추가는 맨 뒤에). 자세한 건 `yolo/README.md`.
 
 ## 빌드·배포 (build/ 에서)
 ```

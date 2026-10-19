@@ -78,3 +78,4 @@ names:
   71: light_switch   # 조명 스위치
   72: socket_outlet   # 콘센트
   73: ventilation   # 환기설비(환풍기·환기구)
+  74: tactile_block   # 점형블록

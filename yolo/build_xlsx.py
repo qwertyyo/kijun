@@ -34,7 +34,7 @@ FM={
 '9.2.3.1 · 9.2.3.2|매다는 장치(로프) 끝부분의 고정(소켓)':['rope_termination'],
 '9.3|구동기 도르래':['traction_sheave'],'9.5.3|매다는 장치(로프/체인) 이완감지 장치 (포지티브 방식, 간접식)':['slack_rope_switch'],
 '10.2.1.1.1|카 추락방지안전장치':['safety_gear'],'10.2.1.4.1|추락방지안전장치 복귀':['safety_gear'],'10.2.1.5|추락방지안전장치 전기적 확인':['safety_gear'],
-'10.2.2.1|과속조절기에 의한 작동':['governor'],'10.2.2.1.3|시험 후 과속조절기 로프/ 관련 부품 상태':['governor_rope','governor'],
+'10.2.2.1|과속조절기에 의한 작동':['governor'],'10.2.2.1.3|시험 후 과속조절기 로프/관련 부품 상태':['governor_rope','governor'],
 '10.2.2.1.6|과속조절기 전기적 확인':['governor'],'10.2.2.3|시험 후 안전 안전로프/관련 부품 상태':[],
 '10.3.1|럽처밸브':['rupture_valve'],'10.4.1|유량제한기':[],'10.5.1|멈춤 쇠 장치':['pawl_device'],'10.5.9|멈춤 쇠 장치 전기적 확인':['pawl_device'],
 '10.6.1|상승과속 방지장치':['rope_brake'],'10.7.1|개문출발 방지장치':[],'10.7.5|개문출발 방지장치 정지거리':[],
@@ -75,10 +75,34 @@ for i,(key,ko,loc,al,refs) in enumerate(C):
         return f'{r} {t}'
     rt=[rname(r) for r in refs]
     rows.append([key,ko,loc,', '.join(al),' / '.join(rt),nb,ns,len(fr),'; '.join(f"{e['num']} {e['title']}" for e in fr),pr])
-# 우선순위·위치 순으로 번호
+# 번호 고정: data.yaml 번호 = FIXED 순서(라벨이 이 번호에 묶임). 새 클래스는 FIXED 맨 뒤에 붙일 것.
+FIXED='''traction_machine brake traction_sheave suspension_rope rope_termination governor rope_brake access_door
+hydraulic_power_unit hydraulic_pipe hand_pump governor_rope guide_rail guide_shoe safety_gear slack_rope_switch
+limit_switch hydraulic_jack rupture_valve pawl_device landing_door_lock door_hanger door_link_rope door_closer
+toe_guard inspection_box stop_switch door_operator car_door_lock car_door_switch buffer landing_door door_shoe
+apron vision_panel load_weighing_device car_door cop door_open_button emergency_call door_safety_device
+emergency_test_panel glass_panel pulley sheave_guard suspension_belt controller main_switch manual_handwheel
+machine_beam warning_sign shutoff_valve rail_bracket counterweight leveling_device travelling_cable compensation
+car_top_balustrade emergency_trap_door counterweight_screen pit_ladder sump unlocking_keyhole door_frame
+hall_button fire_switch sill indicator capacity_plate car_handrail light_fixture light_switch socket_outlet
+ventilation
+tactile_block'''.split()  # 0~73: 1차 확정(2026-10-19), 74~: 추가분
+assert len(FIXED)==len(set(FIXED))
+# 계산된 우선순위와 달리 정한 것(사용자 지정)
+PR={'tactile_block':'2'}  # 점형블록: 불합격 행·언급 수로는 3순위지만 탐지 요청(2026-10-20)
+for r in rows:
+    if r[0] in PR: r[9]=PR[r[0]]
+byk={r[0]:r for r in rows}
+gone=[k for k in FIXED if k not in byk]
+if gone: print('경고: classes.py 에서 빠진 클래스(번호는 비워 둠):',gone,file=sys.stderr)
+# 빠진 클래스는 자리만 남김(번호 당기지 않음)
+fixed=[byk.get(k) or [k,'(삭제 — 번호만 유지, 라벨 달지 말 것)','','','',0,0,0,'','-'] for k in FIXED]
+# FIXED 에 없는 새 1·2순위는 우선순위·위치 순으로 맨 뒤에(FIXED 에 옮겨 적어 고정할 것)
 order=['기계실·구동부','기계실(유압)','승강로','승강로(유압)','승강로(승강장문 뒤)','카 상부·피트','승강장','승강장·카','카','승강장·건물(MRL)','공통']
-rows.sort(key=lambda r:(r[9],order.index(r[2])))
-later=[r for r in rows if r[9]=='3']; rows=[r for r in rows if r[9]!='3']
+rest=sorted((r for r in rows if r[0] not in FIXED),key=lambda r:(r[9],order.index(r[2]),r[0]))
+new=[r for r in rest if r[9]!='3']
+if new: print('경고: FIXED 에 없는 새 클래스(맨 뒤에 붙임, FIXED 에 추가할 것):',[r[0] for r in new],file=sys.stderr)
+later=[r for r in rest if r[9]=='3']; rows=fixed+new
 wb=Workbook(); ws=wb.active; ws.title='클래스'
 H=['id','클래스 키(영문)','한글 이름','위치','별칭·현장용어(라벨러 참고)','근거 조항(별표22, 연혁집 현행)','조문 언급 수','표준화 언급 수','불합격 행 수','관련 불합격 항목(지침 별표2)','우선순위']
 ws.append(H)
@@ -87,7 +111,7 @@ thin=Side(style='thin',color='DDDDDD')
 for c in ws[1]: c.font=Font(bold=True,color='FFFFFF'); c.fill=PatternFill('solid',fgColor='1F4E79'); c.alignment=Alignment(wrap_text=True,vertical='center')
 W=[5,22,26,16,34,40,9,9,9,50,8]
 for i,w in enumerate(W): ws.column_dimensions[get_column_letter(i+1)].width=w
-fills={'1':'FDE8EC','2':'FFF7E0','3':'FFFFFF'}
+fills={'1':'FDE8EC','2':'FFF7E0','3':'FFFFFF','-':'F2F2F2'}
 for row in ws.iter_rows(min_row=2):
     for c in row: c.alignment=Alignment(wrap_text=True,vertical='top'); c.border=Border(bottom=thin)
     row[10].fill=PatternFill('solid',fgColor=fills[str(row[10].value)])
@@ -122,7 +146,7 @@ f'출처: 승강기 안전기준 연혁집(엘리베이터) 현행 조문 {sum(1
 '근거 조항: 그 조문(하위 조항 포함) 원문에 별칭 중 하나가 실제로 들어 있는지 스크립트로 확인함.',
 f'관련 불합격 항목: 별표2 {len(fail)}행을 하나씩 읽고 직접 배정함(‘불합격 행 → 클래스’ 시트). {len(fail)} 행 중 {sum(1 for e in fail if FM[fk(e)])}행이 클래스와 연결, 사진 탐지 대상 아닌 {sum(1 for e in fail if not FM[fk(e)])}행은 이유를 적고 회색 표시.',
 '언급 수: 별칭이 들어 있는 조문·표준화 안건 수(글자 일치, 참고용). 두 글자 이하 별칭은 앞에 한글이 붙지 않을 때만 셈. 일반어(구동기, 잭, 조명 등)는 부풀려질 수 있음.',
-'우선순위(제안): 1 = 불합격 항목과 연결된 물건, 2 = 조문 또는 표준화에서 10건 이상 언급, 3 = 나머지. 처음 학습은 1순위부터 권장.',
+'우선순위(제안): 1 = 불합격 항목과 연결된 물건, 2 = 조문 또는 표준화에서 10건 이상 언급, 3 = 나머지. 처음 학습은 1순위부터 권장. 예외(사용자 지정): 점형블록 2순위.',
 '',
 '라벨링 메모',
 '- 상태(파손·녹·누유·미설치)는 클래스에 넣지 않음(요청: 물건 탐지만). 미설치는 ‘그 클래스가 안 잡힘’으로 판단 가능.',
@@ -133,7 +157,7 @@ f'관련 불합격 항목: 별표2 {len(fail)}행을 하나씩 읽고 직접 배
 '- 삼방틀(문틀)과 승강장문(문짝)은 따로 박스. 문턱(씰)은 승강장·카 공통.',
 '- 유압 전용 클래스(파워유니트, 잭, 배관, 럽처밸브, 수동펌프, 압력계, 차단밸브, 기름방벽, 멈춤쇠)는 유압식 현장 사진이 있어야 학습 가능.',
 '- 1차 학습은 1·2순위 클래스만(‘클래스’ 시트 = data.yaml). 3순위는 ‘나중(3순위)’ 시트에 따로 두었고, 추가할 때는 data.yaml 맨 뒤에 번호를 이어 붙이면 기존 라벨 번호가 안 바뀜.',
-'- 클래스 키(영문)는 YOLO data.yaml 의 names 와 같음. id 는 우선순위·위치 순서.',
+'- 클래스 키(영문)는 YOLO data.yaml 의 names 와 같음. id 는 고정(0~73 = 1차 확정 때 우선순위·위치 순서, 74~ = 추가분). 뺀 클래스도 번호는 비워 둠.',
 ]
 for n in notes: w3.append([n])
 w3.column_dimensions['A'].width=140
