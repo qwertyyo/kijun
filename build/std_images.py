@@ -9,7 +9,7 @@ def norm(s):
     return re.sub(r'[\s‣▪▸•·ㆍ\-\[\]()（）]', '', s or '')
 
 # 그림 주인: 본문과 같은 기준(쪽 배치) — 같은 쪽에서 그림 윗변 바로 위에 있는 본문 줄의 안건.
-# 그 쪽에서 그림 위에 글이 없으면(그림만 있는 쪽 등) 앞쪽의 마지막 본문 줄의 안건.
+# 그 쪽에서 그림 위에 글이 없으면: 그림 아래 첫 글이 안건 머리면 그 안건, 아니면(그림만 있는 쪽 등) 앞쪽의 마지막 본문 줄의 안건.
 # 줄 위치는 std_geo.json(줄번호→[쪽, y, x, 글자크기]), 안건별 줄번호는 parse.py 가 쓴 std_li.json
 import bisect
 GEO = {int(k): v for k, v in json.load(open('std_geo.json')).items()}
@@ -22,9 +22,16 @@ for l, iid in OWN.items():
 for v in bypg.values(): v.sort()
 seq = sorted((GEO[l][0], GEO[l][1], l, iid) for l, iid in OWN.items() if l in GEO)
 skeys = [(a, b) for a, b, _, _ in seq]
+FIRST = {}
+for l, iid in OWN.items(): FIRST[iid] = min(FIRST.get(iid, l), l)
 def owner(pno, y):
-    above = [x for x in bypg.get(pno, []) if x[0] <= y + 4]
+    above = [x for x in bypg.get(pno, []) if 50 <= x[0] <= y + 4]   # 맨 위 제목 띠 줄은 빼고
     if above: return above[-1][2]
+    # 그림이 쪽 맨 위에 있고 그 아래 첫 글이 안건 머리면 그 안건 그림(38쪽 난간대 사진, 329쪽 그림1·2)
+    below = [x for x in bypg.get(pno, []) if x[0] > y + 4]
+    # (같은 높이 줄 여럿 — 왼쪽 번호 칸·오른쪽 칸 — 중 하나가 머리면 됨)
+    for x in [x for x in below if x[0] <= below[0][0] + 4]:
+        if FIRST.get(x[2]) == x[1]: return x[2]
     j = bisect.bisect_left(skeys, (pno, -1)) - 1
     return seq[j][3] if j >= 0 else None
 doc = pymupdf.open(PDF)
@@ -63,5 +70,9 @@ for pno in range(len(doc)):
         res.setdefault(oid, []).append({'f': fn, 'p': pno + 1, 'w': im.width, 'h': im.height, 'hand': hand, 'lo': native_dpi < 100})
         n += 1
 json.dump(res, open('stdimg.json', 'w', encoding='utf-8'), ensure_ascii=False)
+# 주인이 바뀌어 더는 안 쓰는 옛 그림 파일 지우기
+used = {m['f'] for v in res.values() for m in v}
+for f in os.listdir(OUT):
+    if f.endswith('.webp') and f not in used: os.remove(os.path.join(OUT, f))
 tot = sum(os.path.getsize(os.path.join(OUT, f)) for f in os.listdir(OUT))
 print('images', n, 'items with images', len(res), 'size MB', round(tot / 1e6, 2))

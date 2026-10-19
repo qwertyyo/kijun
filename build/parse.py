@@ -134,6 +134,7 @@ def parse_std(path):
               (re.compile(r'^제\s*\d+차\s*기술서류\s*업무\s*표준화'), '§'),
               (re.compile(r'^(?:승강기 |제\s*\d+차 .*)?기술자문\s*간담회.{0,30}$'), '§')]
     sub = None; lastcur = None; subraw = None
+    COLHDR = re.compile(r'^NO\s*(?:검사업무\s*표준화\(기\s*회신\)\s*검사업무\s*표준화\(변경\)|의견\s*협의내용\s*및\s*결과)$')
     import os
     GEO0 = {int(k): v for k, v in json.load(open('std_geo.json')).items()} if os.path.exists('std_geo.json') else {}
     toprow = lambda li: 55 <= GEO0.get(li, [0, 999])[1] <= 100   # 슬라이드 맨 위 제목 자리
@@ -151,6 +152,9 @@ def parse_std(path):
             if cur is not None: lastcur = cur
             cur = None
             continue
+        # 쪽마다 되풀이되는 표의 칸 머리 줄('NO 검사업무 표준화(기 회신) 검사업무 표준화(변경)', 'NO 의견 협의내용 및 결과')은 본문이 아님
+        if COLHDR.match(s): continue
+        s = re.sub(r'^NO\s+의견\s+(?=▪)', '', s)
         if re.match(r'^\d{1,3}$', s):
             if bare is not None and cur is not None:
                 cur['body'].append(bare)
@@ -420,6 +424,16 @@ def parse_std(path):
     for o in out: assert len(o['_li']) == len(o['text'].split('\n')), o['id']
     heads0 = {o['id']: o.pop('_hli') for o in out}
     out = apply_fix(out, IDS, lambda: None)
+    # 슬라이드 맨 위 제목 띠(x≈36, y<50)의 줄('배포자료', '기타', '…재안내' 같은 쪽 제목 둘째 줄)은 본문이 아님
+    # (std_fix 의 자르기 기준으로 쓰일 수 있어 std_fix 다음에 뺀다)
+    G0 = {int(k): v for k, v in json.load(open('std_geo.json')).items()}
+    band = lambda l: l is not None and l in G0 and G0[l][1] < 50 and abs(G0[l][2] - 36.4) < 3
+    for o in out:
+        tl = o['text'].split('\n')
+        if any(band(l) for l in o['_li']):
+            keep = [(t, l) for t, l in zip(tl, o['_li']) if not band(l)]
+            o['text'] = '\n'.join(t for t, _ in keep); o['_li'] = [l for _, l in keep]
+            o['sec'] = sectionize([t for t, _ in keep])
     LI_OUT = {}
     for o in out:
         lis = o.pop('_li')
