@@ -141,7 +141,8 @@ def regions(pg, rows):
     for r, kinds, cnt in cl:
         if 'img' not in kinds and not kinds & {'eq', 'eq1'} and (r.width < 40 or r.height < 25): continue
         if kinds == {'eq'} and r.height < 16: continue   # 한 줄짜리 기호(Rm, b1 등)는 글자로 둔다(분수가 아니면)
-        if r.height > H * (0.92 if 'img' in kinds else 0.8): continue   # 쪽 테두리는 버리되, 그림이 든 쪽 전체 표(피트 사다리 형식 등)는 살린다
+        # 쪽 테두리는 버리되, 그림이 든 쪽 전체 표(피트 사다리 형식 등)와 선이 많은 쪽 전체 표(부속서 Ⅻ 표 Ⅻ.1 이어지는 쪽 등)는 살린다
+        if r.height > H * (0.92 if 'img' in kinds else 0.8) and not ('dr' in kinds and cnt >= 10 and r.height < H * 0.95): continue
         # 영역 안 글자 줄도 포함되도록 넓히고, 연혁 제목(➥)이나 현행 조문 제목이 들어 있으면 틀(테두리)이므로 버린다
         bad = False
         for y, x, font, size, txt, l in rows:

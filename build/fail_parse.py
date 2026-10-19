@@ -45,6 +45,7 @@ def load_vocab():
     for s in texts:
         for w in re.findall(r'[가-힣A-Za-z0-9]+', s): VOCAB.add(w)
 def joiner(prev, nxt):
+    if prev.endswith('/'): return ''   # '로프/' + '관련 부품' → '로프/관련'
     a = re.search(r'([가-힣A-Za-z0-9]+)$', prev); b = re.match(r'^([가-힣A-Za-z0-9]+)', nxt)
     if not a or not b: return ' '
     g = a.group(1) + b.group(1)
@@ -92,7 +93,7 @@ def main():
         out.append({'src': 'fail', 'id': 'fail-' + ('b' if a['sect'] == '부칙' else 'j') + a['num'][1:-1], 'num': ('부칙 ' if a['sect'] == '부칙' else '') + a['num'],
                     'title': a['title'], 'path': '판정 지침 ' + ('부칙' if a['sect'] == '부칙' else '본문'), 'text': '\n'.join(paras)})
     # ---- 2) 별표2 불합격 내용 표(6쪽~)
-    sec = None; prevrow = None; n = 0
+    sec = None; prevrow = None; n = 0; notepre = None
     for pi in range(5, d.page_count):
         pg = d[pi]; bl = pg.get_text('rawdict')['blocks']
         tabs = pg.find_tables().tables
@@ -105,8 +106,11 @@ def main():
                 cells = [pymupdf.Rect(c) if c else None for c in row.cells]
                 vals = [cell_text(lines_in(bl, c), c) if c else None for c in cells]
                 if vals[0] and vals[0].replace(' ', '') == '검사항목': continue
+                if vals[0] and vals[1] is None and vals[2] is None and vals[0].startswith('※') and len(vals[0]) <= 30:
+                    notepre = vals[0]; continue   # 비고 머리('※ 추가사항')만 이 쪽 끝에 있고 내용은 다음 쪽(별표23)
                 if vals[0] and vals[1] is None and vals[2] is None and len(vals[0]) > 30:   # 표 끝의 비고(행 전체 합친 칸)
-                    out.append({'src': 'fail', 'id': f'fail-{sec.split()[0]}-note', 'num': '', 'title': '비고', 'path': sec + ' 안전기준', 'text': vals[0]}); continue
+                    txt = (notepre + ' ' + vals[0]) if notepre and not vals[0].startswith('※') else vals[0]; notepre = None
+                    out.append({'src': 'fail', 'id': f'fail-{sec.split()[0]}-note', 'num': '', 'title': '비고', 'path': sec + ' 안전기준', 'text': txt}); continue
                 if prevrow and (vals[1] or '') == '' and (vals[0] or '' or vals[2]):   # 앞 쪽에서 이어지는 행(검사대상 칸이 빈 행)
                     if vals[2]:
                         v = vals[2]

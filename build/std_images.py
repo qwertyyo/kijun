@@ -24,7 +24,11 @@ seq = sorted((GEO[l][0], GEO[l][1], l, iid) for l, iid in OWN.items() if l in GE
 skeys = [(a, b) for a, b, _, _ in seq]
 FIRST = {}
 for l, iid in OWN.items(): FIRST[iid] = min(FIRST.get(iid, l), l)
+# 쪽 배치로 못 정하는 것(원문 대조로 확인): (쪽 번호, 그림 윗변 y) → 안건 id
+# 266쪽 아래 표 3개 = 19년 4차 #8 '<붙임1 참조>'의 붙임1(안전부품 경과조치 적용방법·접수증) — 같은 쪽 #15 아래에 실려 있음
+OVERRIDE = {(266, 559): 'std-425'}
 def owner(pno, y):
+    if (pno + 1, round(y)) in OVERRIDE: return OVERRIDE[(pno + 1, round(y))]
     above = [x for x in bypg.get(pno, []) if 50 <= x[0] <= y + 4]   # 맨 위 제목 띠 줄은 빼고
     if above: return above[-1][2]
     # 그림이 쪽 맨 위에 있고 그 아래 첫 글이 안건 머리면 그 안건 그림(38쪽 난간대 사진, 329쪽 그림1·2)
@@ -43,8 +47,14 @@ n = 0
 for pno in range(len(doc)):
     pg = doc[pno]
     W, H = pg.rect.width, pg.rect.height
-    for info in pg.get_image_info(xrefs=True):
+    infos = pg.get_image_info(xrefs=True)
+    def _ok(b): w, h = b[2] - b[0], b[3] - b[1]; return not (w > W * 0.9 and h > H * 0.9) and w >= 40 and h >= 25 and b[3] >= 60
+    rects = [pymupdf.Rect(i['bbox']) & pg.rect if _ok(i['bbox']) else pymupdf.Rect() for i in infos]
+    for k_, info in enumerate(infos):
         x0, y0, x1, y1 = info['bbox']
+        # 다른 그림 영역 안에 거의 들어가는 그림은 잘라 보면 같은 장면이 두 번 나온다(39·118·380쪽) — 큰 쪽만
+        A = rects[k_]
+        if any(j != k_ and not (A & B).is_empty and (A & B).get_area() > 0.8 * A.get_area() and (A.get_area(), k_) < (B.get_area(), j) for j, B in enumerate(rects)): continue
         w, h = x1 - x0, y1 - y0
         if w > W * 0.9 and h > H * 0.9: continue        # 슬라이드 배경(로고 머리글)
         if w < 40 or h < 25: continue                   # 아이콘·장식
