@@ -448,11 +448,12 @@ def parse_std(path):
             g = G0.get(l) if l is not None else None
             if not g: return None
             for k, t in enumerate(TB.get(g[0] + 1, [])):
-                if t[0] - 3 <= g[2] <= t[2] and t[1] - 3 <= g[1] <= t[3]: return (g[0] + 1, k)
+                m = t[4:8] if len(t) >= 8 else t[:4]   # 줄 고르는 영역(뒤 4개 값이 있으면)
+                if m[0] - 3 <= g[2] <= m[2] and m[1] - 3 <= g[1] <= m[3]: return (g[0] + 1, k)
             return None
         def crop(tg):
             if tg not in made:
-                pg = pdf[tg[0] - 1]; r = pymupdf.Rect(TB[tg[0]][tg[1]]) + (-2, -2, 2, 2)
+                pg = pdf[tg[0] - 1]; r = pymupdf.Rect(TB[tg[0]][tg[1]][:4]) + (-2, -2, 2, 2)
                 im = Image.open(io.BytesIO(pg.get_pixmap(clip=r & pg.rect, dpi=200).tobytes('png'))).convert('RGB')
                 fn = f'stb_p{tg[0]}_{tg[1]}.webp'; os.makedirs('stdimg', exist_ok=True)
                 im.save(os.path.join('stdimg', fn), 'WEBP', quality=88, method=6)
@@ -471,6 +472,13 @@ def parse_std(path):
                 if tg in done: continue
                 done.add(tg); fn, w, h = crop(tg)
                 nt.append('\x10%s|%d|%d\x0e%s\x11' % (fn, w, h, ' '.join(words[tg]).replace('\x11', ''))); nl.append(l)
+            # 표 그림은 원문에서 표 바로 위에 있는 줄 다음으로 옮긴다(글자 추출 순서로는 표가 쪽 끝에 몰리는 경우: '확인검사 수수료 부과' 등)
+            for tg in list(done):
+                k = next(i for i, t in enumerate(nt) if t.startswith('\x10' + made[tg][0] + '|'))
+                t, l = nt.pop(k), nl.pop(k); top = TB[tg[0]][tg[1]][1]
+                above = [i for i, l2 in enumerate(nl) if l2 is not None and G0.get(l2) and G0[l2][0] == tg[0] - 1 and G0[l2][1] < top and not (G0[l2][2] < 40 and len(nt[i].strip()) <= 4) and not nt[i].startswith('\x10')]   # 왼쪽 띠의 '검사/기준' 같은 칸 이름은 빼고
+                j = above[-1] + 1 if above else k
+                nt.insert(j, t); nl.insert(j, l)
             o['text'] = '\n'.join(nt); o['_li'] = nl; o['sec'] = sectionize(nt)
         keep = {v[0] for v in made.values()}
         for f in os.listdir('stdimg') if os.path.isdir('stdimg') else []:
