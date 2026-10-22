@@ -433,9 +433,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     return `<span class="meq">${escHtml(lin)}</span>`;
   }
   function figHtml(f, w, h) {
-    const hist = /^h(el|es)_/.test(f);   // 연혁집 원문 영역(200dpi로 잘라 냄): 화면엔 절반 크기
-    const dw = hist ? Math.round(w / 2) : +w, dh = hist ? Math.round(h / 2) : +h;
-    return `<span class="fig${hist ? ' h' : ''}"><button type="button" data-fz="fig/${f}" aria-label="그림 크게 보기"><img src="fig/${f}" loading="lazy" width="${dw}" height="${dh}" alt="${hist ? '연혁집 원문 그림·표' : '기준 본문 그림'}"></button></span>`;
+    const stb = /^stb_/.test(f);   // 표준화 슬라이드 안의 표(원문 영역, stdimg/)
+    const hist = stb || /^h(el|es)_/.test(f);   // 연혁집·표준화 원문 영역(200dpi로 잘라 냄): 화면엔 절반 크기
+    const dw = hist ? Math.round(w / 2) : +w, dh = hist ? Math.round(h / 2) : +h, src = (stb ? 'stdimg/' : 'fig/') + f;
+    return `<span class="fig${hist ? ' h' : ''}"><button type="button" data-fz="${src}" aria-label="그림 크게 보기"><img src="${src}" loading="lazy" width="${dw}" height="${dh}" alt="${stb ? '표준화 원문 표' : hist ? '연혁집 원문 그림·표' : '기준 본문 그림'}"></button></span>`;
   }
   // 글자 → HTML: 수식·그림 표식을 자리표로 뺀 뒤 검색어 강조, 다시 끼운다
   function rich(s, re) {
@@ -773,9 +774,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       // 표준화: 제목·요지·결론 섹션은 본문 색인(n), 관련 법령·배경 인용문은 별도 색인(nb)
       let concl = e.sec.filter(isConclSec), bg = e.sec.filter(s => !isConclSec(s));
       if (!concl.length) { concl = bg; bg = []; }
-      const main = concl.map(s => s.p.join(' ')).join(' ');
+      const main = searchText(concl.map(s => s.p.join(' ')).join(' '));
       e.s = normSp((e.title || '') + ' ' + (e.path || '') + ' ' + main + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
-      e.nb = norm(bg.map(s => s.p.join(' ')).join(' '));
+      e.nb = norm(searchText(bg.map(s => s.p.join(' ')).join(' ')));
     } else {
       e.s = normSp((e.src === 'fail' ? e.num + ' ' : '') + (e.title || '') + ' ' + (e.path || '') + ' ' + searchText(e.text) + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
       e.nb = '';
@@ -1104,7 +1105,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const isStd = e.src === 'std', isOld = e.src === 'old';
     let body;
     if (isStd && e.sec && e.sec.length) {
-      const secHtml = s => `<section class="sec ${s.h ? '' : 'nohead'}">${s.h ? `<h3>${escHtml(s.h)}</h3>` : ''}<div class="ps">${s.p.map(p => `<p>${hl(p, re)}</p>`).join('')}</div></section>`;
+      const secHtml = s => `<section class="sec ${s.h ? '' : 'nohead'}">${s.h ? `<h3>${escHtml(s.h)}</h3>` : ''}<div class="ps">${s.p.map(p => p.startsWith('\x10') ? `<p class="stb">${unblk(rich(p, re))}</p>` : `<p>${hl(p, re)}</p>`).join('')}</div></section>`;
       let concl = e.sec.filter(isConclSec), bg = e.sec.filter(s => !isConclSec(s));
       if (!concl.length) { concl = bg; bg = []; }
       const gist = e.gist ? `<div class="gist"><span class="tag">요지</span><span>${hl(e.gist, re)}</span><span class="ai" title="원문을 압축한 자동 요약입니다. 판정은 아래 원문으로 확인하세요.">자동요약</span></div>` : '';
@@ -1420,7 +1421,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     let el = document.getElementById('lb');
     if (!el) { el = document.createElement('div'); el.id = 'lb'; el.className = 'lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
     lbState = null;
-    el.innerHTML = `<div class="lbscroll"><img src="${src}" alt=""></div><div class="lbbar"><span>${/fig\/h(el|es)_/.test(src) ? '연혁집 원문' : '기준 원문(HWP) 그림'} · 두 손가락으로 확대</span><button type="button" data-lbclose>닫기</button></div>`;
+    el.innerHTML = `<div class="lbscroll"><img src="${src}" alt=""></div><div class="lbbar"><span>${/fig\/h(el|es)_/.test(src) ? '연혁집 원문' : /stdimg\/stb_/.test(src) ? '표준화 원문 표' : '기준 원문 그림'} · 두 손가락으로 확대</span><button type="button" data-lbclose>닫기</button></div>`;
     el.hidden = false;
   }
   function closeLb() { const el = document.getElementById('lb'); if (el) el.hidden = true; lbState = null; }

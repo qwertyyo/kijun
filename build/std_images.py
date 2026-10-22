@@ -39,6 +39,7 @@ def owner(pno, y):
     j = bisect.bisect_left(skeys, (pno, -1)) - 1
     return seq[j][3] if j >= 0 else None
 doc = pymupdf.open(PDF)
+TBL = {int(k): v for k, v in json.load(open('std_tables.json')).items()} if os.path.exists('std_tables.json') else {}
 
 # 2) 그림 위치 → 잘라내기
 res = {}
@@ -61,6 +62,7 @@ for pno in range(len(doc)):
         if y1 < 60: continue                            # 상단 로고
         oid = owner(pno, y0)
         if not oid: continue
+        if any(t[0] - 3 <= (x0 + x1) / 2 <= t[2] + 3 and t[1] - 3 <= (y0 + y1) / 2 <= t[3] + 3 for t in TBL.get(pno + 1, [])): continue   # 원문 표 그림(stb_) 안의 사진은 표째로 보인다
         clip = pymupdf.Rect(max(0, x0 - 2), max(0, y0 - 2), min(W, x1 + 2), min(H, y1 + 2))
         # 원본 해상도에 맞춰 렌더(작게 배치된 고해상도 스캔도 원본 픽셀을 살림)
         native_dpi = info['width'] / (w / 72) if w else 150
@@ -83,6 +85,6 @@ json.dump(res, open('stdimg.json', 'w', encoding='utf-8'), ensure_ascii=False)
 # 주인이 바뀌어 더는 안 쓰는 옛 그림 파일 지우기
 used = {m['f'] for v in res.values() for m in v}
 for f in os.listdir(OUT):
-    if f.endswith('.webp') and f not in used: os.remove(os.path.join(OUT, f))
+    if f.endswith('.webp') and f not in used and not f.startswith('stb_'): os.remove(os.path.join(OUT, f))   # stb_ = parse.py 의 표 그림
 tot = sum(os.path.getsize(os.path.join(OUT, f)) for f in os.listdir(OUT))
 print('images', n, 'items with images', len(res), 'size MB', round(tot / 1e6, 2))

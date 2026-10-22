@@ -1,5 +1,6 @@
 """검사기준 통합검색 데이터·페이지 빌드 (build/ 폴더에서 실행: python build.py [--images])
 1) stdgeo.py    : 표준화 PDF 각 줄의 쪽·위치 → std_geo.json (없을 때만)
+   std_tables.py : 표준화 슬라이드 안의 표 영역 → std_tables.json (없을 때만; parse.py 가 표를 원문 그림으로)
 2) parse.py     : 표준화(insp.txt) 안건 나누기 → data.json (std_fix.json 개별 수정, std_ids.json id 고정)
    --images     : std_images.py 로 표준화 그림을 다시 잘라 stdimg/ · stdimg.json 갱신(안건 나눔이 바뀌었을 때)
 3) hist_parse.py / hist_merge.py : 승강기 안전기준 연혁집 PDF(엘리베이터·에스컬레이터) 하나로
@@ -16,6 +17,8 @@ PY = [sys.executable, '-X', 'utf8', '-I']   # 윈도우에서도 UTF-8 로 읽�
 os.makedirs('app_pkg', exist_ok=True); os.makedirs('fig', exist_ok=True)
 if not os.path.exists('std_geo.json'):
     subprocess.run(PY + ['stdgeo.py'], check=True)
+if not os.path.exists('std_tables.json'):
+    subprocess.run(PY + ['std_tables.py'], check=True)   # 슬라이드 안 표 영역(없을 때만)
 subprocess.run(PY + ['parse.py'], check=True)                     # 표준화(std) 파싱
 if '--images' in sys.argv:
     subprocess.run(PY + ['std_images.py'], check=True)

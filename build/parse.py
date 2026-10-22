@@ -434,12 +434,54 @@ def parse_std(path):
             keep = [(t, l) for t, l in zip(tl, o['_li']) if not band(l)]
             o['text'] = '\n'.join(t for t, _ in keep); o['_li'] = [l for _, l in keep]
             o['sec'] = sectionize([t for t, _ in keep])
+    # 슬라이드 안의 표(std_tables.json)는 원문 영역을 그림으로 잘라 그 자리에(표 속 글자는 검색용으로 그림 표식 안에).
+    # 글자만 이어 붙이면 칸·행이 뒤섞여 읽기 어렵다(플랫벨트 판정기준 표 등). 그림은 stdimg/stb_p쪽_번호.webp
+    import os
+    TB = {int(k): v for k, v in json.load(open('std_tables.json')).items()} if os.path.exists('std_tables.json') else {}
+    made = {}
+    if TB:
+        import pymupdf
+        from PIL import Image
+        import io
+        pdf = pymupdf.open('stdzip/std.pdf')
+        def tab_of(l):
+            g = G0.get(l) if l is not None else None
+            if not g: return None
+            for k, t in enumerate(TB.get(g[0] + 1, [])):
+                if t[0] - 3 <= g[2] <= t[2] and t[1] - 3 <= g[1] <= t[3]: return (g[0] + 1, k)
+            return None
+        def crop(tg):
+            if tg not in made:
+                pg = pdf[tg[0] - 1]; r = pymupdf.Rect(TB[tg[0]][tg[1]]) + (-2, -2, 2, 2)
+                im = Image.open(io.BytesIO(pg.get_pixmap(clip=r & pg.rect, dpi=200).tobytes('png'))).convert('RGB')
+                fn = f'stb_p{tg[0]}_{tg[1]}.webp'; os.makedirs('stdimg', exist_ok=True)
+                im.save(os.path.join('stdimg', fn), 'WEBP', quality=88, method=6)
+                made[tg] = (fn, im.width, im.height)
+            return made[tg]
+        for o in out:
+            o['_liall'] = list(o['_li'])
+            tl = o['text'].split('\n'); tags = [tab_of(l) for l in o['_li']]
+            if not any(tags): continue
+            words = {}
+            for t, tg in zip(tl, tags):
+                if tg: words.setdefault(tg, []).append(t.strip())
+            nt, nl, done = [], [], set()
+            for t, l, tg in zip(tl, o['_li'], tags):
+                if tg is None: nt.append(t); nl.append(l); continue
+                if tg in done: continue
+                done.add(tg); fn, w, h = crop(tg)
+                nt.append('\x10%s|%d|%d\x0e%s\x11' % (fn, w, h, ' '.join(words[tg]).replace('\x11', ''))); nl.append(l)
+            o['text'] = '\n'.join(nt); o['_li'] = nl; o['sec'] = sectionize(nt)
+        keep = {v[0] for v in made.values()}
+        for f in os.listdir('stdimg') if os.path.isdir('stdimg') else []:
+            if f.startswith('stb_') and f not in keep: os.remove(os.path.join('stdimg', f))
+        print('std tables as images', len(made))
     LI_OUT = {}
     for o in out:
-        lis = o.pop('_li')
+        lt = o.pop('_li'); lis = o.pop('_liall', None) or lt   # lt: 본문 줄과 짝(표는 한 줄), lis: 원문 줄 전부(그림 주인 정하기용)
         LI_OUT[o['id']] = sorted(set(list(heads0.get(o['id'], [])) + [l_ for l_ in lis if l_ is not None]))
         # std_fix 로 옮기거나 합친 안건은 원문 순서대로 다시 늘어놓는다(덧붙인 블록이 맨 뒤에 몰리지 않게)
-        pr = [(l_, k, s_) for k, (l_, s_) in enumerate(zip(lis, o['text'].split('\n'))) if s_.strip() or l_ is not None]
+        pr = [(l_, k, s_) for k, (l_, s_) in enumerate(zip(lt, o['text'].split('\n'))) if s_.strip() or l_ is not None]
         if o['id'] in FIX_TOUCHED and all(l_ is not None for l_, _, _ in pr):
             ls_ = sorted(pr)
             nt = '\n'.join(s_ for _, _, s_ in ls_)
@@ -525,6 +567,8 @@ def sectionize(lines):
             if cur['p'] or cur['h']: secs.append(cur)
             cur = {'h': hit[0], 'p': []}; i += hit[1]; continue
         s = lines[i].strip()
+        if s.startswith('\x10') or (cur['p'] and cur['p'][-1].startswith('\x10')):   # 원문 표 그림은 따로 문단
+            cur['p'].append(s); i += 1; continue
         if cur['p'] and not BUL.match(s) and not cur['p'][-1].endswith(('.', ':', '：', '함', '음', '됨', '임', '것', '요', '다')):
             cur['p'][-1] += ' ' + s
         elif cur['p'] and not BUL.match(s) and cur['p'][-1].endswith(('.', ':', '：', '함', '음', '됨', '임', '것', '요', '다')) and len(cur['p'][-1]) > 70:
