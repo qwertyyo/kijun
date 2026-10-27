@@ -484,7 +484,7 @@ def parse_std(path):
         for f in os.listdir('stdimg') if os.path.isdir('stdimg') else []:
             if f.startswith('stb_') and f not in keep: os.remove(os.path.join('stdimg', f))
         print('std tables as images', len(made))
-    LI_OUT = {}
+    LI_OUT = {}; PITCH = None
     for o in out:
         lt = o.pop('_li'); lis = o.pop('_liall', None) or lt   # lt: 본문 줄과 짝(표는 한 줄), lis: 원문 줄 전부(그림 주인 정하기용)
         LI_OUT[o['id']] = sorted(set(list(heads0.get(o['id'], [])) + [l_ for l_ in lis if l_ is not None]))
@@ -494,17 +494,25 @@ def parse_std(path):
             ls_ = sorted(pr)
             nt = '\n'.join(s_ for _, _, s_ in ls_)
             if nt != o['text']: o['text'] = nt; o['sec'] = sectionize(nt.split('\n')); lt = [l_ for l_, _, _ in ls_]
-        # 문단 나누기를 원문 위치로 다시: 앞 줄과 쪽이 다르거나, 위로 되돌아갔거나(다른 상자·칸), 글자 크기의 1.9배 넘게 떨어지면 새 문단
+        # 문단 나누기를 원문 위치로 다시: 앞 줄과 쪽이 다르거나, 위로 되돌아갔거나(다른 상자·칸), 보통 줄 간격보다 크게 떨어지면 새 문단
         tl_ = o['text'].split('\n')
+        if PITCH is None:   # 쪽·글자 크기별 보통 줄 간격(중앙값) — 슬라이드마다 줄 간격이 120~200%로 달라 글자 크기만으론 못 가름
+            pt_ = {}
+            for l_ in range(1, max(G0) + 1):
+                a_, b_ = G0.get(l_ - 1), G0.get(l_)
+                if a_ and b_ and a_[0] == b_[0] and a_[3] == b_[3] and 0.9 * b_[3] < b_[1] - a_[1] < 4 * b_[3]:
+                    pt_.setdefault((b_[0], b_[3]), []).append(b_[1] - a_[1])
+            PITCH = {k_: sorted(v_)[len(v_) // 2] for k_, v_ in pt_.items()}
         if len(lt) == len(tl_):
             brk = set()
             for k in range(1, len(lt)):
                 a_, b_ = G0.get(lt[k - 1]) if lt[k - 1] is not None else None, G0.get(lt[k]) if lt[k] is not None else None
                 if not a_ or not b_ or a_[2] < 14 or b_[2] < 14: continue
-                if not (a_[0] != b_[0] or b_[1] < a_[1] - 3 or b_[1] - a_[1] > 1.9 * max(b_[3], 8)): continue
+                sz_ = max(a_[3], b_[3], 8); gap_ = max(1.9 * sz_, 1.45 * PITCH.get((b_[0], sz_), 0))
+                if not (a_[0] != b_[0] or b_[1] < a_[1] - 3 or b_[1] - a_[1] > gap_): continue
                 # 문장이 끝나지 않은 채 이어지는 줄('…하는 경우,' + '함', '…및' + '…')은 위치가 떨어져도 잇는다
                 pv, nx = tl_[k - 1].rstrip(), tl_[k].strip()
-                if len(nx) <= 8 or re.search(r'(,|및|또는|의|를|을|에|와|과|는|은|이|가|로|에서|하고|하여|되어|등|시)$', pv) or re.match(r'^(함|음|됨|임|등|경우|및|또는|하여|되어|으로|에|의|를|을)', nx): continue
+                if len(nx) <= 8 or re.search(r'(,|및|또는|의|를|을|에|와|과|는|은|이|가|로|에서|하고|하여|되어|등|시|한|된|할|될|인|적인|있는|없는)$', pv) or re.match(r'^(함|음|됨|임|등|경우|및|또는|하여|되어|으로|에|의|를|을)', nx): continue
                 brk.add(k)
             o['sec'] = sectionize(tl_, brk)
     json.dump(LI_OUT, open('std_li.json', 'w'))
@@ -568,7 +576,7 @@ LABELS = {'목적/배경':'목적·배경','목적배경':'목적·배경','배�
  '참고자료':'참고자료','참고':'참고','검사방법':'검사방법','검사방법표준화':'검사방법 표준화','내용':'내용','결과':'결과','질의':'질의','답변':'답변','회신':'회신','현황':'현황',
  '문제점':'문제점','개선방안':'개선방안','조치사항':'조치사항','조치':'조치','검토내용':'검토내용','사유':'사유','기준':'기준','해석':'해석','의견':'의견','요청사항':'요청사항',
  '건의사항':'건의사항','변경사항':'변경사항','변경내용':'변경내용','주요내용':'주요내용','안내':'안내','안내사항':'안내사항','적용시점':'적용 시점','시행일':'시행일','참고사항':'참고사항'}
-BUL = re.compile(r'^([ⅠⅡⅢⅣⅤⅥⅦⅧ]\.\d|\d+\.\d+(\.\d+)*\s|ㅇ|○|▪|▫|‣|•|·|-|–|―|◆|◇|※|□|■|★|☆|→|⇒|[①-⑳]|\(?\d{1,2}[.)]|\(?[가-하][.)]|\(?[a-zA-Z][.)]|「|\[|<|예\)|\*|❍|◦|●|◎|▶|▸|►|➢|➤|✓|✔|\([가-힣]{2,8}\)\s)')
+BUL = re.compile(r'^([ⅠⅡⅢⅣⅤⅥⅦⅧ]\.\d|\d+\.\d+(\.\d+)*\s|ㅇ|○|▪|▫|‣|•|·|-|–|―|◆|◇|※|□|■|★|☆|→|⇒|[①-⑳]|\(?\d{1,2}[.)]|\(?[가-하][.)]|\(?[a-zA-Z][.)]|「|\[|<|예\)|\*|❍|◦|●|◎|▶|▸|►|➢|➤|✓|✔|❏|▢|◯|▣|◈|▷|△|▲|➩|➪|➔|➜|⇨|☞|≒|=>|‐|․|[➀-➓❶-❿⑴-⒇㉠-㉭]|>\s|\([가-힣]{2,8}\)\s|\([\u2018\x27]\d{2}\.\d)')
 
 def sectionize(lines, brk=()):
     # brk: 원문 위치로 보아 새 문단이 시작되는 줄 번호(쪽이 바뀜·위로 되돌아감·크게 떨어짐)
@@ -601,7 +609,12 @@ def sectionize(lines, brk=()):
             cur['p'].append(s)
         i += 1
     if cur['p'] or cur['h']: secs.append(cur)
+    # 한 줄로 읽힌 원문 줄 속 다음 글머리('…함 ※ …', '…연락함 ▶ …')·조항 머리에서도 나눔
+    for sc in secs:
+        sc['p'] = [q for p in sc['p'] for q in ([p] if p.startswith('\x10') else MIDBUL.split(p)) if not re.fullmatch(r'[^\w\s]', q)]   # 글머리 기호만 남은 줄은 버림
     return [s for s in secs if s['p']]
+MIDBUL = re.compile(r'(?<=[.다함음됨임요것])\s+(?=(?:▶|※|❍|❏|□|ㅇ|○|▪|•|◆|➩|‣|-)\s?\S)'
+                    r'|(?:(?<=다\.)|(?<=[다』]))\s+(?=\d{1,2}(?:\.\d{1,2}){1,4}\s+(?![에의및과와을를])[가-힣「『])')   # '…한다. 5.4.5 견고한…' 조항 머리
 
 if __name__ == '__main__':
     b = parse_b24('b24.txt')
