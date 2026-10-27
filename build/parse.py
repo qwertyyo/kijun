@@ -493,7 +493,20 @@ def parse_std(path):
         if o['id'] in FIX_TOUCHED and all(l_ is not None for l_, _, _ in pr):
             ls_ = sorted(pr)
             nt = '\n'.join(s_ for _, _, s_ in ls_)
-            if nt != o['text']: o['text'] = nt; o['sec'] = sectionize(nt.split('\n'))
+            if nt != o['text']: o['text'] = nt; o['sec'] = sectionize(nt.split('\n')); lt = [l_ for l_, _, _ in ls_]
+        # 문단 나누기를 원문 위치로 다시: 앞 줄과 쪽이 다르거나, 위로 되돌아갔거나(다른 상자·칸), 글자 크기의 1.9배 넘게 떨어지면 새 문단
+        tl_ = o['text'].split('\n')
+        if len(lt) == len(tl_):
+            brk = set()
+            for k in range(1, len(lt)):
+                a_, b_ = G0.get(lt[k - 1]) if lt[k - 1] is not None else None, G0.get(lt[k]) if lt[k] is not None else None
+                if not a_ or not b_ or a_[2] < 14 or b_[2] < 14: continue
+                if not (a_[0] != b_[0] or b_[1] < a_[1] - 3 or b_[1] - a_[1] > 1.9 * max(b_[3], 8)): continue
+                # 문장이 끝나지 않은 채 이어지는 줄('…하는 경우,' + '함', '…및' + '…')은 위치가 떨어져도 잇는다
+                pv, nx = tl_[k - 1].rstrip(), tl_[k].strip()
+                if len(nx) <= 8 or re.search(r'(,|및|또는|의|를|을|에|와|과|는|은|이|가|로|에서|하고|하여|되어|등|시)$', pv) or re.match(r'^(함|음|됨|임|등|경우|및|또는|하여|되어|으로|에|의|를|을)', nx): continue
+                brk.add(k)
+            o['sec'] = sectionize(tl_, brk)
     json.dump(LI_OUT, open('std_li.json', 'w'))
     json.dump(IDS, open('std_ids.json', 'w'), ensure_ascii=False, indent=0)
     return out
@@ -555,9 +568,10 @@ LABELS = {'목적/배경':'목적·배경','목적배경':'목적·배경','배�
  '참고자료':'참고자료','참고':'참고','검사방법':'검사방법','검사방법표준화':'검사방법 표준화','내용':'내용','결과':'결과','질의':'질의','답변':'답변','회신':'회신','현황':'현황',
  '문제점':'문제점','개선방안':'개선방안','조치사항':'조치사항','조치':'조치','검토내용':'검토내용','사유':'사유','기준':'기준','해석':'해석','의견':'의견','요청사항':'요청사항',
  '건의사항':'건의사항','변경사항':'변경사항','변경내용':'변경내용','주요내용':'주요내용','안내':'안내','안내사항':'안내사항','적용시점':'적용 시점','시행일':'시행일','참고사항':'참고사항'}
-BUL = re.compile(r'^([ⅠⅡⅢⅣⅤⅥⅦⅧ]\.\d|\d+\.\d+(\.\d+)*\s|ㅇ|○|▪|▫|‣|•|·|-|–|―|◆|◇|※|□|■|★|☆|→|⇒|[①-⑳]|\(?\d{1,2}[.)]|\(?[가-하][.)]|\(?[a-zA-Z][.)]|「|\[|<|예\)|\*)')
+BUL = re.compile(r'^([ⅠⅡⅢⅣⅤⅥⅦⅧ]\.\d|\d+\.\d+(\.\d+)*\s|ㅇ|○|▪|▫|‣|•|·|-|–|―|◆|◇|※|□|■|★|☆|→|⇒|[①-⑳]|\(?\d{1,2}[.)]|\(?[가-하][.)]|\(?[a-zA-Z][.)]|「|\[|<|예\)|\*|❍|◦|●|◎|▶|▸|►|➢|➤|✓|✔|\([가-힣]{2,8}\)\s)')
 
-def sectionize(lines):
+def sectionize(lines, brk=()):
+    # brk: 원문 위치로 보아 새 문단이 시작되는 줄 번호(쪽이 바뀜·위로 되돌아감·크게 떨어짐)
     secs = []; cur = {'h': '', 'p': []}
     i = 0; n = len(lines)
     while i < n:
@@ -576,6 +590,8 @@ def sectionize(lines):
             cur = {'h': hit[0], 'p': []}; i += hit[1]; continue
         s = lines[i].strip()
         if s.startswith('\x10') or (cur['p'] and cur['p'][-1].startswith('\x10')):   # 원문 표 그림은 따로 문단
+            cur['p'].append(s); i += 1; continue
+        if i in brk and cur['p']:
             cur['p'].append(s); i += 1; continue
         if cur['p'] and not BUL.match(s) and not cur['p'][-1].endswith(('.', ':', '：', '함', '음', '됨', '임', '것', '요', '다')):
             cur['p'][-1] += ' ' + s
