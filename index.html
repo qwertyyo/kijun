@@ -792,6 +792,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       e.nb = '';
     }
     e.nt = norm(e.title || ''); e.st = normSp(e.title || ''); e.c = cho(e.n);
+    e.nf = FAILBY[e.id] ? norm(FAILBY[e.id].map(f => (f.title || '') + ' ' + f.text).join(' ')) : '';   // 이 조문의 '불합격 내용' 상자 글
     if (e.h) e.nh = norm(e.h.blocks.map(b => plainH(b.text)).join(' '));
   });
   let withBg = false;
@@ -863,10 +864,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 
   // 같은 점수대에서 기준 조문을 표준화보다 앞에. 기준일이 있으면 그날 시행 중이던 엘리베이터 판이 기준 조문이고,
   // 기준일 모드: 기준 조문(엘리베이터·에스컬레이터 당시 문구) +3, 표준화 0
+  // 불합격 내용(판정 지침 별표2 행)은 맨 앞(현장에서 바로 판정 근거): 엘리베이터·에스컬레이터(별표22·24) 행 +10,
+  // 경사형·소형화물용·휠체어리프트(별표23·25~27)와 지침 본문은 기준 조문과 같은 +3
   function srcBonus(e) {
-    if (APPLY) return e.src === 'std' || e.src === 'fail' ? 0 : 3;
-    return e.src === 'std' || e.src === 'old' || e.src === 'fail' ? 0 : 3;
+    if (e.src === 'fail') return /^별표2[24]/.test(e.path || '') ? 10 : 3;
+    if (APPLY) return e.src === 'std' ? 0 : 3;
+    return e.src === 'std' || e.src === 'old' ? 0 : 3;
   }
+  // 짧은 글에 든 검색어일수록 그 글의 주제(긴 조문 속 한 번 나온 말보다 앞). 0.75~1.4배
+  const dens = e => Math.max(0.75, Math.min(1.4, Math.sqrt(500 / Math.max(60, e.n.length))));
   function search(q) {
     const terms = joinSynPhrases(q.trim().split(/\s+/).filter(Boolean)).map(canonW);
     if (!terms.length) return { hits: [], groups: [] };
@@ -893,7 +899,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
               // 낱말 가운데에 묻힌 매치(운행거리 속 '행거')는 0.25만 친다. 한 글자 검색어는 구분하지 않음
               if (nv.length >= 2) { const ws = countRe(g.res[vi], e.s, cnt); if (ws) strong = true; cnt = ws + (cnt - ws) * 0.25; } else strong = true;
             }
-            if (e.nh) { let j = -1, ch = 0; while ((j = e.nh.indexOf(nv, j + 1)) >= 0 && ch < 10) ch++; if (ch) { cnt += ch * (APPLY ? 1 : 0.6); strong = true; histHit = true; } }
+            if (e.nh) { let j = -1, ch = 0; while ((j = e.nh.indexOf(nv, j + 1)) >= 0 && ch < 10) ch++; if (ch) { if (cnt && !APPLY) cnt += ch * 0.15; else { cnt += ch * (APPLY ? 1 : 0.6); histHit = true; } strong = true; } }
+            if (e.nf && e.nf.includes(nv)) { cnt += 2; strong = true; }   // 이 조문의 불합격 내용에 검색어
             if (withBg && e.nb) { let j = -1, cb = 0; while ((j = e.nb.indexOf(nv, j + 1)) >= 0 && cb < 10) cb++; cnt += cb * 0.3; }
             if (e.nt.includes(nv) && (nv.length < 2 || countRe(g.res[vi], e.st, 1))) cnt += 6; if (v === g.term) cnt *= 1.3;
           }
@@ -901,11 +908,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
         }
         if (!best) { ok = false; break; }
         if (!strong) weak = true;
-        score += Math.min(best, 8);
+        score += Math.min(best * dens(e), 8);
       }
       // 기준 조문(별표22·24)은 근거이므로 같은 점수대에서 표준화보다 앞에 둔다
       // 검색어가 낱말 가운데에만 묻혀 있는 조문(예: '행거' → 운행거리)은 맨 뒤로
-      if (ok) hits.push({ e, score: score + srcBonus(e) + (histHit ? 4 : 0) - (weak ? 100 : 0), weak });   // 연혁에 검색어가 있으면(옛 용어) 그 기준 조문을 앞으로
+      if (ok) hits.push({ e, score: score + (weak ? 0 : srcBonus(e)) + (histHit ? 4 : 0) - (weak ? 100 : 0), weak });   // 연혁에 검색어가 있으면(옛 용어) 그 기준 조문을 앞으로
     }
     hits.sort((a, b) => b.score - a.score);
     return { hits, groups };
@@ -1111,6 +1118,25 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       return `<div class="p09">${line}</div>${info}`;
     }).join('');
   }
+  // 검색어가 접힌 본문 뒤쪽(또는 근거·연혁)에만 있으면 카드 위에 '찾은 곳' 한 줄 — 맨 위 카드에 검색어가 안 보이는 일 방지
+  function foundHtml(e, re) {
+    const R = new RegExp(re.source, re.flags.replace('g', ''));
+    const vis = [e.title, e.path, e.gist].concat(FAILBY[e.id] ? FAILBY[e.id].map(f => (f.title || '') + ' ' + f.text) : []);
+    if (e.h && !APPLY) vis.push(e.h.curg || '');
+    if (vis.some(t => t && R.test(t))) return '';
+    const snip = (t, lab) => { const m = R.exec(t); if (!m) return ''; const a = Math.max(0, m.index - 30); return `<div class="hfound">${lab} · ${a ? '…' : ''}${hl(t.slice(a, m.index + m[0].length + 50), re)}…</div>`; };
+    let main = '', bg = '';
+    if (e.src === 'std' && e.sec && e.sec.length) {
+      let concl = e.sec.filter(isConclSec), bgs = e.sec.filter(s => !isConclSec(s));
+      if (!concl.length) { concl = bgs; bgs = []; }
+      main = searchText(concl.map(s => s.p.join(' ')).join(' ')); bg = searchText(bgs.map(s => s.p.join(' ')).join(' '));
+    } else main = searchText(e.text).replace(/[\x01-\x04]/g, '');
+    const m = R.exec(main);
+    if (m) return m.index < 110 ? '' : snip(main, '본문에서 찾음');
+    if (bg && R.test(bg)) return snip(bg, '근거·배경에서 찾음');
+    if (e.h) for (const b of e.h.blocks) { const pt = plainH(b.text); if (R.test(pt)) return snip(pt, '연혁에서 찾음 · ' + escHtml(b.head)); }
+    return '';
+  }
   function card(e, re) {
     const isStd = e.src === 'std', isOld = e.src === 'old';
     let body;
@@ -1137,12 +1163,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       : `<span class="badge" title="${e.src === 'b22' ? '별표22 엘리베이터 안전기준' : '별표24 에스컬레이터 안전기준'}">${e.src === 'b22' ? '엘리베이터' : '에스컬레이터'}</span><span class="num">${escHtml(e.num)}</span>`;
     const ai = null;
     // 검색어가 현행 문구엔 없고 연혁에만 있으면 어디서 찾았는지 한 줄
-    let found = '';
+    const found = re ? foundHtml(e, re) : '';
     if (false) { re.lastIndex = 0; const inCur = re.test((e.title || '') + e.text); if (!inCur) { const b = e.h.blocks.find(b => { re.lastIndex = 0; return re.test(plainH(b.text)); }); if (b) { const pt = plainH(b.text); re.lastIndex = 0; const m = re.exec(pt); const s0 = Math.max(0, m.index - 40); found = `<div class="hfound">연혁에서 찾음 · ${escHtml(b.head)}<br>…${hl(pt.slice(s0, m.index + 80), re)}…</div>`; } } re.lastIndex = 0; }
     const title = (ai ? `<div class="after ${ai.kind}">${ai.html}</div>` : '') + (e.title ? `<h2>${hl(e.title, re)}</h2>` : '');
     const path = !isStd && e.path ? `<div class="path">${hl(e.path, re)}</div>` : '';
     const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '');
-    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
+    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
   }
 
   // ---- 열람(목차 → 장·회차 단위로 쭉 읽기)
