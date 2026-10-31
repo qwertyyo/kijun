@@ -534,6 +534,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       n = n.trim().replace(/^부속서\s*/, '').replace(/^([IVX]+)(?=\.|$)/, m => romanA[m] || m).replace(/\.$/, '');
       const k = src + '-' + n;
       (FAILBY[k] = FAILBY[k] || []).includes(f) || FAILBY[k].push(f);
+      (f.cl = f.cl || []).push(k);   // 이 불합격 행의 근거 조문 id
     });
   });
   function failHtml(e, re) {
@@ -588,7 +589,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     ['과속역행방지장치','과속역행','과속·역행방지','과속ㆍ역행방지','과속역행방지','과속·역전방지','과속ㆍ역전방지','과속 및 의도되지 않은 운행 방향의 역전','별표 18','별표18'],
     ['역행방지장치','역행방지','역행','역구동방지장치','역구동방지','역구동','역주행','역전방지','역전 감지','의도되지 않은 운행방향의 역전','의도되지 않은 역전','운행 방향의 역전'],
     ['보조브레이크','보조 브레이크','보조제동기','보조 제동','auxiliary brake','보조 브레이크의 미-작동','5.4.2.2'],
-    ['주브레이크','주 브레이크','브레이크','제동기','운전 브레이크','정지거리','제동거리'],
+    ['주브레이크','주 브레이크','브레이크','제동기','운전 브레이크'],
+    ['정지거리','제동거리'],
     ['과속','과속 감지','1.2배','1.4배','과속감지'],
     ['라이닝','브레이크 라이닝','제동력','마모'],
     ['자기적합확인서','자기적합','설치매뉴얼','적용축','중공축','중실축'],
@@ -693,10 +695,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     ['점검운전','인스펙션','핸디운전','점검속도','점검 운전','유지관리 운전'],
     ['주행거리','승강행정','행정','주행 거리'],
     ['카도어 스위치','게이트 스위치','카문 닫힘 확인','카문 스위치','카문 잠금'],
-    ['피트스위치','피트 정지스위치','정지장치','피트 스톱'],
+    ['피트스위치','피트 정지스위치','정지장치','피트 스톱','정지스위치','정지 스위치'],
     ['머신룸','기계실','기계류 공간'],
     ['기계실없는','MRL','기계실 없는','머신룸리스'],
-    ['비상정지장치','세이프티','세프티','추락방지안전장치','안전기어','비상정지'],
+    ['비상정지장치','세이프티','세프티','추락방지안전장치','안전기어'],
     // --- 개정판에 따라 이름이 바뀐 기준 용어 (2009 승강기검사기준 → 2013~2018 별표1 → 2019 이후 별표22)
     ['조속기로프','조속기 로프','과속조절기 로프','과속조절기로프','거버너 로프','가바나 로프'],
     ['상부공간','승강로 상부공간','headroom'],
@@ -783,8 +785,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     }
     e.nt = norm(e.title || ''); e.st = normSp(e.title || ''); e.c = cho(e.n);
     e.nf = FAILBY[e.id] ? norm(FAILBY[e.id].map(f => (f.title || '') + ' ' + f.text).join(' ')) : '';   // 이 조문의 '불합격 내용' 상자 글
-    if (e.h) e.nh = norm(e.h.blocks.map(b => plainH(b.text)).join(' '));
+    if (e.h) { e.hs = normSp(e.h.blocks.map(b => plainH(b.text)).join(' ')); e.nh = e.hs.replace(/ /g, ''); }
   });
+  // 불합격 행마다 근거 조문(같은 번호의 엘리베이터·에스컬레이터 조문) 글 — 검색어가 근거 조문에도 있어야 '그 말에 대한 불합격'으로 본다
+  { const BYID = {}; ALL.forEach(e => { BYID[e.id] = e; }); ALL.forEach(e => { if (e.src === 'fail' && e.cl) e.cs = e.cl.map(k => BYID[k]).filter(Boolean).map(x => x.s).join(' '); }); }
   let withBg = false;
   try { withBg = localStorage.getItem('kbg') === '1'; } catch (e) {}
 
@@ -819,6 +823,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     });
   }
   function synGroups() { return dictRows().map(r => r.g).filter(g => g.length >= 2).concat(customSyn); }
+  // user: 내 용어·공용 승인 묶음(기본 사전 묶음을 서로 이어 주는 다리), 아니면 기본 사전
+  function synGroupsT() { return dictRows().filter(r => r.g.length >= 2).map(r => ({ g: r.g, user: r.src === 'shared' })).concat(customSyn.map(g => ({ g, user: true }))); }
   // '키 홀'처럼 띄어 쓴 현장용어가 사전에 있으면 두 낱말로 쪼개지 말고 한 말로 찾는다
   function joinSynPhrases(ws) {
     const keys = new Set(synGroups().flat().map(wn));
@@ -833,17 +839,19 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function expandTerm(t) {
     const set = new Set([t]);
     const nt = wn(t);
-    const groups = synGroups();
+    const groups = synGroupsT();
     // 1단계: 입력어와 같거나 거의 같은 말이 든 그룹
-    for (const g of groups) {
-      if (g.some(w => wn(w) === nt || (nt.length >= 2 && wn(w).includes(nt) && wn(w).length - nt.length <= 1))) g.forEach(w => set.add(w));
+    const bridge = new Set([nt]);   // 기본 사전 묶음을 더 따라가도 되는 말: 입력어 + 내 용어·공용 승인 묶음에서 온 말
+    for (const { g, user } of groups) {
+      if (g.some(w => wn(w) === nt || (nt.length >= 2 && wn(w).includes(nt) && wn(w).length - nt.length <= 1))) g.forEach(w => { set.add(w); if (user) bridge.add(wn(w)); });
     }
-    // 2단계 이후: 사용자가 추가한 그룹처럼 기존 그룹과 한 단어로만 이어진 경우도 따라감 (정확히 같은 말로만)
+    // 2단계 이후: 사용자가 추가한 그룹처럼 기존 그룹과 한 단어로만 이어진 경우도 따라감 (정확히 같은 말로만).
+    // 기본 사전 묶음끼리는 잇지 않는다: '정지스위치'→'비상정지'→'비상정지장치'(추락방지안전장치)처럼 뜻이 번지는 것 방지
     for (let pass = 0; pass < 3; pass++) {
       const before = set.size;
       const have = new Set(Array.from(set).map(wn));
-      for (const g of groups) {
-        if (g.some(w => have.has(wn(w)))) g.forEach(w => set.add(w));
+      for (const { g, user } of groups) {
+        if (g.some(w => user ? have.has(wn(w)) : bridge.has(wn(w)))) g.forEach(w => { set.add(w); if (user) bridge.add(wn(w)); });
       }
       if (set.size === before) break;
     }
@@ -854,15 +862,17 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 
   // 같은 점수대에서 기준 조문을 표준화보다 앞에. 기준일이 있으면 그날 시행 중이던 엘리베이터 판이 기준 조문이고,
   // 기준일 모드: 기준 조문(엘리베이터·에스컬레이터 당시 문구) +3, 표준화 0
-  // 불합격 내용(판정 지침 별표2 행)은 맨 앞(현장에서 바로 판정 근거): 엘리베이터·에스컬레이터(별표22·24) 행 +10,
-  // 경사형·소형화물용·휠체어리프트(별표23·25~27)와 지침 본문은 기준 조문과 같은 +3
-  function srcBonus(e) {
-    if (e.src === 'fail') return /^별표2[24]/.test(e.path || '') ? 10 : 3;
-    if (APPLY) return e.src === 'std' ? 0 : 3;
+  // 불합격 내용(판정 지침 별표2 행): 검색어가 검사대상 제목·같은 번호 근거 조문에 있거나 바로 뒤에 판정 말('…미작동')이 오면(about)
+  // 그 말에 대한 판정이므로 엘리베이터(별표22) 행은 맨 앞 +10. 지나가며 나온 말('방범창 파손으로 … 균형추에 닿을 수 있음')이면
+  // 조문과 같은 +3. 에스컬레이터(별표24) 행 +1/0, 경사형·소형화물용·휠체어리프트(별표23·25~27)·지침 본문 0.
+  // 엘리베이터 조문 +3, 에스컬레이터 조문·표준화 0 — 엘리베이터 검색에 에스컬레이터 것이 앞서지 않게(에스컬레이터 말은 에스컬레이터 것만 걸림)
+  function srcBonus(e, about) {
+    if (e.src === 'fail') { const p = e.path || ''; return /^별표22/.test(p) ? (about ? 10 : 3) : /^별표24/.test(p) && about ? 1 : 0; }
+    if (e.src === 'b24') return 0;
     return e.src === 'std' || e.src === 'old' ? 0 : 3;
   }
-  // 짧은 글에 든 검색어일수록 그 글의 주제(긴 조문 속 한 번 나온 말보다 앞). 0.75~1.4배
-  const dens = e => Math.max(0.75, Math.min(1.4, Math.sqrt(500 / Math.max(60, e.n.length))));
+  // 짧은 글에 든 검색어일수록 그 글의 주제(긴 조문 속 한 번 나온 말보다 앞). 0.6~1.4배
+  const dens = e => Math.max(0.6, Math.min(1.4, Math.sqrt(500 / Math.max(60, e.n.length))));
   function search(q) {
     const terms = joinSynPhrases(q.trim().split(/\s+/).filter(Boolean)).map(canonW);
     if (!terms.length) return { hits: [], groups: [] };
@@ -870,13 +880,16 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       let vars = expandTerm(t);
       // '3로'처럼 숫자가 섞인 아주 짧은 현장용어는 사전 확장어로만 찾는다 (조문번호 '…5.3로'에 걸리는 것 방지)
       if (t.length <= 2 && /\d/.test(t) && vars.length > 1) vars = vars.filter(v => v !== t);
-      return { term: t, vars, res: vars.map(v => isChoOnly(v) || !norm(v) ? null : isWhole(v) ? wholeRe(wn(v)) : wordStartRe(norm(v))) };
+      const res = vars.map(v => isChoOnly(v) || !norm(v) ? null : isWhole(v) ? wholeRe(wn(v)) : wordStartRe(norm(v)));
+      // 불합격 행에서 검색어 바로 뒤에 판정 말이 오면('열림버튼 미작동', '행거롤러 이탈') 그 말에 대한 불합격
+      const fres = res.map(r => r ? new RegExp(r.source + '[^·/]{0,6}?(?:미설치|미작동|불량|이탈|없음|파손|절단|훼손|미흡|부적합|손상|마모|누락|초과|미달|미부착)', 'g') : null);
+      return { term: t, vars, res, fres };
     });
     const hits = [];
     for (const e of ALL) {
-      let score = 0, ok = true, weak = false, histHit = false;
+      let score = 0, ok = true, weak = false, histHit = false, allAbout = true;
       for (const g of groups) {
-        let best = 0, strong = false;
+        let best = 0, strong = false, about = false;
         for (let vi = 0; vi < g.vars.length; vi++) {
           const v = g.vars[vi];
           let cnt = 0;
@@ -889,20 +902,25 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
               // 낱말 가운데에 묻힌 매치(운행거리 속 '행거')는 0.25만 친다. 한 글자 검색어는 구분하지 않음
               if (nv.length >= 2) { const ws = countRe(g.res[vi], e.s, cnt); if (ws) strong = true; cnt = ws + (cnt - ws) * 0.25; } else strong = true;
             }
-            if (e.nh) { let j = -1, ch = 0; while ((j = e.nh.indexOf(nv, j + 1)) >= 0 && ch < 10) ch++; if (ch) { if (cnt && !APPLY) cnt += ch * 0.15; else { cnt += ch * (APPLY ? 1 : 0.6); histHit = true; } strong = true; } }
+            // 연혁(옛 문구)도 낱말 첫머리만('비상정지장치' 속 '정지장치' X). 기준일 모드는 연혁이 그날 문구라 그대로 치고,
+            // 현행 보기에선 현행 문구에 있으면 0.15배, 연혁에만 있으면 많아야 1점(옛 장애인 세부기준 전문 같은 긴 연혁이 1등 하던 것)
+            if (e.hs) { const ch = countRe(g.res[vi], e.hs, 10); if (ch) { if (APPLY) { if (!cnt) histHit = true; cnt += ch; } else cnt += cnt ? ch * 0.15 : Math.min(ch, 2) * 0.25; strong = true; } }
             if (e.nf && e.nf.includes(nv)) { cnt += 2; strong = true; }   // 이 조문의 불합격 내용에 검색어
             if (withBg && e.nb) { let j = -1, cb = 0; while ((j = e.nb.indexOf(nv, j + 1)) >= 0 && cb < 10) cb++; cnt += cb * 0.3; }
             if (e.nt.includes(nv) && (nv.length < 2 || countRe(g.res[vi], e.st, 1))) cnt += 6; if (v === g.term) cnt *= 1.3;
           }
           if (cnt > best) best = cnt;
+          // 불합격 행: 검사대상 제목에 검색어가 있거나, 같은 번호 근거 조문에도 검색어가 있으면 '그 말에 대한 불합격'
+          if (e.src === 'fail' && cnt && !about && g.res[vi] && (countRe(g.res[vi], e.st, 1) || (e.cs && countRe(g.res[vi], e.cs, 1)) || countRe(g.fres[vi], e.s, 1))) about = true;
         }
         if (!best) { ok = false; break; }
         if (!strong) weak = true;
-        score += Math.min(best * dens(e), 8);
+        if (!about) allAbout = false;
+        score += Math.min(3 * Math.log1p(best) * dens(e), 8);   // 횟수는 로그로(긴 글에 15번 나온 말이 2번 나온 짧은 조문을 덮지 않게)
       }
       // 기준 조문(별표22·24)은 근거이므로 같은 점수대에서 표준화보다 앞에 둔다
       // 검색어가 낱말 가운데에만 묻혀 있는 조문(예: '행거' → 운행거리)은 맨 뒤로
-      if (ok) hits.push({ e, score: score + (weak ? 0 : srcBonus(e)) + (histHit ? 4 : 0) - (weak ? 100 : 0), weak });   // 연혁에 검색어가 있으면(옛 용어) 그 기준 조문을 앞으로
+      if (ok) hits.push({ e, score: score + (weak ? 0 : srcBonus(e, allAbout)) + (histHit ? 4 : 0) - (weak ? 100 : 0), weak });   // 연혁에 검색어가 있으면(옛 용어) 그 기준 조문을 앞으로
     }
     hits.sort((a, b) => b.score - a.score);
     return { hits, groups };
@@ -1109,6 +1127,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     }).join('');
   }
   // 검색어가 접힌 본문 뒤쪽(또는 근거·연혁)에만 있으면 카드 위에 '찾은 곳' 한 줄 — 맨 위 카드에 검색어가 안 보이는 일 방지
+  // 불합격 행이 어느 승강기 것인지 배지에 같이(엘리베이터 검색에 에스컬레이터 5.x 행이 섞여도 바로 구분)
+  const FAILKIND = { '22': '엘리베이터', '23': '경사형 엘리베이터', '24': '에스컬레이터', '25': '소형화물용', '26': '수직형 휠체어리프트', '27': '경사형 휠체어리프트' };
+  function failKind(e) { const m = /^별표(2\d)/.exec(e.path || ''); return m ? FAILKIND[m[1]] || '' : ''; }
   function foundHtml(e, re) {
     const R = new RegExp(re.source, re.flags.replace('g', ''));
     const vis = [e.title, e.path, e.gist].concat(FAILBY[e.id] ? FAILBY[e.id].map(f => (f.title || '') + ' ' + f.text) : []);
@@ -1146,7 +1167,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     } else body = stdText(e.text, re);
     const figs = (isStd && e.img && e.img.length) ? `<div class="figs">${e.img.map((m, k) => `<figure><button type="button" data-lb="${e.id}" data-k="${k}" aria-label="그림 크게 보기"><img src="stdimg/${m[0]}" loading="lazy" width="${Math.round(m[2] * 120 / m[3])}" height="120" alt="${escHtml((e.title || '') + ' 그림 ' + (k + 1))}"></button><figcaption>${m[4] ? '배포자료 · ' : ''}원문 ${m[1]}쪽${m[5] ? ' · 원본 저해상도' : ''}</figcaption></figure>`).join('')}</div>` : '';
     const meta = e.src === 'fail'
-      ? `<span class="badge" title="승강기 설치검사 및 안전검사 결과 판정 및 확인검사 지침">불합격</span>${e.num ? `<span class="num">${escHtml(e.num)}</span>` : ''}`
+      ? `<span class="badge" title="승강기 설치검사 및 안전검사 결과 판정 및 확인검사 지침${e.path ? ' · ' + escHtml(e.path) : ''}">불합격${failKind(e) ? ' · ' + failKind(e) : ''}</span>${e.num ? `<span class="num">${escHtml(e.num)}</span>` : ''}`
       : isStd
       ? `<span class="badge">표준화</span><span>${escHtml(e.path)}</span>${e.num ? `<span class="num">#${e.num}</span>` : ''}`
       : isOld ? `<span class="badge">엘리베이터 · ${APPLY && AV() < NV && e.vers.includes(AV()) ? '당시 기준' : '개정 전'}</span><span class="num">${escHtml(e.num)}</span><span class="vr" title="이 본문이 그대로 실린 판(시행일)">${verRange(e.vers)}</span>`

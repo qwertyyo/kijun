@@ -6,6 +6,12 @@ MODE = sys.argv[1] if len(sys.argv) > 1 else 'el'
 SRC, BASE, OUT, GKF = {'el': ('hist.json', 'base_el.json', 'hist_final.json', 'hist_gist_keyed.json'), 'es': ('hist_es.json', 'base_es.json', 'hist_es_final.json', 'hist_es_gist_keyed.json')}[MODE]
 h = json.load(open(SRC)); b = json.load(open(BASE))
 order = [e['num'] for e in b]; has = {e['num']: bool(e['text'].strip()) for e in b}; title = {e['num']: e['title'] for e in b}
+# 절 전체의 옛 기준인데 연혁집이 그 절 마지막 조항 뒤에 몰아 실은 연혁 → 절(제목만 있는 조문)의 연혁으로 옮긴다
+# (엘 17.1.5.7 뒤의 2013·2009 블록 = 옛 16.1.1~ / 3.1.10 장애인용 엘리베이터 전체와 편의증진법 세부기준 전문)
+RESCOPE = {'el': {'17.1.5.7': '17.1'}, 'es': {}}[MODE]
+for a_, s_ in RESCOPE.items():
+    if a_ in h and h[a_]['blocks']:
+        h.setdefault(s_, {'cur': None, 'blocks': []})['blocks'] += h[a_]['blocks']; h[a_]['blocks'] = []
 out = {}
 for n, v in h.items():
     if has.get(n):
