@@ -1049,7 +1049,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (!q.trim()) {
       if (view) { renderView(); return; }
       $('status').innerHTML = `<span>${APPLY ? applyLabel() : `엘리베이터 ${DATA.b22.length}건 · 에스컬레이터 ${DATA.b24.length}건 · 표준화 ${DATA.std.length}건 · 불합격 ${DATA.fail.length}건`}</span><span>목차에서 골라 쭉 읽거나, 검색어를 넣으세요</span>`;
-      $('results').innerHTML = sample() + toc();
+      $('results').innerHTML = toc();
       return;
     }
     view = null;
@@ -1279,11 +1279,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (ev.target.closest('[data-totoc]')) { savePos(); clearTimeout(st); view = null; try { localStorage.setItem('kview', ''); } catch (e) {} render(); restorePos('toc'); return; }
   });
 
-  function sample() {
-    const picks = ['핸드레일 벽 400', '삼각부 스펀지', '역구동', '보조브레이크', '토가드', '에이프런', '피트 틈새', 'UCMP', '조속기', '기어오름', '스커트 틈새'];
-    return `<div class="empty">자주 찾는 검색: ${picks.map(p => `<button class="chip" data-q="${p}">${p}</button>`).join(' ')}</div>`;
-  }
-
   $('f').addEventListener('submit', ev => { ev.preventDefault(); render(); $('q').blur(); });
   let timer; $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 160); });
   $('bgtog').setAttribute('aria-pressed', String(withBg));
@@ -1295,7 +1290,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   });
   $('results').addEventListener('click', ev => {
     if (ev.target.closest('[data-more]')) { SHOWN += 80; const y = getY(); render(); setY(y); return; }
-    const q = ev.target.closest('[data-q]'); if (q) { $('q').value = q.dataset.q; render(); return; }
     const gs = ev.target.closest('[data-gosrc]'); if (gs) { src = gs.dataset.gosrc; srcSync(); render(); setY(0); return; }
     const hb = ev.target.closest('[data-hist]'); if (hb) { const c = hb.closest('.card'), box = c.querySelector('.hist'); const open = box.hidden; box.hidden = !open; if (open && !box.innerHTML) { box.innerHTML = historyHtml(byId[hb.dataset.hist]); box.querySelectorAll('.ht').forEach(x => { if (x.scrollHeight <= x.clientHeight + 4) { x.classList.remove('clip'); x.nextElementSibling.remove(); } }); } box.hidden = !open; hb.setAttribute('aria-expanded', String(open)); return; }
     const hx = ev.target.closest('.hx'); if (hx) { const ht = hx.previousElementSibling; const cl = ht.classList.toggle('clip'); hx.textContent = cl ? '펼치기' : '접기'; return; }
