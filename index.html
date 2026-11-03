@@ -359,14 +359,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     <button class="chip" data-src="fail" aria-pressed="false">불합격</button>
     </div>
     <div class="optbar">
-    <span class="ywrap" id="dwrap"><button type="button" class="chip ysel" id="dbtn" aria-expanded="false" aria-controls="dpop" title="설치일 등 기준일을 넣으면 그날 시행 중이던 엘리베이터 기준으로 검색·열람">기준일: 현행</button><div class="ypop dpop" id="dpop" hidden role="group" aria-label="기준 적용일 선택">
-      <div class="drow"><label for="dyear">연도</label><input id="dyear" type="number" inputmode="numeric" min="1990" max="2099" placeholder="예: 2016"><button type="button" class="chip" id="dyok">적용</button></div>
-      <div class="drow"><label for="ddate">날짜</label><input id="ddate" type="date" min="1990-01-01" max="2099-12-31"></div>
-      <div class="dinfo" id="dinfo">설치일(또는 허가일 등) 기준일을 넣으면 그날 시행 중이던 엘리베이터 기준만 보여줍니다.</div>
-      <div class="drow"><span></span><button type="button" class="chip" id="chgbtn" aria-pressed="false" style="grid-column:2/4" title="기준일 당시 판에서 이후 바뀌거나 없어진 조문 + 그 뒤 새로 생긴 현행 조문">이 날짜 이후 바뀐 조문만 보기</button></div>
-      <div class="yfoot"><button type="button" class="chip" id="dnow">현행으로</button><button type="button" class="chip" id="dclose">닫기</button></div>
-    </div></span>
-    <span class="ywrap" id="vwrap" hidden style="display:none"><button type="button" class="chip ysel" id="vbtn" aria-expanded="false" aria-controls="vpop">판: 전체</button><div class="ypop" id="vpop" hidden role="group" aria-label="구기준 판 선택(여러 개 가능)"><div class="ygrid v2" id="vers"></div><div class="yfoot"><span class="hint">시행일 · 여러 개 선택 가능</span><button type="button" class="chip" id="vclear">전체</button><button type="button" class="chip" id="vclose">닫기</button></div></div></span><span class="ywrap" id="ywrap"><button type="button" class="chip ysel" id="ybtn" aria-expanded="false" aria-controls="ypop">연도: 전체</button><div class="ypop" id="ypop" hidden role="group" aria-label="표준화 연도 선택(여러 개 가능)"><div class="ygrid" id="years"></div><div class="yfoot"><span class="hint">여러 개 선택 가능</span><button type="button" class="chip" id="yclear">전체</button><button type="button" class="chip" id="yclose">닫기</button></div></div></span>
+    <span class="ywrap" id="vwrap" hidden style="display:none"><button type="button" class="chip ysel" id="vbtn" aria-expanded="false" aria-controls="vpop">판: 전체</button><div class="ypop" id="vpop" hidden role="group" aria-label="구기준 판 선택(여러 개 가능)"><div class="ygrid v2" id="vers"></div><div class="yfoot"><span class="hint">시행일 · 여러 개 선택 가능</span><button type="button" class="chip" id="vclear">전체</button><button type="button" class="chip" id="vclose">닫기</button></div></div></span>
     <button class="chip" id="bgtog" aria-pressed="false" title="표준화 안건의 관련 법령·배경 인용문까지 검색 대상에 포함">인용문 포함</button>
     </div>
   </div>
@@ -467,8 +460,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   // 블록(\x0f…\x0f) 앞뒤의 줄바꿈·공백을 없애 빈 줄이 생기지 않게
   const unblk = h => h.replace(/[ \t]*\n?[ \t]*\x0f([^\x0f]*)\x0f[ \t]*\n?/g, '$1');
-  // 기준일 상태: APPLY = {d:'YYYY.MM.DD', year?}. NV/AV 는 '기준일 모드' 판정용(AV() < NV 이면 기준일 모드)
-  const NV = 1; let APPLY = null; let CHG = false; const AV = () => APPLY ? 0 : NV;
+  // 기준일 선택 UI를 제거했으므로 저장된 날짜와 관계없이 현행으로 표시한다.
+  const NV = 1; const APPLY = null; const CHG = false; const AV = () => NV;
   const DEF_CUR = '2019.04.04';   // 엘리베이터
   const DEF_CUR_ES = '2019.03.28'; // 에스컬레이터: 연혁집 안내 '2013.9.15 종전 연혁이 있으면 2019.3.28 적용 표시 생략'
   const defCur = e => e.src === 'b24' ? DEF_CUR_ES : DEF_CUR;   // 현행 문구 적용일이 연혁집에 없는 조문: 표시된 조문 대다수(102개)의 별표22 적용일로 간주
@@ -969,6 +962,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function escHtml(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
   function hl(s, re) { if (!re) return escHtml(s); return escHtml(s).replace(re, '<mark>$1</mark>'); }
 
+  const applyLabel = () => '';
+
   // ---- 상태
   let src = 'all'; const YS = new Set(); const yOK = e => !YS.size || e.src !== 'std' || YS.has(e.year);
   const VS = new Set(); const vOK = e => e.src !== 'old' || !VS.size || e.vers.some(i => VS.has(i));
@@ -980,14 +975,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   };
   const pass = e => srcOK(e) && yOK(e) && vOK(e);
   const $ = id => document.getElementById(id);
-  const years = Array.from(new Set(DATA.std.map(e => e.year).filter(Boolean))).sort();
-  $('years').innerHTML = years.slice().reverse().map(y => `<button type="button" class="yr" data-yr="${y}" aria-pressed="false">${y}</button>`).join('');
-  const yLabel = () => { const a = [...YS].sort(); return !a.length ? '' : a.length <= 3 ? a.map(y => y.slice(2)).join('·') + '년' : a.length + '개 연도'; };
-  function ySync() {
-    $('years').querySelectorAll('[data-yr]').forEach(x => x.setAttribute('aria-pressed', String(YS.has(x.dataset.yr))));
-    $('ybtn').textContent = YS.size ? '연도: ' + yLabel() : '연도: 전체'; $('ybtn').toggleAttribute('data-on', YS.size > 0);
-    if (YS.size && src !== 'all' && src !== 'std') { src = 'all'; srcSync(); }
-  }
   function leaveView() { if (!view) return false; savePos(); clearTimeout(st); view = null; try { localStorage.setItem('kview', ''); } catch (e) {} return true; }
   function refilter() { SHOWN = 80; for (const k in LCACHE) delete LCACHE[k]; const left = leaveView(); render(); if (left) { hold = Date.now() + 500; setY(0); } }
   $('vers').innerHTML = OLD.vers.map((x, i) => `<button type="button" class="yr" data-vi="${i}" aria-pressed="false">${x.v}<small>${escHtml(x.doc.replace(/\s*\(.*\)$/, '').replace(/ KC .*/, '').replace('엘리베이터 안전기준', 'EL 안전기준').replace('전기식 엘리베이터의 구조', '전기식 EL 구조'))}</small></button>`).join('');
@@ -996,54 +983,17 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     $('vers').querySelectorAll('[data-vi]').forEach(x => x.setAttribute('aria-pressed', String(VS.has(+x.dataset.vi))));
     $('vbtn').textContent = VS.size ? '판: ' + vLabel() : '판: 전체'; $('vbtn').toggleAttribute('data-on', VS.size > 0);
   }
-  const fmtD = d => d.replace(/-/g, '.');
-  function applyLabel() { if (!APPLY) return ''; return `기준일 ${APPLY.year ? APPLY.year + '년' : APPLY.d} → 그날 적용되던 기준 문구(연혁집)`; }
-  function dInfo() {
-    const box = $('dinfo');
-    if (!APPLY) { box.innerHTML = '건축허가일(또는 시행일 기준 항목은 그 날짜)을 넣으면, 연혁집에 따라 그날 적용되던 엘리베이터·에스컬레이터 기준 문구를 보여줍니다.'; return; }
-    let h = `<b>${APPLY.year ? APPLY.year + '년 1월 1일' : APPLY.d}</b> 기준으로 엘리베이터·에스컬레이터 조문마다 그날 적용되던 문구를 표시합니다.`;
-    if (APPLY.year) { const inYear = HDATES.filter(s => s.startsWith(APPLY.year + '.')); if (inYear.length) h += `<br>${APPLY.year}년 중 바뀐 날: ` + inYear.map(s => `<button type="button" class="chip" data-dpick="${s}">${s.slice(5)}</button>`).join(''); }
-    h += `<br><span style="font-size:11.5px">출처: 한국승강기안전공단 「승강기 안전기준 연혁집」(엘리베이터 2025.10, 에스컬레이터 v2.0 2026.9). 연혁 대부분이 ‘○○ 이후의 건축허가분부터 적용’ 기준이라 기준일은 건축허가일로 넣는 게 정확합니다. 현행 문구 적용일이 표시되지 않은 조문은 엘리베이터 ${DEF_CUR}, 에스컬레이터 ${DEF_CUR_ES}(연혁집 안내)부터로 봅니다. 표준화는 기준일과 관계없이 그대로입니다.</span>`;
-    box.innerHTML = h;
-  }
-  function setApply(d, year) {   // d: 'YYYY.MM.DD' 또는 null
-    if (!d) APPLY = null;
-    else APPLY = { d, year: year || null };
-    $('dbtn').textContent = APPLY ? '기준일: ' + (APPLY.year || APPLY.d) : '기준일: 현행'; $('dbtn').toggleAttribute('data-on', !!APPLY);
-    try { localStorage.setItem('kdate', APPLY ? JSON.stringify({ d: APPLY.d, year: APPLY.year }) : ''); } catch (e) {}
-    if (!APPLY) CHG = false; chgSync(); dInfo(); refilter();
-  }
-  const dPop = open => { $('dpop').hidden = !open; $('dbtn').setAttribute('aria-expanded', String(open)); };
-  $('dbtn').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); dPop($('dpop').hidden); if (!$('dpop').hidden) $('dyear').focus(); });
-  $('dpop').addEventListener('click', ev => { ev.stopPropagation(); const b = ev.target.closest('[data-dpick]'); if (b) { $('ddate').value = b.dataset.dpick.replace(/\./g, '-'); setApply(b.dataset.dpick); } });
-  function chgSync() { $('chgbtn').setAttribute('aria-pressed', String(CHG)); $('chgbtn').disabled = !APPLY; }
-  $('chgbtn').addEventListener('click', ev => { ev.stopPropagation(); if (!APPLY) return; CHG = !CHG; chgSync(); if (CHG && src === 'std') { src = 'all'; srcSync(); } refilter(); });
-  $('dclose').addEventListener('click', ev => { ev.stopPropagation(); dPop(false); });
-  $('dnow').addEventListener('click', ev => { ev.stopPropagation(); $('dyear').value = ''; $('ddate').value = ''; setApply(null); });
-  const yearGo = () => { const y = parseInt($('dyear').value, 10); if (y >= 1990 && y <= 2099) { $('ddate').value = ''; setApply(y + '.01.01', String(y)); } };
-  $('dyok').addEventListener('click', ev => { ev.stopPropagation(); yearGo(); });
-  $('dyear').addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); yearGo(); } });
-  $('ddate').addEventListener('change', () => { const v = $('ddate').value; if (/^\d{4}-\d{2}-\d{2}$/.test(v)) { $('dyear').value = ''; setApply(fmtD(v)); } });
-  document.addEventListener('click', () => { if (!$('dpop').hidden) dPop(false); });
   function srcSync() {
     $('filters').querySelectorAll('[data-src]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.src === src)));
-    $('vwrap').hidden = true; $('ywrap').hidden = !(src === 'all' || src === 'std'); $('dwrap').hidden = src === 'std' || src === 'fail';
+    $('vwrap').hidden = true;
   }
   const vPop = open => { $('vpop').hidden = !open; $('vbtn').setAttribute('aria-expanded', String(open)); };
-  $('vbtn').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); vPop($('vpop').hidden); });
+  $('vbtn').addEventListener('click', ev => { ev.stopPropagation(); vPop($('vpop').hidden); });
   $('vclose').addEventListener('click', ev => { ev.stopPropagation(); vPop(false); });
   $('vclear').addEventListener('click', ev => { ev.stopPropagation(); VS.clear(); vSync(); refilter(); });
   $('vpop').addEventListener('click', ev => ev.stopPropagation());
   $('vers').addEventListener('click', ev => { const b = ev.target.closest('[data-vi]'); if (!b) return; const i = +b.dataset.vi; VS.has(i) ? VS.delete(i) : VS.add(i); vSync(); refilter(); });
   document.addEventListener('click', () => { if (!$('vpop').hidden) vPop(false); });
-  const yPop = open => { $('ypop').hidden = !open; $('ybtn').setAttribute('aria-expanded', String(open)); };
-  $('ybtn').addEventListener('click', ev => { ev.stopPropagation(); vPop(false); yPop($('ypop').hidden); });
-  $('yclose').addEventListener('click', ev => { ev.stopPropagation(); yPop(false); });
-  $('yclear').addEventListener('click', ev => { ev.stopPropagation(); YS.clear(); ySync(); refilter(); });
-  $('ypop').addEventListener('click', ev => ev.stopPropagation());
-  $('years').addEventListener('click', ev => { const b = ev.target.closest('[data-yr]'); if (!b) return; const y = b.dataset.yr; YS.has(y) ? YS.delete(y) : YS.add(y); ySync(); refilter(); });
-  document.addEventListener('click', () => { if (!$('ypop').hidden) yPop(false); });
-  document.addEventListener('keydown', ev => { if (ev.key === 'Escape') { if (!$('ypop').hidden) { yPop(false); $('ybtn').focus(); } if (!$('vpop').hidden) { vPop(false); $('vbtn').focus(); } } });
 
   let SHOWN = 80;
   function render() {
@@ -1072,7 +1022,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       return;
     }
     view = null;
-    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${({ all: '전체', b24: '에스컬레이터', b22: '엘리베이터', std: '표준화', fail: '불합격', old: '엘리베이터' })[src]}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${YS.size && src !== 'old' ? ' · ' + yLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
+    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${({ all: '전체', b24: '에스컬레이터', b22: '엘리베이터', std: '표준화', fail: '불합격', old: '엘리베이터' })[src]}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
     if (!total) { const first = q.trim().split(/\s+/)[0]; $('results').innerHTML = `<div class="empty">결과 없음. 단어를 띄어서 줄이거나 다른 말로 바꿔보세요.<br>초성 검색도 됩니다: <code>ㅅㅋㅌ</code> → 스커트<br><br>현장에서 쓰는 말이라면 <button type="button" class="link" data-addterm="${escHtml(first)}">‘${escHtml(first)}’을 기준 용어에 연결</button>하세요.</div>`; return; }
     $('results').innerHTML = list.map((h, i) => (h.weak && (i === 0 || !list[i - 1].weak) ? `<div class="weakdiv">아래는 검색어가 다른 낱말 속에 들어 있는 경우입니다 (예: ‘${escHtml(groups[0].term)}’가 낱말 가운데에 있음)</div>` : '') + card(h.e, re)).join('');
     measure();
@@ -1546,8 +1496,6 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 마지막으로 읽던 장/회차로 복귀
   try { const v = JSON.parse(localStorage.getItem('kview') || 'null'); if (v && !$('q').value.trim() && !location.hash) view = v; } catch (e) {}
   $('q').addEventListener('change', () => { try { localStorage.setItem('kq', $('q').value); } catch (e) {} });
-  chgSync();
-  try { const k = JSON.parse(localStorage.getItem('kdate') || 'null'); if (k && k.d) { APPLY = { d: k.d, year: k.year }; $('dbtn').textContent = '기준일: ' + (k.year || k.d); $('dbtn').toggleAttribute('data-on', true); chgSync(); if (k.year) $('dyear').value = k.year; else $('ddate').value = k.d.replace(/\./g, '-'); dInfo(); } } catch (e) {}
   srcSync();
   render();
   if (view) restorePos(view.src + '|' + view.key); else if (!$('q').value.trim()) restorePos('toc');
