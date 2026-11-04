@@ -91,19 +91,24 @@ class ClauseReferences(unittest.TestCase):
             card.locator('.more').click()
         ref = card.locator('.body [data-ref-num="17.3.5.1"]').first
         self.assertEqual(ref.get_attribute('data-ref-ids'), 'b22-17.3.5.1')
+        ref.scroll_into_view_if_needed()
+        self.reading_scroll = self.page.evaluate('scrollY')
         ref.click()
         self.page.wait_for_selector('.ref-window:not([hidden])')
         return card
 
     def test_example_preserves_query_results_and_reading_position(self):
         card = self.open_example()
-        before = self.page.evaluate('({q:document.querySelector("#q").value,y:scrollY,ids:KIJUN.results(20).map(e=>e.num)})')
+        before = self.page.evaluate('({q:document.querySelector("#q").value,ids:KIJUN.results(20).map(e=>e.num)})')
+        top_before = card.bounding_box()['y']
         self.assertIn('17.3.5.1', self.page.locator('.ref-title').inner_text())
         self.assertIn('피난호출 스위치', self.page.locator('.ref-content').inner_text())
         self.assertEqual(len(self.page.context.pages), 1)
         self.page.locator('[data-ref-close]').click()
-        after = self.page.evaluate('({q:document.querySelector("#q").value,y:scrollY,ids:KIJUN.results(20).map(e=>e.num)})')
+        after = self.page.evaluate('({q:document.querySelector("#q").value,ids:KIJUN.results(20).map(e=>e.num)})')
         self.assertEqual(before, after)
+        self.assertAlmostEqual(card.bounding_box()['y'], top_before, delta=1)
+        self.assertAlmostEqual(self.page.evaluate('scrollY'), self.reading_scroll, delta=1)
         self.assertIn('open', card.get_attribute('class').split())
 
     def test_nested_reference_back_and_parent_clause(self):
@@ -192,6 +197,58 @@ class ClauseReferences(unittest.TestCase):
         self.assertNotEqual(self.page.locator('.ref-content').evaluate('(e)=>getComputedStyle(e).touchAction'), 'none')
         self.assertTrue(self.page.locator('body').evaluate('(e)=>e.scrollWidth <= innerWidth'))
         self.page.screenshot(path='/workspace/kijun-local/clause-mobile.png')
+
+    def swipe_content(self, distance):
+        box = self.page.locator('.ref-content').bounding_box()
+        x, y = box['x'] + box['width'] - 6, box['y'] + box['height'] / 2
+        session = self.page.context.new_cdp_session(self.page)
+        session.send('Input.dispatchTouchEvent', dict(type='touchStart', touchPoints=[dict(x=x, y=y)]))
+        for step in range(1, 7):
+            session.send('Input.dispatchTouchEvent', dict(type='touchMove', touchPoints=[dict(x=x, y=y + distance * step / 6)]))
+            self.page.wait_for_timeout(20)
+        session.send('Input.dispatchTouchEvent', dict(type='touchEnd', touchPoints=[]))
+        self.page.wait_for_timeout(300)
+
+    def test_short_popup_content_swipe_never_scrolls_search_page(self):
+        # Some mobile browsers/webviews do not contain scroll chaining using CSS alone.
+        self.page.add_style_tag(content='.ref-content { overscroll-behavior: auto !important; }')
+        card = self.open_example()
+        before = card.bounding_box()['y']
+        self.assertTrue(self.page.locator('.ref-content').evaluate('(e)=>e.scrollHeight <= e.clientHeight'))
+        for distance in [-120, 120]:
+            self.swipe_content(distance)
+            self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
+
+    def test_long_popup_scrolls_internally_without_background_scroll_at_edges(self):
+        self.page.add_style_tag(content='.ref-content { overscroll-behavior: auto !important; }')
+        self.open_example()
+        self.page.locator('[data-ref-close]').click()
+        card = self.page.locator('[id="b22-17.3.5.7"]')
+        card.locator('.body [data-ref-num="16.3"]').click()
+        content = self.page.locator('.ref-content')
+        before = card.bounding_box()['y']
+        self.swipe_content(-100)
+        self.assertGreater(content.evaluate('(e)=>e.scrollTop'), 0)
+        self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
+        for edge, direction in [(0, 120), ('bottom', -120)]:
+            content.evaluate('(e,edge)=>e.scrollTop = edge === "bottom" ? e.scrollHeight : 0', edge)
+            self.swipe_content(direction)
+            self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
+
+    def test_popup_close_restores_existing_page_styles_and_scroll(self):
+        self.page.evaluate('''() => {
+          document.documentElement.style.overflow = 'scroll';
+          document.documentElement.style.overscrollBehavior = 'contain';
+          document.body.style.position = 'relative';
+          document.body.style.setProperty('color', 'rgb(20, 40, 60)', 'important');
+        }''')
+        before = self.page.evaluate('({html:document.documentElement.style.cssText,body:document.body.style.cssText})')
+        self.open_example()
+        # Closing with Escape must release the lock just like the close button.
+        self.page.keyboard.press('Escape')
+        after = self.page.evaluate('({html:document.documentElement.style.cssText,body:document.body.style.cssText})')
+        self.assertEqual(before, after)
+        self.assertAlmostEqual(self.page.evaluate('scrollY'), self.reading_scroll, delta=1)
 
     def test_escalator_uses_escalator_clauses(self):
         self.page.evaluate('KIJUN.setSource("b24")')

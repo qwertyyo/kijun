@@ -1237,9 +1237,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     measure();
   }
   // ---- 읽던 위치 기억: 목차·각 장/회차별 스크롤 위치를 저장했다가 돌아오면 복원(기기에 저장되어 다시 열어도 유지)
+  let refPageLock = null;
   const SC = () => document.scrollingElement || document.documentElement;
-  const getY = () => Math.max(window.scrollY || 0, SC().scrollTop || 0);
-  const setY = y => { window.scrollTo(0, y); SC().scrollTop = y; };
+  const getY = () => refPageLock ? refPageLock.y : Math.max(window.scrollY || 0, SC().scrollTop || 0);
+  const setY = y => { if (refPageLock) { refPageLock.y = y; document.body.style.top = -y + 'px'; return; } window.scrollTo(0, y); SC().scrollTop = y; };
   let POS = {};
   try { POS = JSON.parse(localStorage.getItem('kpos') || '{}'); } catch (e) { POS = {}; }
   const curKey = () => (view ? view.src + '|' + view.key : ($('q').value.trim() ? null : 'toc'));
@@ -1507,6 +1508,25 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   let refWindow = null, refContent, refTitle, refBar, refBack, refOrigin, refCurrent;
   const refTrail = [];
+  function lockRefPage() {
+    if (refPageLock) return;
+    const root = document.documentElement, body = document.body;
+    const saved = [];
+    const set = (el, prop, value) => { saved.push([el, prop, el.style.getPropertyValue(prop), el.style.getPropertyPriority(prop)]); el.style.setProperty(prop, value); };
+    const x = window.scrollX || 0, y = getY(), gutter = innerWidth - root.clientWidth;
+    refPageLock = { x, y, saved };
+    // CSS만으로는 짧은 본문의 터치가 배경 스크롤로 넘어가는 브라우저가 있다.
+    // 본문 길이와 관계없이 배경을 고정하고, 보이던 위치는 top으로 유지한다.
+    set(root, 'overflow', 'hidden'); set(root, 'overscroll-behavior', 'none');
+    set(body, 'position', 'fixed'); set(body, 'top', -y + 'px'); set(body, 'left', -x + 'px');
+    set(body, 'width', `calc(100% - ${gutter}px)`); set(body, 'overflow', 'hidden');
+  }
+  function unlockRefPage() {
+    if (!refPageLock) return;
+    const { x, y, saved } = refPageLock; refPageLock = null;
+    saved.forEach(([el, prop, value, priority]) => { if (value) el.style.setProperty(prop, value, priority); else el.style.removeProperty(prop); });
+    window.scrollTo(x, y); SC().scrollTop = y;
+  }
   function fitRefWindow(left, top) {
     const r = refWindow.getBoundingClientRect(), gap = 8;
     refWindow.style.left = Math.max(gap, Math.min(left, innerWidth - r.width - gap)) + 'px';
@@ -1514,6 +1534,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   function closeRefWindow() {
     refWindow.hidden = true; refTrail.length = 0;
+    unlockRefPage();
     if (refOrigin && refOrigin.isConnected) refOrigin.focus({ preventScroll: true });
   }
   function createRefWindow() {
@@ -1563,7 +1584,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (!refWindow) createRefWindow();
     const wasOpen = !refWindow.hidden;
     if (wasOpen) refTrail.push({ state: refCurrent, scroll: refContent.scrollTop });
-    else { refOrigin = button; refTrail.length = 0; }
+    else { refOrigin = button; refTrail.length = 0; lockRefPage(); }
     refWindow.hidden = false;
     showReference({ ids: button.dataset.refIds.split(','), num: button.dataset.refNum });
     if (!wasOpen) { const r = refWindow.getBoundingClientRect(); fitRefWindow((innerWidth - r.width) / 2, Math.min(80, (innerHeight - r.height) / 2)); }
