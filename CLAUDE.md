@@ -83,6 +83,7 @@ python -m http.server -d .. 8765         # 로컬 확인: http://localhost:8765/
 - 기준일 모드: `curStart`/`pickBlock`/`applicable`(template). 엘리베이터 현행 기본 적용일 2019.04.04, 에스컬레이터 2019.03.28.
 
 ## 자주 하는 일
+- **참조 조문 보기**: 카드 본문·표·요약·적용 연혁의 조문 번호를 누르면 페이지 위의 이동 가능한 조문 창으로 현행 내용을 본다. 제목줄은 마우스·손가락 드래그 및 방향키로 이동하며, 창 안의 참조는 같은 창에서 열고 `이전`으로 돌아간다. 같은 번호가 두 기준에 있으면 자료 종류로 구분하고, 모호하면 선택 화면을 보인다. 데이터에 없는 번호·치수·날짜·외부 규격은 임의로 연결하지 않는다. 제목만 있는 상위 조항은 하위 본문을 함께 보여준다. 구현은 `template.html`의 `referenceTargets`·`linkClauseRefs`·`showReference`. 브라우저 회귀 검사: Playwright가 설치된 Python과 시스템 Chromium으로 `python build/tests/test_clause_refs.py -v` 실행(`CHROMIUM_PATH`로 브라우저 경로 지정 가능).
 - **현장용어 추가**("A = B"): `build/template.html` 의 `BASE_SYN` 에서 같은 뜻 묶음에 넣거나 새 줄 추가 → `python publish.py "현장용어 추가: A = B"`. 넣은 뒤 그 말로 검색해 결과가 맞는지 확인(브라우저 콘솔 `KIJUN.search('A', 6)`).
 - 검색은 띄어쓰기 뺀 글자열 포함 검사라 짧은 현장용어는 긴 말 속에도 걸린다. 그러면 안 되는 말은 **큰따옴표로 감싸** 사전에 넣는다(`BASE_SYN` 의 `'"잠"'`): 앞뒤가 한글이 아닐 때만 찾음('잠', '(잠)' O / '잠금'·'잠김' X, 하이라이트도 같음). 사이트 용어 추가·사전 고치기·공유 제안에서도 따옴표('…', "…", 둥근 따옴표)로 쓰면 곧은 큰따옴표로 통일해 저장되고 시트에도 그대로 간다(`canonW`/`isWhole`/`wn`). 사전 화면엔 따옴표 대신 '낱말' 표시. 검색창의 잠은 사전에 "잠"이 있으면 낱말로만.
 - **표준화 새 판(예: 26년 3차 반영본)**: `stdzip/std.pdf` 교체 → (2쪽 개인정보 있으면 빈 쪽 처리) → `python make_insp.py` → `python build.py --images` → 새 안건·바뀐 안건 목록을 data.json 과 이전 것을 비교해 뽑고, 요지를 써서 `gists.json` 에 추가 → 원문 대조 검토(섞인 내용·잘린 제목) → 필요하면 `std_fix.json` → publish.

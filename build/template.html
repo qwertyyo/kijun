@@ -330,6 +330,24 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 /* 앱 임베드: 앱이 자체 상단바를 가지므로 제목줄 숨김 */
 .embedded .brand { display: none }
 .embedded header.top { padding-top: 8px }
+/* 본문 조문 참조와 페이지 위에서 이동하는 조문 창 */
+.clause-ref { font: inherit; display: inline; color: var(--accent); background: none; border: 0; padding: 0 1px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer }
+.clause-ref:hover { background: var(--accent-soft) }
+.clause-ref:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px }
+.ref-window { position: fixed; z-index: 40; width: min(640px, calc(100vw - 24px)); height: min(640px, 72dvh); max-height: calc(100dvh - 16px); display: flex; flex-direction: column; background: var(--surface); color: var(--fg); border: 1px solid var(--accent); border-radius: 12px; box-shadow: 0 8px 36px rgba(0,0,0,.3); overflow: hidden }
+.ref-window[hidden] { display: none }
+.ref-bar { display: flex; align-items: center; gap: 8px; min-height: 48px; flex-shrink: 0; padding: 6px 8px; background: var(--accent-soft); border-bottom: 1px solid var(--line); cursor: grab; touch-action: none; user-select: none }
+.ref-bar:active { cursor: grabbing }
+.ref-bar:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px }
+.ref-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere }
+.ref-bar button { font: inherit; font-size: 13px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; min-height: 36px; cursor: pointer; touch-action: manipulation }
+.ref-bar button:disabled { opacity: .4; cursor: default }
+.ref-content { overflow: auto; overscroll-behavior: contain; min-height: 0; padding: 12px; flex: 1 }
+.ref-content .card { margin: 0 0 12px; padding: 12px }
+.ref-content .card .body { max-height: none }
+.ref-content .card .body::after, .ref-content .card > .more { display: none }
+.ref-note { margin: 0 0 10px; font-size: 13px; color: var(--muted) }
+.ref-choice { display: block; width: 100%; text-align: left; font: inherit; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 8px 0; cursor: pointer }
 </style>
 
 <div class="wrap">
@@ -398,6 +416,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 <script>
 (function () {
   const DATA = JSON.parse(document.getElementById('data').textContent);
+  // 제목만 있는 상위 조항도 참조할 수 있도록 검색용 필터링 전에 보관한다.
+  const REF_ENTRIES = Object.fromEntries(DATA.b22.concat(DATA.b24).map(e => [e.id, e]));
   // 본문 없는 제목만 있는 조문(예: '5.6 손잡이 시스템')과 회차 목차는 검색 대상에서 제외
   // 장(章) 제목: 본문 없는 제목 조문도 목차용으로 보관
   const CH = { b22: {}, b24: {} };
@@ -1021,6 +1041,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 실제 렌더 높이로 잘림 여부 판정: 안 잘리면 버튼·그라데이션 제거. 글꼴 로드·창 크기 변경 후 다시 잰다.
   function measure() {
     $('results').querySelectorAll('.card').forEach(c => {
+      if (!c.dataset.refsLinked) { linkClauseRefs(c, byId[c.id]); c.dataset.refsLinked = '1'; }
       if (c.classList.contains('open')) return;
       const b = c.querySelector('.body'); if (!b) return;
       c.classList.remove('short');
@@ -1247,14 +1268,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (b.dataset.src) { src = b.dataset.src; srcSync(); refilter(); return; }
     render();
   });
-  $('results').addEventListener('click', ev => {
+  function cardClick(ev) {
     if (ev.target.closest('[data-more]')) { SHOWN += 80; const y = getY(); render(); setY(y); return; }
     const gs = ev.target.closest('[data-gosrc]'); if (gs) { src = gs.dataset.gosrc; srcSync(); render(); setY(0); return; }
-    const hb = ev.target.closest('[data-hist]'); if (hb) { const c = hb.closest('.card'), box = c.querySelector('.hist'); const open = box.hidden; box.hidden = !open; if (open && !box.innerHTML) { box.innerHTML = historyHtml(byId[hb.dataset.hist]); box.querySelectorAll('.ht').forEach(x => { if (x.scrollHeight <= x.clientHeight + 4) { x.classList.remove('clip'); x.nextElementSibling.remove(); } }); } box.hidden = !open; hb.setAttribute('aria-expanded', String(open)); return; }
+    const hb = ev.target.closest('[data-hist]'); if (hb) { const c = hb.closest('.card'), box = c.querySelector('.hist'); const open = box.hidden; box.hidden = !open; if (open && !box.innerHTML) { const e = byId[hb.dataset.hist]; box.innerHTML = historyHtml(e); linkClauseRefs(box, e); box.querySelectorAll('.ht').forEach(x => { if (x.scrollHeight <= x.clientHeight + 4) { x.classList.remove('clip'); x.nextElementSibling.remove(); } }); } box.hidden = !open; hb.setAttribute('aria-expanded', String(open)); return; }
     const hx = ev.target.closest('.hx'); if (hx) { const ht = hx.previousElementSibling; const cl = ht.classList.toggle('clip'); hx.textContent = cl ? '펼치기' : '접기'; return; }
     const bt = ev.target.closest('.bgtoggle'); if (bt) { const bg = bt.nextElementSibling; const open = bg.hidden; bg.hidden = !open; bt.setAttribute('aria-expanded', String(open)); bt.textContent = (open ? '근거·배경 접기' : bt.textContent.replace('접기', '보기')); const c = bt.closest('.card'); if (open) { c.classList.add('open'); const mm = c.querySelector('.more'); if (mm) mm.textContent = '접기'; } return; }
     const m = ev.target.closest('.more'); if (m) { const c = m.closest('.card'); c.classList.toggle('open'); m.textContent = c.classList.contains('open') ? '접기' : '전체 보기'; }
-  });
+  }
+  $('results').addEventListener('click', cardClick);
 
   // ---- 용어 사전 UI
   const baseWords = () => Array.from(new Set(dictRows().flatMap(r => r.g))).sort((a, b) => a.localeCompare(b, 'ko'));
@@ -1413,6 +1435,131 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 
   // ---- 그림 확대 보기
   const byId = {}; ALL.forEach(e => { byId[e.id] = e; });
+  // ---- 조문 참조: 현재 페이지와 검색 상태를 유지하는 비모달 창
+  const REF_NAME = { b22: '엘리베이터', b24: '에스컬레이터' };
+  const refRoman = { ...romanA, XI: 'Ⅺ', XII: 'Ⅻ', XIII: 'XⅢ', XIV: 'XⅣ' };
+  const refNum = n => n.replace(/^부속서\s*/, '').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
+  function referenceTargets(num, e, text, at) {
+    const before = text.slice(0, at), after = text.slice(at + num.length);
+    // 날짜·치수·그림/표 번호와 외부 규격의 번호를 조문으로 오인하지 않는다.
+    if (/^(?:19|20)\d{2}\./.test(num) || /^\s*(?:mm|cm|m(?:\s|$|[²³/])|kN|N(?:\s|$)|kg|㎜|㎝|㎟|㎠|㎡|㎥|㎧|㎏|㏓|lx|Hz|MPa|kPa|Pa|V(?:\s|$)|A(?:\s|$)|%|초|배|도|년|월|일)/i.test(after)) return [];
+    if (/(?:그림|표)\s*$/.test(before)) return [];
+    const markers = Array.from(before.matchAll(/별표\s*(2[2-7])|KS\s*[A-Z]|\b(?:EN|ISO|IEC)\s*\d/gi));
+    const last = markers[markers.length - 1];
+    if (last && !last[1]) return [];
+    let source = last ? ({22: 'b22', 24: 'b24'}[last[1]] || 'unsupported') : null;
+    if (!source && e) {
+      if (e.src === 'b22' || e.src === 'b24') source = e.src;
+      else if (e.src === 'fail') { const m = /별표(2[2-7])/.exec(e.path || ''); if (m) source = ({22: 'b22', 24: 'b24'}[m[1]] || 'unsupported'); }
+      else if (e.src === 'std') {
+        const el = /엘리베이터/.test(e.title), es = /에스컬레이터|무빙워크/.test(e.title);
+        if (el !== es) source = el ? 'b22' : 'b24';
+      }
+    }
+    const n = refNum(num);
+    return (source ? [source] : ['b22', 'b24']).map(s => REF_ENTRIES[s + '-' + n]).filter(Boolean);
+  }
+  function linkClauseRefs(root, e) {
+    const blocks = new Set(['DIV', 'P', 'SECTION', 'H2', 'H3', 'H4', 'LI', 'TD', 'TH', 'BR']);
+    let nodes = [];
+    function flush() {
+      if (!nodes.length) return;
+      const group = nodes; nodes = [];
+      const text = group.map(n => n.textContent).join('');
+      const matches = Array.from(text.matchAll(/(?:부속서\s*(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)*|(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)+)/g));
+      const offsets = []; let total = 0;
+      group.forEach(n => { offsets.push(total); total += n.textContent.length; });
+      // 뒤에서부터 바꿔 앞쪽 텍스트 노드의 오프셋과 검색어 강조를 보존한다.
+      for (const m of matches.reverse()) {
+        if (/[\d.A-Za-z]/.test(text[m.index - 1] || '') || /^[\dA-Za-z]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) continue;
+        const targets = referenceTargets(m[0], e, text, m.index); if (!targets.length) continue;
+        const end = m.index + m[0].length;
+        const a = offsets.findIndex((o, i) => o + group[i].textContent.length > m.index);
+        const b = offsets.findIndex((o, i) => o + group[i].textContent.length >= end);
+        if (a < 0 || b < 0) continue;
+        const range = document.createRange(); range.setStart(group[a], m.index - offsets[a]); range.setEnd(group[b], end - offsets[b]);
+        const button = document.createElement('button'); button.type = 'button'; button.className = 'clause-ref';
+        button.dataset.refIds = targets.map(t => t.id).join(','); button.dataset.refNum = refNum(m[0]);
+        button.setAttribute('aria-haspopup', 'dialog');
+        button.title = targets.length === 1 ? `${REF_NAME[targets[0].src]} ${refNum(m[0])} 조문 보기` : `${refNum(m[0])} 조문 — 기준 선택`;
+        button.appendChild(range.extractContents()); range.insertNode(button);
+      }
+    }
+    function walk(node) {
+      if (node.nodeType === Node.TEXT_NODE) { nodes.push(node); return; }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex')) { flush(); return; }
+      const block = blocks.has(node.tagName); if (block) flush();
+      Array.from(node.childNodes).forEach(walk);
+      if (block) flush();
+    }
+    walk(root); flush();
+  }
+  let refWindow = null, refContent, refTitle, refBar, refBack, refOrigin, refCurrent;
+  const refTrail = [];
+  function fitRefWindow(left, top) {
+    const r = refWindow.getBoundingClientRect(), gap = 8;
+    refWindow.style.left = Math.max(gap, Math.min(left, innerWidth - r.width - gap)) + 'px';
+    refWindow.style.top = Math.max(gap, Math.min(top, innerHeight - r.height - gap)) + 'px';
+  }
+  function closeRefWindow() {
+    refWindow.hidden = true; refTrail.length = 0;
+    if (refOrigin && refOrigin.isConnected) refOrigin.focus({ preventScroll: true });
+  }
+  function createRefWindow() {
+    refWindow = document.createElement('div'); refWindow.className = 'ref-window'; refWindow.hidden = true;
+    refWindow.setAttribute('role', 'dialog'); refWindow.setAttribute('aria-labelledby', 'ref-title');
+    refWindow.innerHTML = '<div class="ref-bar" tabindex="0" aria-label="조문 창 이동. 드래그하거나 방향키로 이동"><button type="button" data-ref-back aria-label="이전 조문">← 이전</button><span class="ref-title" id="ref-title"></span><button type="button" data-ref-close aria-label="조문 창 닫기">닫기 ×</button></div><div class="ref-content"></div>';
+    document.body.appendChild(refWindow);
+    refBar = refWindow.querySelector('.ref-bar'); refTitle = refWindow.querySelector('.ref-title'); refContent = refWindow.querySelector('.ref-content'); refBack = refWindow.querySelector('[data-ref-back]');
+    refWindow.querySelector('[data-ref-close]').addEventListener('click', closeRefWindow);
+    refBack.addEventListener('click', () => { const prev = refTrail.pop(); if (prev) showReference(prev.state, prev.scroll); });
+    refContent.addEventListener('click', cardClick);
+    let drag = null;
+    refBar.addEventListener('pointerdown', ev => {
+      if (ev.target.closest('button') || !ev.isPrimary || ev.button !== 0) return;
+      const r = refWindow.getBoundingClientRect(); drag = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, left: r.left, top: r.top };
+      refBar.setPointerCapture(ev.pointerId); ev.preventDefault();
+    });
+    refBar.addEventListener('pointermove', ev => { if (drag && ev.pointerId === drag.id) { fitRefWindow(drag.left + ev.clientX - drag.x, drag.top + ev.clientY - drag.y); ev.preventDefault(); } });
+    const endDrag = () => { drag = null; };
+    refBar.addEventListener('pointerup', endDrag); refBar.addEventListener('pointercancel', endDrag); refBar.addEventListener('lostpointercapture', endDrag);
+    refBar.addEventListener('keydown', ev => {
+      if (ev.target !== refBar || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(ev.key)) return;
+      const r = refWindow.getBoundingClientRect(), step = ev.shiftKey ? 30 : 10;
+      fitRefWindow(r.left + (ev.key === 'ArrowRight' ? step : ev.key === 'ArrowLeft' ? -step : 0), r.top + (ev.key === 'ArrowDown' ? step : ev.key === 'ArrowUp' ? -step : 0)); ev.preventDefault();
+    });
+  }
+  function showReference(state, scroll) {
+    refCurrent = state;
+    const entries = state.ids.map(id => REF_ENTRIES[id]).filter(Boolean);
+    refBack.disabled = !refTrail.length;
+    if (entries.length > 1) {
+      refTitle.textContent = state.num + ' · 기준 선택';
+      refContent.innerHTML = '<p class="ref-note">같은 번호의 조문이 있습니다. 확인할 기준을 선택하세요.</p>' + entries.map(e => `<button type="button" class="ref-choice" data-ref-ids="${e.id}" data-ref-num="${escHtml(e.num)}">${REF_NAME[e.src]} · ${escHtml(e.num)}${e.title ? ' ' + escHtml(e.title) : ''}</button>`).join('');
+    } else {
+      const e = entries[0]; if (!e) return;
+      refTitle.textContent = `${REF_NAME[e.src]} · ${e.num} (현행)`;
+      const children = e.text.trim() ? [] : Object.values(REF_ENTRIES).filter(c => c.src === e.src && c.num.startsWith(e.num + '.') && c.text.trim());
+      refContent.innerHTML = (children.length ? `<p class="ref-note">${escHtml(e.num)} ${escHtml(e.title || '')}의 하위 조문입니다.</p>` : '') + (children.length ? children : [e]).map(c => card(c, null)).join('');
+      refContent.querySelectorAll('.card').forEach(c => { const entry = REF_ENTRIES[c.id]; c.removeAttribute('id'); linkClauseRefs(c, entry); });
+    }
+    refContent.scrollTop = scroll || 0;
+    refBar.focus({ preventScroll: true });
+  }
+  document.addEventListener('click', ev => {
+    const button = ev.target.closest('[data-ref-ids]'); if (!button) return;
+    ev.preventDefault();
+    if (!refWindow) createRefWindow();
+    const wasOpen = !refWindow.hidden;
+    if (wasOpen) refTrail.push({ state: refCurrent, scroll: refContent.scrollTop });
+    else { refOrigin = button; refTrail.length = 0; }
+    refWindow.hidden = false;
+    showReference({ ids: button.dataset.refIds.split(','), num: button.dataset.refNum });
+    if (!wasOpen) { const r = refWindow.getBoundingClientRect(); fitRefWindow((innerWidth - r.width) / 2, Math.min(80, (innerHeight - r.height) / 2)); }
+  });
+  document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && refWindow && !refWindow.hidden && !document.querySelector('#lb:not([hidden])')) { closeRefWindow(); ev.preventDefault(); } });
+  window.addEventListener('resize', () => { if (refWindow && !refWindow.hidden) { const r = refWindow.getBoundingClientRect(); fitRefWindow(r.left, r.top); } });
   let lbState = null;
   function openLb(id, k) {
     const e = byId[id]; if (!e || !e.img) return;
