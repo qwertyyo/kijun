@@ -174,6 +174,114 @@ class PublishedPage(unittest.TestCase):
                 image.evaluate('(e)=>e.decode()')
             self.page.locator('[data-ref-close]').click()
 
+    def open_table_window(self):
+        self.page.locator('[data-src="b24"]').click()
+        self.page.locator('[data-view="b24"][data-key="Ⅳ"]').click()
+        self.page.locator('[id="b24-Ⅳ"] .body [data-ref-table="Ⅱ.1"]').first.click()
+
+    def assert_usable_window(self):
+        box=self.page.locator('.ref-window').bounding_box()
+        self.assertGreaterEqual(box['height'],96)
+        self.assertGreater(box['width'],150)
+        self.assertGreaterEqual(box['x'],-1)
+        self.assertGreaterEqual(box['y'],-1)
+        self.assertLessEqual(box['x']+box['width'],self.page.viewport_size['width']+1)
+        self.assertLessEqual(box['y']+box['height'],self.page.viewport_size['height']+1)
+        self.assertTrue(self.page.locator('[data-ref-close]').is_visible())
+        self.assertGreater(self.page.locator('.ref-content').evaluate('(e)=>e.clientHeight'),30)
+
+    def test_tablet_portrait_landscape_and_split_screen(self):
+        for width,height in ((600,960),(960,600),(768,1024),(1280,800),(480,800),(360,640)):
+            self.page.set_viewport_size({'width':width,'height':height})
+            self.open_table_window()
+            self.assert_usable_window()
+            self.page.locator('.ref-content').evaluate('(e)=>e.scrollTop=120')
+            self.assertGreater(self.page.locator('.ref-content').evaluate('(e)=>e.scrollTop'),0)
+            self.page.locator('[data-ref-close]').click()
+            self.assertNotEqual(self.page.locator('body').evaluate('(e)=>getComputedStyle(e).position'),'fixed')
+
+    def test_popup_recovers_from_zero_height_css_and_zero_visual_viewport(self):
+        self.page.add_init_script('''const v=new EventTarget();Object.assign(v,{width:0,height:0,offsetTop:0,offsetLeft:0});Object.defineProperty(window,'visualViewport',{value:v});''')
+        self.page.reload(wait_until='networkidle')
+        self.page.set_viewport_size({'width':960,'height':600})
+        self.page.add_style_tag(content='.ref-window { height:0;max-height:0;width:0; }')
+        self.open_table_window()
+        self.assert_usable_window()
+        self.page.set_viewport_size({'width':600,'height':960})
+        self.page.wait_for_timeout(200)
+        self.assert_usable_window()
+        self.page.locator('[data-ref-close]').click()
+
+    def test_popup_position_with_transformed_body(self):
+        self.page.set_viewport_size({'width':960,'height':600})
+        self.page.add_style_tag(content='body { transform:translateZ(0); }')
+        self.open_table_window()
+        self.assert_usable_window()
+        self.page.screenshot(path='/workspace/kijun-local/tablet-transformed-popup.png')
+        self.page.locator('[data-ref-close]').click()
+        self.assertNotEqual(self.page.locator('body').evaluate('(e)=>getComputedStyle(e).position'),'fixed')
+
+    def test_popup_render_failure_never_locks_background(self):
+        self.page.locator('[data-src="b24"]').click()
+        self.page.locator('[data-view="b24"][data-key="Ⅳ"]').click()
+        self.page.evaluate('''() => {const p=Element.prototype,d=Object.getOwnPropertyDescriptor(p,'innerHTML');Object.defineProperty(p,'innerHTML',{get:d.get,set(v){if(this.classList.contains('ref-content')){Object.defineProperty(p,'innerHTML',d);throw Error('Expected render failure');}d.set.call(this,v);},configurable:true});}''')
+        ref=self.page.locator('[id="b24-Ⅳ"] .body [data-ref-table="Ⅱ.1"]').first
+        ref.click()
+        self.assertTrue(self.page.locator('.ref-window').is_hidden())
+        self.assertNotEqual(self.page.locator('body').evaluate('(e)=>getComputedStyle(e).position'),'fixed')
+        ref.click()
+        self.assert_usable_window()
+        self.page.locator('[data-ref-close]').click()
+
+    def test_drag_without_pointer_capture(self):
+        self.page.set_viewport_size({'width':1200,'height':1000})
+        self.page.evaluate('Element.prototype.setPointerCapture=undefined')
+        self.open_table_window()
+        old=self.page.locator('.ref-window').bounding_box()
+        title=self.page.locator('.ref-title').bounding_box()
+        x,y=title['x']+20,title['y']+10
+        self.page.mouse.move(x,y);self.page.mouse.down();self.page.mouse.move(x+80,y+120);self.page.mouse.up()
+        new=self.page.locator('.ref-window').bounding_box()
+        self.assertAlmostEqual(new['x']-old['x'],80,delta=2)
+        self.assertAlmostEqual(new['y']-old['y'],120,delta=2)
+
+    def test_legacy_mouse_and_touch_drag(self):
+        self.page.add_init_script('delete window.PointerEvent')
+        self.page.reload(wait_until='networkidle')
+        self.page.set_viewport_size({'width':1200,'height':1000})
+        self.open_table_window()
+        old=self.page.locator('.ref-window').bounding_box()
+        title=self.page.locator('.ref-title').bounding_box();x,y=title['x']+20,title['y']+10
+        self.page.mouse.move(x,y);self.page.mouse.down();self.page.mouse.move(x+60,y+100);self.page.mouse.up()
+        moved=self.page.locator('.ref-window').bounding_box()
+        self.assertAlmostEqual(moved['y']-old['y'],100,delta=2)
+        title=self.page.locator('.ref-title').bounding_box();x,y=title['x']+20,title['y']+10
+        session=self.page.context.new_cdp_session(self.page)
+        session.send('Input.dispatchTouchEvent',{'type':'touchStart','touchPoints':[{'x':x,'y':y}]})
+        session.send('Input.dispatchTouchEvent',{'type':'touchMove','touchPoints':[{'x':x,'y':y-60}]})
+        session.send('Input.dispatchTouchEvent',{'type':'touchEnd','touchPoints':[]})
+        new=self.page.locator('.ref-window').bounding_box()
+        self.assertAlmostEqual(new['y']-moved['y'],-60,delta=3)
+
+    def test_safety_factor_images_and_original_reference_typo(self):
+        self.page.locator('[data-src="b22"]').click()
+        self.page.locator('[data-view="b22"][data-key="Ⅹ"]').click()
+        card=self.page.locator('[id="b22-Ⅹ.3"]')
+        images=card.locator('.body img')
+        self.assertEqual(images.count(),2)
+        for image in images.all():
+            image.scroll_into_view_if_needed()
+            image.evaluate('(e)=>e.decode()')
+            self.assertGreater(image.evaluate('(e)=>e.naturalWidth'),100)
+        self.assertIn('Sf = 안전율',card.inner_text())
+        ref=card.locator('.body [data-ref-assets]').filter(has_text='그림 Ⅸ.1')
+        self.assertEqual(ref.get_attribute('data-ref-assets'),'b22-figure-Ⅹ.1')
+        card.screenshot(path='/workspace/kijun-local/safety-factor-clean-card.png')
+        ref.click()
+        self.assertIn('그림 Ⅹ.1',self.page.locator('.ref-title').inner_text())
+        self.assertIn('원문 본문은 그림 Ⅸ.1',self.page.locator('.ref-content').inner_text())
+        self.assertIn('ref_b22_figure_Ⅹ_1',self.page.locator('.ref-content img').get_attribute('src'))
+
     def test_all_toc_groups_using_published_html(self):
         entries = {e['id']:e for src in ('b22','b24','std','fail') for e in self.data[src]}
         clauses = {e['id'] for src in ('b22','b24') for e in self.data[src]}

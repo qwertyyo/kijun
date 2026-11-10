@@ -69,8 +69,9 @@ class ReferenceAssets(unittest.TestCase):
         for (folder, filename), dimensions in files.items():
             with Image.open(ROOT / folder / filename) as image:
                 self.assertEqual(image.size, dimensions, filename)
+                self.assertLess(image.convert('L').getextrema()[0],245,'Empty image: '+filename)
                 image.verify()
-        self.assertEqual(len(files), 680)
+        self.assertEqual(len(files), 676)
         print('Original card/history image files verified:', len(files))
 
     def test_multi_page_tables_include_first_rows_and_last_page(self):

@@ -173,6 +173,9 @@ def build_context_asset_links(data, catalog, base=None):
                     continue
                 kind, num = ('table' if match[1] == '표' else 'figure'), number(match[2])
                 assets = [a for a in catalog.values() if not a.get('historical') and a['src'] == source and a['kind'] == kind and a['num'] == num]
+                alias = next((a for a in config['aliases'] if (a['entry'], a['kind'], a['num']) == (entry['id'], kind, num)), None)
+                if alias and source == src:
+                    assets = [catalog[alias['target']]]
                 if len(assets) > 1:
                     owned = [a for a in assets if a['owner'] == entry['id']]
                     if owned:

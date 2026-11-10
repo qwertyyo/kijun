@@ -97,11 +97,13 @@ DET = []
 ENDFIG = []   # 연혁 블록 끝 점선 다음 그림이라 현행 본문으로 보낸 것(확인용)
 REJ = []
 # ---- 연혁 블록 속 그림·표·수식: 글자로 뽑으면 뒤죽박죽이 되므로 원문 영역을 그림으로 잘라 넣는다
-import os, io
+import os, io, hashlib
 from PIL import Image
 FIGDIR = 'fig'; os.makedirs(FIGDIR, exist_ok=True)
 PUA = re.compile('[-]')
 from restore_eq import M as EQMAP   # 글자로 되살릴 수 있는 수식 글꼴 코드
+from pdf_math import prepare_math_rows
+MATH_ARTIFACTS = []
 def regions(pg, rows):
     """그림(이미지)·선으로 그린 도형/표·수식 줄을 묶어 영역 목록으로"""
     H = pg.rect.height
@@ -165,11 +167,14 @@ def regions(pg, rows):
             if cnt < 12 and len(inside) > 3: continue   # 글 문단을 두른 틀(선 몇 개)은 표가 아니다
         out.append(r)
     return out
-def crop(pg, r, name):
+def crop(pg, r, name, versioned=False):
     pix = pg.get_pixmap(clip=(r + (-2, -1, 2, 1)) & pg.rect, dpi=200)
     im = Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
+    if versioned:
+        # 잘못된 옛 조각과 같은 URL을 재사용해 브라우저에 빈 그림이 남지 않게 한다.
+        name = name.removesuffix('.webp') + '_' + hashlib.sha256(im.tobytes()).hexdigest()[:10] + '.webp'
     im.save(os.path.join(FIGDIR, name), 'WEBP', quality=88, method=6)
-    return im.width, im.height
+    return name, im.width, im.height
 def figtext(txts):
     """그림 영역의 검색용 글자: 색 표시 빼고, 수식 글꼴 코드는 되살릴 수 있는 것만 글자로(나머지는 버림)"""
     from restore_eq import restore
@@ -226,6 +231,8 @@ def main():
                 txt = ''.join(c['c'] for s in l['spans'] for c in s['chars'])
                 if not txt.strip(): continue
                 rows.append((l['bbox'][1], l['bbox'][0], s0['font'], round(s0['size']), txt, l))
+        rows, discarded_math = prepare_math_rows(rows)
+        MATH_ARTIFACTS.extend((pi + 1, row[4]) for row in discarded_math)
         FULL = pg.rect.width * 0.82
         def add_cur(txt, l):
             """현행 본문 줄 추가. 같은 높이에서 오른쪽에 이어지는 줄('F' | ': 멈춤 쇠 장치가 …', '… 및 그' | '작동수단')은 한 줄로"""
@@ -270,7 +277,7 @@ def main():
                     if nxt is not None and nxt[3] <= 9 and not nxt[2].startswith(CFG['cur_font']): blk.pop('endy', None)
                     else: ENDFIG.append((pi + 1, round(l.y0), cur)); close()
                 if blk is not None or BASE:
-                    name = f'h{MODE}_p{pi + 1}_{txt}.webp'; w, h = crop(pg, l, name)
+                    name = f'h{MODE}_p{pi + 1}_{txt}.webp'; name, w, h = crop(pg, l, name, versioned=bool(discarded_math))
                     fig = [name, w, h, [line_text(m[5]) for m in sorted(members[int(txt)], key=lambda m: (round(m[0]), m[1]))]]
                     (blk['lines'] if blk is not None else BASE[-1]['items']).append(fig)
                 continue
@@ -355,3 +362,4 @@ def main():
     print('clauses', len(base), 'with text', sum(1 for e in base if e['text'].strip()), '| clauses with history', sum(1 for v in out.values() if v['blocks']), 'blocks', nb, 'cur markers', sum(1 for v in out.values() if v['cur']))
 main()
 print('rejected', len(REJ), REJ[:20]); print('figs after block end', len(ENDFIG), ENDFIG[:40])
+print('discarded phantom math extenders', len(MATH_ARTIFACTS), MATH_ARTIFACTS)
