@@ -428,6 +428,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 <script id="data" type="application/json">__DATA__</script>
 <script>
 (function () {
+  const PAGE_BUILD = '__BUILD__';
   const DATA = JSON.parse(document.getElementById('data').textContent);
   // 제목만 있는 상위 조항도 참조할 수 있도록 검색용 필터링 전에 보관한다.
   const REF_ENTRIES = Object.fromEntries(DATA.b22.concat(DATA.b24).map(e => [e.id, e]));
@@ -1269,7 +1270,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     POS[k] = getY();
     try { localStorage.setItem('kpos', JSON.stringify(POS)); localStorage.setItem('kview', view ? JSON.stringify(view) : ''); } catch (e) {}
   }
-  function restorePos(k) { clearTimeout(st); hold = Date.now() + 500; const y = POS[k] || 0; setY(y); requestAnimationFrame(() => setY(y)); setTimeout(() => setY(y), 120); }
+  function restorePos(k, position) { clearTimeout(st); hold = Date.now() + 500; const y = position == null ? (POS[k] || 0) : position; setY(y); requestAnimationFrame(() => setY(y)); setTimeout(() => setY(y), 120); }
   var st; window.addEventListener('scroll', () => { clearTimeout(st); st = setTimeout(savePos, 250); }, { passive: true });
   document.addEventListener('scroll', () => { clearTimeout(st); st = setTimeout(savePos, 250); }, { passive: true, capture: true });
 
@@ -1763,7 +1764,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       document.documentElement.classList.toggle('embedded', o.hideHeader !== false);
       if (o.hideSub) document.querySelector('.brand .sub').hidden = true;
     },
-    version: '2026-10-13'
+    version: '2026-10-13',
+    build: PAGE_BUILD
   };
   // 주소 해시로 초기 검색어 전달: kijun.html#q=토가드 (브라우저/WebView 공통)
   try { const h = decodeURIComponent(location.hash || ''); const m = h.match(/^#q=(.+)$/); if (m) { $('q').value = m[1]; } } catch (e) {}
@@ -1772,9 +1774,40 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   try { const last = localStorage.getItem('kq'); if (last && !$('q').value) $('q').value = last; } catch (e) {}
   // 마지막으로 읽던 장/회차로 복귀
   try { const v = JSON.parse(localStorage.getItem('kview') || 'null'); if (v && !$('q').value.trim() && !location.hash) view = v; } catch (e) {}
+  let refreshState = null;
+  try { refreshState = JSON.parse(sessionStorage.getItem('krefresh') || 'null'); sessionStorage.removeItem('krefresh'); } catch (e) {}
+  if (refreshState && refreshState.q === $('q').value && ['all','b22','b24','std','fail'].includes(refreshState.src)) src = refreshState.src;
   $('q').addEventListener('change', () => { try { localStorage.setItem('kq', $('q').value); } catch (e) {} });
   srcSync();
   render();
-  if (view) restorePos(view.src + '|' + view.key); else if (!$('q').value.trim()) restorePos('toc');
+  if (refreshState && refreshState.q === $('q').value && Number.isFinite(refreshState.y)) restorePos(curKey(), refreshState.y);
+  else if (view) restorePos(view.src + '|' + view.key); else if (!$('q').value.trim()) restorePos('toc');
+
+  // 열어 둔 탭/뒤로가기에 옛 HTML이 남아도, 복귀 시 게시 버전을 확인한다.
+  let checkingRelease = false;
+  const deferRelease = () => document.hidden || document.activeElement?.matches('input, textarea, select, [contenteditable="true"]') || document.querySelector('[role="dialog"]:not([hidden])');
+  async function checkRelease() {
+    if (checkingRelease || deferRelease() || !/^[a-f0-9]{16}$/.test(PAGE_BUILD)) return;
+    checkingRelease = true;
+    try {
+      const response = await fetch('release.json', { cache: 'no-store' });
+      if (!response.ok) return;
+      const latest = (await response.json()).version;
+      if (!/^[a-f0-9]{16}$/.test(latest) || latest === PAGE_BUILD || deferRelease()) return;
+      const url = new URL(location.href);
+      if (url.searchParams.get('v') === latest) return; // CDN 반영 중 반복 이동 방지
+      const q = $('q').value;
+      savePos();
+      try {
+        localStorage.setItem('kq', q); localStorage.setItem('kview', view ? JSON.stringify(view) : '');
+        sessionStorage.setItem('krefresh', JSON.stringify({ src, q, y: getY() }));
+      } catch (e) {}
+      url.searchParams.set('v', latest); url.hash = q ? 'q=' + encodeURIComponent(q) : '';
+      location.replace(url.href);
+    } catch (e) { /* 연결이 끊겨도 읽던 본문은 유지한다. */ }
+    finally { checkingRelease = false; }
+  }
+  window.addEventListener('pageshow', checkRelease);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) checkRelease(); });
 })();
 </script>

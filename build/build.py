@@ -52,7 +52,10 @@ d['std_asset_links'], d['history_asset_links'] = build_context_asset_links(d, d[
 json.dump(d, open('data.json', 'w', encoding='utf-8'), ensure_ascii=False)
 t = open('template.html', encoding='utf-8').read()
 s = json.dumps(d, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
-body = t.replace('__DATA__', s); open('kijun.html', 'w', encoding='utf-8').write(body)
+import hashlib
+release = hashlib.sha256((t + s).encode('utf-8')).hexdigest()[:16]
+json.dump({'version': release}, open('app_pkg/release.json', 'w', encoding='utf-8'))
+body = t.replace('__BUILD__', release).replace('__DATA__', s); open('kijun.html', 'w', encoding='utf-8').write(body)
 full = '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body + '\n</body>\n</html>\n'
 open('app_pkg/kijun.html', 'w', encoding='utf-8').write(full)
 out = {'b22': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e in d['b22'] if e['text'].strip()],

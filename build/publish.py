@@ -13,6 +13,7 @@ subprocess.run(['git', '-C', R, 'pull', '-q', '--rebase', '--autostash', 'origin
 t = open(os.path.join(B, 'app_pkg', 'kijun.html'), encoding='utf-8').read()
 t = t.replace('<meta charset="utf-8">', '<meta charset="utf-8">\n<title>검사기준 통합검색</title>\n<meta name="robots" content="noindex">', 1)
 open(os.path.join(R, 'index.html'), 'w', encoding='utf-8', newline='\n').write(t)
+shutil.copy2(os.path.join(B, 'app_pkg', 'release.json'), os.path.join(R, 'release.json'))
 for d in ('fig', 'stdimg'):
     if not os.path.isdir(os.path.join(B, d)): continue   # stdimg/ 는 --images 로 다시 잘랐을 때만
     shutil.rmtree(os.path.join(R, d), ignore_errors=True)
