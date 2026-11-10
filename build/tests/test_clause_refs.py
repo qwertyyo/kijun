@@ -47,7 +47,7 @@ class ClauseReferences(unittest.TestCase):
             '__DATA__', json.dumps(data, ensure_ascii=False).replace('</', '<\\/'))
         # A test-only hook exercises every real card/history, without exporting app internals.
         hook_at = body.rfind('})();')
-        body = body[:hook_at] + 'window.__refTest = { card, historyHtml, linkClauseRefs, byId, REF_ENTRIES, ES_TABLES };\n' + body[hook_at:]
+        body = body[:hook_at] + 'window.__refTest = { card, historyHtml, linkClauseRefs, byId, REF_ENTRIES, ES_TABLES, REF_ASSETS, assetMentions, assetTargets, referenceSource };\n' + body[hook_at:]
         # Preserve the real build wrapper, including its [hidden] rule for the image viewer.
         (site / 'index.html').write_text(original.split('<body>', 1)[0] + '<body>' + body + '</body></html>')
         (site / 'config.json').write_text('{"synApi":""}')
@@ -118,7 +118,7 @@ class ClauseReferences(unittest.TestCase):
         card.locator('.body [data-ref-num="16.3"]').click()
         self.assertIn('16.3', self.page.locator('.ref-title').inner_text())
         self.assertGreater(self.page.locator('.ref-content .card').count(), 1)
-        ref = self.page.locator('.ref-content .clause-ref').first
+        ref = self.page.locator('.ref-content [data-ref-ids]').first
         n = ref.get_attribute('data-ref-num')
         self.page.locator('.ref-content').evaluate('(e) => e.scrollTop = 40')
         ref.click()
@@ -253,7 +253,7 @@ class ClauseReferences(unittest.TestCase):
     def test_escalator_uses_escalator_clauses(self):
         self.page.evaluate('KIJUN.setSource("b24")')
         self.search('핸드레일')
-        refs = self.page.locator('#results .card.b24 .clause-ref')
+        refs = self.page.locator('#results .card.b24 [data-ref-ids]')
         self.assertGreater(refs.count(), 0)
         self.assertTrue(all(r.startswith('b24-') for r in refs.evaluate_all('(es)=>es.map(e=>e.dataset.refIds)')))
         refs.first.click()
@@ -395,26 +395,162 @@ class ClauseReferences(unittest.TestCase):
         self.page.keyboard.press('Escape')
         self.assertTrue(self.page.locator('.ref-window').is_hidden())
 
+    def test_every_asset_opens_and_every_image_loads_at_mobile_width(self):
+        keys = self.page.evaluate('Object.keys(__refTest.REF_ASSETS)')
+        self.assertGreaterEqual(len(keys), 121)
+        for start in range(0, len(keys), 15):
+            self.page.evaluate('''async (keys) => {
+              for (const key of keys) {
+                const asset = __refTest.REF_ASSETS[key];
+                const button = document.createElement('button');button.dataset.refAssets=key;
+                document.body.appendChild(button);button.click();button.remove();
+                const root = document.querySelector('.ref-content');
+                if (root.querySelector('[data-asset-key]')?.dataset.assetKey !== key) throw Error('Wrong asset: '+key);
+                const images = Array.from(root.querySelectorAll('img'));
+                if (images.length !== asset.pages.length) throw Error('Incomplete asset: '+key);
+                for (let i=0;i<images.length;i++) {
+                  await images[i].decode();
+                  if (images[i].naturalWidth !== asset.pages[i].width || images[i].naturalHeight !== asset.pages[i].height) throw Error('Image dimensions: '+key);
+                }
+                if (document.body.scrollWidth > innerWidth) throw Error('Mobile overflow: '+key);
+                document.querySelector('[data-ref-close]').click();
+              }
+            }''', keys[start:start+15])
+        print('All reference popups/images verified:', len(keys))
+
+    def test_all_current_internal_named_references_resolve(self):
+        audit = self.page.evaluate('''() => {
+          const t=__refTest, missing=[], external=[];let checked=0;
+          for (const e of Object.values(t.REF_ENTRIES)) {
+            const text=(e.title+'\\n'+e.text).replace(/\\x10[^\\x11]*\\x11/g,'').replace(/\\[[^\\]]*\\]/g,'');
+            for (const line of text.split('\\n')) for (const m of t.assetMentions(line)) {
+              checked++;
+              if (t.referenceSource(e,line.slice(0,m.at))==='unsupported') {external.push(e.id+': '+m.text);continue;}
+              if (!t.assetTargets(m.kind,m.num,e,line,m.at).assets.length) missing.push(e.id+': '+m.text);
+            }
+          }
+          return {checked,missing,external};
+        }''')
+        self.assertGreater(audit['checked'], 150)
+        self.assertEqual(audit['missing'], [])
+        print('Current named-reference audit:', audit)
+
+    def test_duplicate_numbers_external_standards_and_old_captions(self):
+        cases = self.page.evaluate('''() => {
+          const t=__refTest;
+          const get=(id,text,kind,num)=>t.assetTargets(kind,num,t.REF_ENTRIES[id],text,text.indexOf(kind==='table'?'표':'그림'));
+          return {
+            buttons:get('b22-16.1.5.2.4','표 16 참조','table','16').assets,
+            verification:get('b22-18.2','표 16 참조','table','16').assets,
+            rail:get('b22-Ⅷ.2.1','그림 Ⅷ.1 참조','figure','Ⅷ.1').assets,
+            ladder:get('b22-Ⅶ.5','그림 Ⅷ.1 참조','figure','Ⅷ.1').assets,
+            ks:get('b22-9.7.2','KS B ISO 13857, 표 4에 따른다','table','4').assets,
+            oldCaption:get('b24-5.5.3.4','[ 그림 1 스커트 디플렉터의 요건 ]','figure','1').assets,
+            alias:get('b22-Ⅻ','다음 표 Ⅱ.1은 고장 배제를 기술한다','table','Ⅱ.1'),
+            compound:t.assetMentions('그림 24.1 및 24.2, 그림 27.1, 27.2 및 27.3').map(m=>m.num)
+          };
+        }''')
+        self.assertEqual(cases['buttons'], ['b22-table-16'])
+        self.assertEqual(cases['verification'], ['b22-table-16-verification'])
+        self.assertEqual(cases['rail'], ['b22-figure-Ⅷ.1-p331'])
+        self.assertEqual(cases['ladder'], ['b22-figure-Ⅷ.1'])
+        self.assertEqual(cases['ks'], [])
+        self.assertEqual(cases['oldCaption'], [])
+        self.assertEqual(cases['alias']['assets'], ['b22-table-Ⅻ.1'])
+        self.assertIn('표 Ⅻ.1', cases['alias']['note'])
+        self.assertEqual(cases['compound'], ['24.1','24.2','27.1','27.2','27.3'])
+
+    def test_parenthesized_table_row_is_not_a_definition_clause(self):
+        actual = self.page.evaluate('''() => {
+          const t=__refTest,e=t.REF_ENTRIES['b22-14.3.2.2'];
+          document.querySelector('#results').innerHTML=t.card(e,null);
+          t.linkClauseRefs(document.querySelector('#results'),e);
+          const buttons=Array.from(document.querySelectorAll('.body [data-ref-assets]'));
+          const row=buttons.find(b=>b.textContent==='3.6');
+          if (!row) throw Error('Missing table row');row.click();
+          return {target:row.dataset.refAssets, wrong:document.querySelectorAll('.body [data-ref-ids="b22-3.6"]').length};
+        }''')
+        self.assertEqual(actual, {'target':'b22-table-Ⅻ.1','wrong':0})
+        self.assertIn('표 Ⅻ.1', self.page.locator('.ref-title').inner_text())
+        content=self.page.locator('.ref-content');target=self.page.locator('[data-table-page="3"]')
+        self.assertAlmostEqual(target.bounding_box()['y'],content.bounding_box()['y'],delta=2)
+
+    def test_history_uses_its_own_illustrations(self):
+        stats = self.page.evaluate('''() => {
+          const t=__refTest;let historical=0;
+          for (const e of Object.values(t.byId)) {
+            if (!e.h) continue;
+            const root=document.createElement('div');root.className='hist';root.innerHTML=t.historyHtml(e);t.linkClauseRefs(root,e);
+            root.querySelectorAll('[data-ref-assets]').forEach(b=>{
+              for (const key of b.dataset.refAssets.split(',')) {
+                if (!t.REF_ASSETS[key].historical) throw Error('Current image in history: '+e.id+' '+key);
+                historical++;
+              }
+            });
+          }
+          return historical;
+        }''')
+        self.assertGreater(stats, 10)
+        print('Historical references to their own images:', stats)
+
+    def test_standardization_external_and_historical_references(self):
+        self.page.evaluate('KIJUN.setSource("std")')
+        self.search('더블랩 권상도르래')
+        card = self.page.locator('#std-424')
+        if 'open' not in card.get_attribute('class').split():
+            card.locator('.more').click()
+        self.assertEqual(card.locator('.body [data-ref-assets*="table-4"]').count(), 0)
+        self.assertGreater(card.locator('.body [data-ref-assets="b22-figure-19"]').count(), 0)
+        self.search('화물용 문열림출발방지장치')
+        card = self.page.locator('#std-722')
+        if 'open' not in card.get_attribute('class').split():
+            card.locator('.more').click()
+        card.locator('.body [data-ref-assets="b22-figure-20"]').click()
+        self.assertIn('그림 20', self.page.locator('.ref-title').inner_text())
+        self.page.locator('[data-ref-close]').click()
+        self.search('화물용 자동차용 제원')
+        card = self.page.locator('#std-329')
+        if 'open' not in card.get_attribute('class').split():
+            card.locator('.more').click()
+        if card.locator('.bg[hidden]').count():
+            card.locator('.bgtoggle').click()
+        card.locator('.body [data-ref-assets^="history-"]').first.click()
+        self.assertIn('적용 연혁', self.page.locator('.ref-title').inner_text())
+        self.assertIn('hel_p111_', self.page.locator('.ref-content img').first.get_attribute('src'))
+
+    def test_external_clause_scope_survives_paragraph_breaks_in_quotations(self):
+        refs=self.page.evaluate('''() => {
+          const t=__refTest,e=t.byId['std-757'];const root=document.createElement('div');root.innerHTML=t.card(e,null);t.linkClauseRefs(root,e);
+          const actual=Array.from(root.querySelectorAll('[data-ref-ids]')).map(b=>({text:b.textContent,ids:b.dataset.refIds}));
+          const sample=document.createElement('div');sample.innerHTML='<section class="sec"><h3>관련 법령 / 고시</h3><p>별표22</p><p>16.3.2에 따른 기준</p><p>참고: EN81-20</p><p>5.12.3.2에 따른 외부 규격</p><p>별표24</p><p>5.12.3.2에 따른 기준</p></section>';
+          t.linkClauseRefs(sample,{src:'std',title:''});
+          return {actual,sample:Array.from(sample.querySelectorAll('[data-ref-ids]')).map(b=>b.dataset.refIds)};
+        }''')
+        self.assertTrue(any(r['text']=='16.3.2' and r['ids']=='b22-16.3.2' for r in refs['actual']))
+        self.assertFalse(any(r['text']=='5.12.3.2' for r in refs['actual']))
+        self.assertEqual(refs['sample'],['b22-16.3.2','b24-5.12.3.2'])
+
     def test_all_cards_and_history_keep_text_and_resolve_existing_targets(self):
         stats = self.page.evaluate('''() => {
           const t = window.__refTest;
           let cards = 0, histories = 0, links = 0;
-          const check = (html, entry) => {
+          const check = (html, entry, historical=false) => {
             const root = document.createElement('div'); root.innerHTML = html;
+            if (historical) root.className='hist';
             const text = root.textContent;
             t.linkClauseRefs(root, entry);
             if (root.textContent !== text) throw Error('Text changed: ' + entry.id);
             root.querySelectorAll('.clause-ref').forEach(b => {
               if (b.querySelector('button')) throw Error('Nested button: ' + entry.id);
-              if (b.dataset.refTable) {
-                if (!t.ES_TABLES[b.dataset.refTable]) throw Error('Missing table: ' + b.dataset.refTable);
+              if (b.dataset.refAssets) {
+                b.dataset.refAssets.split(',').forEach(key => { if (!t.REF_ASSETS[key]) throw Error('Missing asset: ' + key); });
               } else b.dataset.refIds.split(',').forEach(id => { if (!t.REF_ENTRIES[id]) throw Error('Missing target: ' + id); });
               links++;
             });
           };
           for (const entry of Object.values(t.byId)) {
             check(t.card(entry, null), entry); cards++;
-            if (entry.h) { check(t.historyHtml(entry), entry); histories++; }
+            if (entry.h) { check(t.historyHtml(entry), entry, true); histories++; }
           }
           return {cards, histories, links};
         }''')

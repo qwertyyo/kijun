@@ -1,0 +1,1838 @@
+{
+  "sources": {
+    "b22": {
+      "pdf": "hist_src/hist.pdf",
+      "sha256": "976f529387ce94a572f57a41bd9c51fc0aac5e9e8f7ae793309647dc77c0dfb3"
+    },
+    "b24": {
+      "pdf": "hist_es/hist.pdf",
+      "sha256": "22f679b5a30711bba44b27b02b7f4bbf533583937e27bc06193f2eb59c042cb5"
+    }
+  },
+  "assets": [
+    {
+      "key": "b22-table-1",
+      "src": "b22",
+      "kind": "table",
+      "num": "1",
+      "owner": "b22-6.5.6.1.1",
+      "title": "카, 균형추 및 평형추의 끝단 위치",
+      "caption_page": 41,
+      "caption": "표1",
+      "files": [
+        "hel_p41_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-2",
+      "src": "b22",
+      "kind": "table",
+      "num": "2",
+      "owner": "b22-6.5.7.1",
+      "title": "상부공간의 피난공간 크기",
+      "caption_page": 43,
+      "caption": "표2",
+      "files": [
+        "hel_p43_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-3",
+      "src": "b22",
+      "kind": "table",
+      "num": "3",
+      "owner": "b22-6.5.8.1",
+      "title": "피트의 피난공간 크기",
+      "caption_page": 49,
+      "caption": "표3",
+      "files": [
+        "hel_p49_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-4",
+      "src": "b22",
+      "kind": "table",
+      "num": "4",
+      "owner": "b22-7.5.3.4",
+      "title": "진자충격시험의 타격 지점",
+      "caption_page": 79,
+      "caption": "표4",
+      "files": [
+        "hel_p79_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-5",
+      "src": "b22",
+      "kind": "table",
+      "num": "5",
+      "owner": "b22-8.2.1.4",
+      "title": "정격하중 및 최대 카 유효 면적",
+      "caption_page": 106,
+      "caption": "표5",
+      "files": [
+        "hel_p106_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-6",
+      "src": "b22",
+      "kind": "table",
+      "num": "6",
+      "owner": "b22-8.2.2.2",
+      "title": "화물용 엘리베이터의 정격하중 및 최대 카 유효 면적",
+      "caption_page": 109,
+      "caption": "표6",
+      "files": [
+        "hel_p109_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-7",
+      "src": "b22",
+      "kind": "table",
+      "num": "7",
+      "owner": "b22-8.2.3.1",
+      "title": "엘리베이터의 정원 및 최소 카 유효 면적",
+      "caption_page": 110,
+      "caption": "표7",
+      "files": [
+        "hel_p110_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-8",
+      "src": "b22",
+      "kind": "table",
+      "num": "8",
+      "owner": "b22-8.3.2.3",
+      "title": "카 벽에 사용되는 평면 유리판",
+      "caption_page": 115,
+      "caption": "표8",
+      "files": [
+        "hel_p115_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-9",
+      "src": "b22",
+      "kind": "table",
+      "num": "9",
+      "owner": "b22-9.7.1",
+      "title": "도르래, 풀리 및 스프로킷의 보호",
+      "caption_page": 139,
+      "caption": "표9",
+      "files": [
+        "hel_p139_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-10",
+      "src": "b22",
+      "kind": "table",
+      "num": "10",
+      "owner": "b22-10.1.2",
+      "title": "권상 구동 및 포지티브 구동 엘리베이터의 보호수단",
+      "caption_page": 143,
+      "caption": "표10",
+      "files": [
+        "hel_p143_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-11",
+      "src": "b22",
+      "kind": "table",
+      "num": "11",
+      "owner": "b22-10.1.3",
+      "title": "유압식 엘리베이터의 보호수단",
+      "caption_page": 144,
+      "caption": "표11",
+      "files": [
+        "hel_p144_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-12",
+      "src": "b22",
+      "kind": "table",
+      "num": "12",
+      "owner": "b22-11.3",
+      "title": "하중 조건별 고려해야 할 하중과 힘",
+      "caption_page": 185,
+      "caption": "표12",
+      "files": [
+        "hel_p185_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-13",
+      "src": "b22",
+      "kind": "table",
+      "num": "13",
+      "owner": "b22-11.4.4",
+      "title": "충격 계수",
+      "caption_page": 186,
+      "caption": "표13",
+      "files": [
+        "hel_p186_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-14",
+      "src": "b22",
+      "kind": "table",
+      "num": "14",
+      "owner": "b22-11.4.5",
+      "title": "주행안내 레일의 안전율",
+      "caption_page": 186,
+      "caption": "표14",
+      "files": [
+        "hel_p186_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-15",
+      "src": "b22",
+      "kind": "table",
+      "num": "15",
+      "owner": "b22-14.1.3.1",
+      "title": "절연 저항",
+      "caption_page": 225,
+      "caption": "표15",
+      "files": [
+        "hel_p225_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-16",
+      "src": "b22",
+      "kind": "table",
+      "num": "16",
+      "owner": "b22-16.1.5.2.4",
+      "title": "점검운전 조작반 – 버튼 지정",
+      "caption_page": 254,
+      "caption": "표16",
+      "files": [
+        "hel_p254_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-Ⅰ.1",
+      "src": "b22",
+      "kind": "table",
+      "num": "Ⅰ.1",
+      "owner": "b22-Ⅰ",
+      "title": "전기안전장치 목록",
+      "caption_page": 314,
+      "caption": "표Ⅰ.1",
+      "files": [
+        "hel_p314_0.webp",
+        "hel_p315_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-Ⅳ.1",
+      "src": "b22",
+      "kind": "table",
+      "num": "Ⅳ.1",
+      "owner": "b22-Ⅳ",
+      "title": "로프의 마모 및 파손상태에 대한 기준",
+      "caption_page": 322,
+      "caption": "표Ⅳ.1",
+      "files": [
+        "hel_p322_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-Ⅳ.2",
+      "src": "b22",
+      "kind": "table",
+      "num": "Ⅳ.2",
+      "owner": "b22-Ⅳ",
+      "title": "마모길이",
+      "caption_page": 322,
+      "caption": "표Ⅳ.2",
+      "files": [
+        "hel_p323_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-Ⅹ.1",
+      "src": "b22",
+      "kind": "table",
+      "num": "Ⅹ.1",
+      "owner": "b22-Ⅹ.2.1",
+      "title": "권상도르래의 등가번호 평가",
+      "caption_page": 349,
+      "caption": "표Ⅹ.1",
+      "files": [
+        "hel_p349_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-Ⅻ.1",
+      "src": "b22",
+      "kind": "table",
+      "num": "Ⅻ.1",
+      "owner": "b22-Ⅻ",
+      "title": "전자부품 – 고장 배제",
+      "caption_page": 359,
+      "caption": "표Ⅻ.1",
+      "files": [
+        "hel_p359_0.webp",
+        "hel_p360_0.webp",
+        "hel_p361_0.webp",
+        "hel_p362_0.webp",
+        "hel_p363_0.webp"
+      ],
+      "row_pages": {
+        "3.6": 3
+      }
+    },
+    {
+      "key": "b22-table-XⅢ.1",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.1",
+      "owner": "b22-XⅢ.1",
+      "title": "결함을 방지하고 감지하기 위한 공통 조치 – 하드웨어 설계",
+      "caption_page": 364,
+      "caption": "표XⅢ.1",
+      "files": [
+        "hel_p364_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-XⅢ.2",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.2",
+      "owner": "b22-XⅢ.1",
+      "title": "결함을 방지하고 감지하기 위한 공통 조치 – 소프트웨어 설계",
+      "caption_page": 364,
+      "caption": "표XⅢ.2",
+      "files": [
+        "hel_p364_0.webp",
+        "hel_p365_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-XⅢ.3",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.3",
+      "owner": "b22-XⅢ.1",
+      "title": "설계 및 구현 프로세스의 공통 조치",
+      "caption_page": 365,
+      "caption": "표XⅢ.3",
+      "files": [
+        "hel_p365_0.webp",
+        "hel_p366_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-XⅢ.4",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.4",
+      "owner": "b22-XⅢ.2",
+      "title": "SIL 1에 따른 구체적인 조치",
+      "caption_page": 366,
+      "caption": "표XⅢ.4",
+      "files": [
+        "hel_p366_0.webp",
+        "hel_p367_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-XⅢ.5",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.5",
+      "owner": "b22-XⅢ.2",
+      "title": "SIL 2에 따른 구체적인 조치",
+      "caption_page": 367,
+      "caption": "표XⅢ.5",
+      "files": [
+        "hel_p367_0.webp",
+        "hel_p368_1.webp"
+      ]
+    },
+    {
+      "key": "b22-table-XⅢ.6",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.6",
+      "owner": "b22-XⅢ.2",
+      "title": "SIL 3에 따른 구체적인 조치",
+      "caption_page": 368,
+      "caption": "표XⅢ.6",
+      "files": [
+        "hel_p368_0.webp",
+        "hel_p369_0.webp"
+      ]
+    },
+    {
+      "key": "b22-table-XⅢ.7",
+      "src": "b22",
+      "kind": "table",
+      "num": "XⅢ.7",
+      "owner": "b22-XⅢ.3",
+      "title": "고장 제어에 대한 가능한 조치의 설명",
+      "caption_page": 369,
+      "caption": "표XⅢ.7",
+      "files": [
+        "hel_p370_0.webp",
+        "hel_p371_0.webp",
+        "hel_p372_0.webp",
+        "hel_p373_0.webp"
+      ],
+      "clips": [
+        [
+          369,
+          60,
+          616,
+          526,
+          807
+        ]
+      ]
+    },
+    {
+      "key": "b22-table-16-verification",
+      "src": "b22",
+      "kind": "table",
+      "num": "16",
+      "owner": "b22-18.2",
+      "title": "안전 요구사항 및 보호조치 검증 방법",
+      "caption_page": 310,
+      "caption": "표16",
+      "files": [
+        "hel_p310_0.webp",
+        "hel_p311_0.webp",
+        "hel_p312_0.webp",
+        "hel_p313_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-1",
+      "src": "b24",
+      "kind": "table",
+      "num": "1",
+      "owner": "b24-4.2",
+      "title": "이 기준에서 사용된 기호 및 해당 측정 단위",
+      "caption_page": 16,
+      "caption": "표1",
+      "files": [
+        "hes_p16_0.webp",
+        "hes_p17_0.webp",
+        "hes_p18_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-2",
+      "src": "b24",
+      "kind": "table",
+      "num": "2",
+      "owner": "b24-5.4.2.1.3.1",
+      "title": "에스컬레이터의 제동부하 결정",
+      "caption_page": 37,
+      "caption": "표2",
+      "files": [
+        "hes_p37_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-3",
+      "src": "b24",
+      "kind": "table",
+      "num": "3",
+      "owner": "b24-5.4.2.1.3.2",
+      "title": "에스컬레이터의 정지거리",
+      "caption_page": 37,
+      "caption": "표3",
+      "files": [
+        "hes_p37_2.webp"
+      ]
+    },
+    {
+      "key": "b24-table-4",
+      "src": "b24",
+      "kind": "table",
+      "num": "4",
+      "owner": "b24-5.4.2.1.3.3",
+      "title": "무빙워크의 제동부하 결정",
+      "caption_page": 38,
+      "caption": "표4",
+      "files": [
+        "hes_p38_1.webp"
+      ]
+    },
+    {
+      "key": "b24-table-5",
+      "src": "b24",
+      "kind": "table",
+      "num": "5",
+      "owner": "b24-5.4.2.1.3.4",
+      "title": "무빙워크의 정지거리",
+      "caption_page": 39,
+      "caption": "표5",
+      "files": [
+        "hes_p39_1.webp"
+      ]
+    },
+    {
+      "key": "b24-table-6",
+      "src": "b24",
+      "kind": "table",
+      "num": "6",
+      "owner": "b24-5.12.1.1",
+      "title": "보호장치 및 기능",
+      "caption_page": 82,
+      "caption": "표6",
+      "files": [
+        "hes_p82_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-7",
+      "src": "b24",
+      "kind": "table",
+      "num": "7",
+      "owner": "b24-5.12.2.1",
+      "title": "안전 제어 시스템 구현을 위한 요구조건",
+      "caption_page": 84,
+      "caption": "표7",
+      "files": [
+        "hes_p84_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-8",
+      "src": "b24",
+      "kind": "table",
+      "num": "8",
+      "owner": "b24-5.12.2.7.1",
+      "title": "안전장치가 감지해야 할 사항",
+      "caption_page": 89,
+      "caption": "표8",
+      "files": [
+        "hes_p89_0.webp",
+        "hes_p90_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-9",
+      "src": "b24",
+      "kind": "table",
+      "num": "9",
+      "owner": "b24-5.12.2.9.1",
+      "title": "전기적 차단 시퀀스 감지에 대한 요구조건",
+      "caption_page": 98,
+      "caption": "표9",
+      "files": [
+        "hes_p98_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-10",
+      "src": "b24",
+      "kind": "table",
+      "num": "10",
+      "owner": "b24-5.12.3.1",
+      "title": "제어장치 및 기능",
+      "caption_page": 99,
+      "caption": "표10",
+      "files": [
+        "hes_p99_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-11",
+      "src": "b24",
+      "kind": "table",
+      "num": "11",
+      "owner": "b24-8.2",
+      "title": "안전 요구사항 및 보호조치 검증 방법",
+      "caption_page": 120,
+      "caption": "표11",
+      "files": [
+        "hes_p120_0.webp",
+        "hes_p121_0.webp",
+        "hes_p122_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-Ⅱ.1",
+      "src": "b24",
+      "kind": "table",
+      "num": "Ⅱ.1",
+      "owner": "b24-Ⅱ.2",
+      "title": "고장 배제",
+      "caption_page": 139,
+      "caption": "표Ⅱ.1",
+      "files": [
+        "hes_p139_0.webp",
+        "hes_p140_0.webp",
+        "hes_p141_1.webp"
+      ]
+    },
+    {
+      "key": "b24-table-Ⅵ.1",
+      "src": "b24",
+      "kind": "table",
+      "num": "Ⅵ.1",
+      "owner": "b24-Ⅵ.1",
+      "title": "최대 수송능력",
+      "caption_page": 146,
+      "caption": "표Ⅵ.1",
+      "files": [
+        "hes_p146_0.webp"
+      ]
+    },
+    {
+      "key": "b24-table-Ⅷ.1",
+      "src": "b24",
+      "kind": "table",
+      "num": "Ⅷ.1",
+      "owner": "b24-Ⅷ",
+      "title": "미끄럼 방지 평가 그룹에 대한 경사각의 전체 평균값 할당",
+      "caption_page": 149,
+      "caption": "표Ⅷ.1",
+      "files": [
+        "hes_p149_0.webp"
+      ]
+    },
+    {
+      "key": "b22-figure-1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "1",
+      "owner": "b22-6.5.2.3",
+      "title": "반-밀폐식 승강로",
+      "caption_page": 32,
+      "caption": "그림1",
+      "clips": [
+        [
+          32,
+          56,
+          69.28,
+          552,
+          655.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "2",
+      "owner": "b22-6.5.2.3",
+      "title": "반 밀폐식 승강로 – 거리",
+      "caption_page": 33,
+      "caption": "그림2",
+      "clips": [
+        [
+          33,
+          56,
+          69.28,
+          552,
+          379.2
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "3",
+      "owner": "b22-6.5.3.2",
+      "title": "카와 카 출입구를 마주하는 벽 사이의 틈새",
+      "caption_page": 38,
+      "caption": "그림3",
+      "clips": [
+        [
+          38,
+          56,
+          69.28,
+          552,
+          323.3
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-4",
+      "src": "b22",
+      "kind": "figure",
+      "num": "4",
+      "owner": "b22-6.5.7.1",
+      "title": "피난공간 축소의 최대 크기",
+      "caption_page": 42,
+      "caption": "그림4",
+      "clips": [
+        [
+          42,
+          56,
+          474.2,
+          552,
+          741.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-5",
+      "src": "b22",
+      "kind": "figure",
+      "num": "5",
+      "owner": "b22-6.5.7.2",
+      "title": "카 지붕에 고정된 부품과 승강로 천장에 고정된 가장 낮은 부품 사이의 최소 거리",
+      "caption_page": 44,
+      "caption": "그림5",
+      "clips": [
+        [
+          44,
+          56,
+          69.29,
+          552,
+          519.64
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-6",
+      "src": "b22",
+      "kind": "figure",
+      "num": "6",
+      "owner": "b22-6.5.8.2",
+      "title": "주행안내 레일 주변의 수평 거리 XH",
+      "caption_page": 50,
+      "caption": "그림6",
+      "clips": [
+        [
+          50,
+          56,
+          85.71,
+          552,
+          280.6
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-7",
+      "src": "b22",
+      "kind": "figure",
+      "num": "7",
+      "owner": "b22-6.5.8.2",
+      "title": "카 프레임 부분, 추락방지안전장치, 가이드 슈/롤러, 멈춤 쇠 장치의 최소 수직 거리",
+      "caption_page": 50,
+      "caption": "그림7",
+      "clips": [
+        [
+          50,
+          56,
+          297.04,
+          552,
+          559.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-8",
+      "src": "b22",
+      "kind": "figure",
+      "num": "8",
+      "owner": "b22-7.4.3",
+      "title": "경첩이 있는 승강장문과 접히는 카문의 조합",
+      "caption_page": 72,
+      "caption": "그림8",
+      "clips": [
+        [
+          72,
+          56,
+          585.08,
+          552,
+          770.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-9",
+      "src": "b22",
+      "kind": "figure",
+      "num": "9",
+      "owner": "b22-7.4.3",
+      "title": "경첩이 있는 승강장문과 수평 개폐식 카문의 조합",
+      "caption_page": 73,
+      "caption": "그림9",
+      "clips": [
+        [
+          73,
+          56,
+          69.28,
+          552,
+          239.6
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-10",
+      "src": "b22",
+      "kind": "figure",
+      "num": "10",
+      "owner": "b22-7.4.3",
+      "title": "기계적으로 연동되지 않은 수평 개폐식 승강장문과 카문의 조합",
+      "caption_page": 73,
+      "caption": "그림10",
+      "clips": [
+        [
+          73,
+          56,
+          259.52,
+          552,
+          461.3
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-11",
+      "src": "b22",
+      "kind": "figure",
+      "num": "11",
+      "owner": "b22-7.5.3.4",
+      "title": "진자충격시험의 타격 지점",
+      "caption_page": 80,
+      "caption": "그림11",
+      "clips": [
+        [
+          80,
+          56,
+          67.85,
+          552,
+          725.4
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-12",
+      "src": "b22",
+      "kind": "figure",
+      "num": "12",
+      "owner": "b22-7.9.1.2",
+      "title": "잠금 부품의 예시",
+      "caption_page": 92,
+      "caption": "그림12",
+      "clips": [
+        [
+          92,
+          56,
+          408.87,
+          552,
+          573.3
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-13",
+      "src": "b22",
+      "kind": "figure",
+      "num": "13",
+      "owner": "b22-7.9.3.1",
+      "title": "비상잠금해제를 위한 삼각열쇠 구멍",
+      "caption_page": 96,
+      "caption": "그림13",
+      "clips": [
+        [
+          96,
+          56,
+          365.72,
+          552,
+          557.6
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-14",
+      "src": "b22",
+      "kind": "figure",
+      "num": "14",
+      "owner": "b22-8.2.2.1",
+      "title": "운송 장치에 의한 하중에 대한 그림문자",
+      "caption_page": 108,
+      "caption": "그림14",
+      "clips": [
+        [
+          108,
+          56,
+          69.28,
+          552,
+          366.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-15",
+      "src": "b22",
+      "kind": "figure",
+      "num": "15",
+      "owner": "b22-8.7.3",
+      "title": "추락 보호 부품의 예(전기식 엘리베이터)",
+      "caption_page": 122,
+      "caption": "그림15",
+      "clips": [
+        [
+          122,
+          56,
+          338.51,
+          552,
+          588.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-16",
+      "src": "b22",
+      "kind": "figure",
+      "num": "16",
+      "owner": "b22-8.7.3",
+      "title": "추락 보호 부품의 예(유압식 엘리베이터)",
+      "caption_page": 123,
+      "caption": "그림16",
+      "clips": [
+        [
+          123,
+          56,
+          69.28,
+          552,
+          315.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-17",
+      "src": "b22",
+      "kind": "figure",
+      "num": "17",
+      "owner": "b22-8.7.4",
+      "title": "카 지붕 보호난간 – 높이",
+      "caption_page": 124,
+      "caption": "그림17",
+      "clips": [
+        [
+          124,
+          56,
+          67.85,
+          552,
+          733.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-18",
+      "src": "b22",
+      "kind": "figure",
+      "num": "18",
+      "owner": "b22-9.7.1",
+      "title": "보호 수단(nip guard)의 예시",
+      "caption_page": 139,
+      "caption": "그림18",
+      "clips": [
+        [
+          139,
+          56,
+          89.64,
+          552,
+          738.9
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-19",
+      "src": "b22",
+      "kind": "figure",
+      "num": "19",
+      "owner": "b22-9.7.2",
+      "title": "로프 고정장치(retainer)의 배치 예시",
+      "caption_page": 141,
+      "caption": "그림19",
+      "clips": [
+        [
+          141,
+          56,
+          69.28,
+          552,
+          188.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-20",
+      "src": "b22",
+      "kind": "figure",
+      "num": "20",
+      "owner": "b22-10.7.5",
+      "title": "상승 및 하강 움직임에 대한 문열림출발방지장치 정지 요건",
+      "caption_page": 177,
+      "caption": "그림20",
+      "clips": [
+        [
+          177,
+          56,
+          65.09,
+          552,
+          440.1
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-21",
+      "src": "b22",
+      "kind": "figure",
+      "num": "21",
+      "owner": "b22-15.2.3.3",
+      "title": "안전 회로 평가를 위한 순서도",
+      "caption_page": 243,
+      "caption": "그림21",
+      "clips": [
+        [
+          243,
+          56,
+          159.55,
+          552,
+          601.4
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-22",
+      "src": "b22",
+      "kind": "figure",
+      "num": "22",
+      "owner": "b22-16.1.5.2.4",
+      "title": "점검운전 조작반 – 제어 장치 및 픽토그램",
+      "caption_page": 255,
+      "caption": "그림22",
+      "clips": [
+        [
+          255,
+          56,
+          69.28,
+          552,
+          365.2
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-23",
+      "src": "b22",
+      "kind": "figure",
+      "num": "23",
+      "owner": "b22-16.1.8.3",
+      "title": "바이패스(bypass) 픽토그램",
+      "caption_page": 259,
+      "caption": "그림23",
+      "clips": [
+        [
+          259,
+          56,
+          648.97,
+          552,
+          773.1
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-24.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "24.1",
+      "owner": "b22-17.2.2.1",
+      "title": "단독 소방구조용 엘리베이터 및 방화 구획된 로비의 배치도",
+      "caption_page": 279,
+      "caption": "그림24.1",
+      "clips": [
+        [
+          279,
+          56,
+          72.04,
+          552,
+          434.2
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-24.2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "24.2",
+      "owner": "b22-17.2.2.1",
+      "title": "다수의승강로에있는소방구조용엘리베이터및방화구획된로비의 배치도",
+      "caption_page": 279,
+      "caption": "그림24.2",
+      "clips": [
+        [
+          279,
+          56,
+          448.79,
+          552,
+          712.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-24.3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "24.3",
+      "owner": "b22-17.2.2.1",
+      "title": "다수의 승강로에 있는 이중 출입 소방구조용 엘리베이터 및 방화 구획된 로비의 배치도",
+      "caption_page": 280,
+      "caption": "그림24.3",
+      "clips": [
+        [
+          280,
+          56,
+          63.65,
+          552,
+          504.88
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-25",
+      "src": "b22",
+      "kind": "figure",
+      "num": "25",
+      "owner": "b22-17.2.2.1",
+      "title": "방화구획의 개념",
+      "caption_page": 281,
+      "caption": "그림25",
+      "clips": [
+        [
+          281,
+          56,
+          76.6,
+          552,
+          629.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-26",
+      "src": "b22",
+      "kind": "figure",
+      "num": "26",
+      "owner": "b22-17.2.4.6",
+      "title": "전기장치의 물에 대한 보호",
+      "caption_page": 286,
+      "caption": "그림26",
+      "clips": [
+        [
+          286,
+          56,
+          65.09,
+          552,
+          504.5
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-27.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "27.1",
+      "owner": "b22-17.2.5.7",
+      "title": "카에 부착된 휴대용 사다리를 이용하여 승강로 밖으로 구출",
+      "caption_page": 289,
+      "caption": "그림27.1",
+      "clips": [
+        [
+          289,
+          56,
+          173.21,
+          552,
+          761.2
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-27.2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "27.2",
+      "owner": "b22-17.2.5.7",
+      "title": "카에 부착된 휴대용 사다리를 이용한 자체 탈출",
+      "caption_page": 290,
+      "caption": "그림27.2",
+      "clips": [
+        [
+          290,
+          56,
+          63.65,
+          552,
+          583.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-27.3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "27.3",
+      "owner": "b22-17.2.5.7",
+      "title": "카 내부 캐비닛에 보관된 휴대용 사다리를 이용한 자체 탈출",
+      "caption_page": 291,
+      "caption": "그림27.3",
+      "clips": [
+        [
+          291,
+          56,
+          63.65,
+          552,
+          549.2
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-28",
+      "src": "b22",
+      "kind": "figure",
+      "num": "28",
+      "owner": "b22-17.2.8.1",
+      "title": "소방구조용 엘리베이터의 알림표지",
+      "caption_page": 292,
+      "caption": "그림28",
+      "clips": [
+        [
+          292,
+          56,
+          231.21,
+          552,
+          631.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-29",
+      "src": "b22",
+      "kind": "figure",
+      "num": "29",
+      "owner": "b22-17.2.9.1",
+      "title": "소방구조용 엘리베이터의 전원공급에 대한 예시",
+      "caption_page": 298,
+      "caption": "그림29",
+      "clips": [
+        [
+          298,
+          56,
+          442.56,
+          552,
+          698.9
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅳ.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅳ.1",
+      "owner": "b22-Ⅳ",
+      "title": "마모길이",
+      "caption_page": 322,
+      "caption": "그림Ⅳ.1",
+      "clips": [
+        [
+          322,
+          56,
+          213.59,
+          552,
+          612.4
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅴ.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅴ.1",
+      "owner": "b22-Ⅴ",
+      "title": "기계류 공간 - 접근 (6.2)",
+      "caption_page": 324,
+      "caption": "그림Ⅴ.1",
+      "clips": [
+        [
+          324,
+          56,
+          82.59,
+          552,
+          745.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅷ.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅷ.1",
+      "owner": "b22-Ⅶ.5",
+      "title": "피트 사다리의 종류(형식)",
+      "caption_page": 330,
+      "caption": "그림Ⅷ.1",
+      "clips": [
+        [
+          330,
+          56,
+          63.15,
+          552,
+          765.6
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅷ.1-p331",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅷ.1",
+      "owner": "b22-Ⅷ.2.1",
+      "title": "주행안내 레일의 축",
+      "caption_page": 331,
+      "caption": "그림Ⅷ.1",
+      "clips": [
+        [
+          331,
+          56,
+          445.43,
+          552,
+          640.6
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅷ.2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅷ.2",
+      "owner": "b22-Ⅷ.5",
+      "title": "플랜지 굽힙 계산의 치수",
+      "caption_page": 334,
+      "caption": "그림Ⅷ.2",
+      "clips": [
+        [
+          334,
+          56,
+          47.79,
+          552,
+          559.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅷ.3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅷ.3",
+      "owner": "b22-Ⅷ.7.1.2",
+      "title": "엘리베이터 카의 하중 분포 – 일반적인 경우",
+      "caption_page": 336,
+      "caption": "그림Ⅷ.3",
+      "clips": [
+        [
+          336,
+          56,
+          66.53,
+          552,
+          445.5
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅷ.4",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅷ.4",
+      "owner": "b22-Ⅷ.7.2.1.1",
+      "title": "추락방지안전장치 작동 – 엘리베이터 카의 하중 분포(X-축에 대해)",
+      "caption_page": 338,
+      "caption": "그림Ⅷ.4",
+      "clips": [
+        [
+          338,
+          56,
+          74.32,
+          552,
+          358.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅷ.5",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅷ.5",
+      "owner": "b22-Ⅷ.7.2.1.1",
+      "title": "추락방지안전장치 작동 – 엘리베이터 카의 하중 분포(Y-축에 대해)",
+      "caption_page": 338,
+      "caption": "그림Ⅷ.5",
+      "clips": [
+        [
+          338,
+          56,
+          371.35,
+          552,
+          616.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅸ.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅸ.1",
+      "owner": "b22-Ⅸ.2.2.1.1",
+      "title": "반원 언더컷 홈",
+      "caption_page": 341,
+      "caption": "그림Ⅸ.1",
+      "clips": [
+        [
+          341,
+          56,
+          509.68,
+          552,
+          782.3
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅸ.2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅸ.2",
+      "owner": "b22-Ⅸ.2.2.1.2",
+      "title": "V-홈",
+      "caption_page": 342,
+      "caption": "그림Ⅸ.2",
+      "clips": [
+        [
+          342,
+          56,
+          363.32,
+          552,
+          614.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅸ.3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅸ.3",
+      "owner": "b22-Ⅸ.2.2.2",
+      "title": "최소 마찰계수",
+      "caption_page": 343,
+      "caption": "그림Ⅸ.3",
+      "clips": [
+        [
+          343,
+          56,
+          305.79,
+          552,
+          548.1
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅸ.4",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅸ.4",
+      "owner": "b22-Ⅸ.3",
+      "title": "일반적인 경우",
+      "caption_page": 344,
+      "caption": "그림Ⅸ.4",
+      "clips": [
+        [
+          344,
+          56,
+          63.65,
+          552,
+          613.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅸ.5",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅸ.5",
+      "owner": "b22-Ⅸ.3.1",
+      "title": "예시 – 보상수단이 없는 경우",
+      "caption_page": 347,
+      "caption": "그림Ⅸ.5",
+      "clips": [
+        [
+          347,
+          56,
+          255.44,
+          552,
+          536.8
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅹ.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅹ.1",
+      "owner": "b22-Ⅹ.3",
+      "title": "최소 안전율의 평가",
+      "caption_page": 350,
+      "caption": "그림Ⅹ.1",
+      "clips": [
+        [
+          350,
+          56,
+          410.67,
+          552,
+          674.2
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅹ.2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅹ.2",
+      "owner": "b22-Ⅹ.4",
+      "title": "2:1 로핑 - V홈",
+      "caption_page": 351,
+      "caption": "그림Ⅹ.2",
+      "clips": [
+        [
+          351,
+          56,
+          359.61,
+          552,
+          623.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅹ.2-p352",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅹ.2",
+      "owner": "b22-Ⅹ.4",
+      "title": "1:1 로핑 – 언더컷 U홈",
+      "caption_page": 352,
+      "caption": "그림Ⅹ.2",
+      "clips": [
+        [
+          352,
+          56,
+          75.76,
+          552,
+          311.0
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅹ.3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅹ.3",
+      "owner": "b22-Ⅹ.4",
+      "title": "1:1 로핑(더블랩) - U홈",
+      "caption_page": 352,
+      "caption": "그림Ⅹ.3",
+      "clips": [
+        [
+          352,
+          56,
+          338.63,
+          552,
+          591.4
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.1",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.1",
+      "owner": "b22-Ⅺ.1.1",
+      "title": "표면 두께의 계산",
+      "caption_page": 353,
+      "caption": "그림Ⅺ.1",
+      "clips": [
+        [
+          353,
+          56,
+          171.74,
+          552,
+          357.3
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.2",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.2",
+      "owner": "b22-Ⅺ.1.2",
+      "title": "릴리빙 홈을 가진 편평한 기초",
+      "caption_page": 353,
+      "caption": "그림Ⅺ.2",
+      "clips": [
+        [
+          353,
+          56,
+          471.92,
+          552,
+          660.4
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.3",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.3",
+      "owner": "b22-Ⅺ.1.2",
+      "title": "캠버 기초",
+      "caption_page": 354,
+      "caption": "그림Ⅺ.3",
+      "clips": [
+        [
+          354,
+          56,
+          67.85,
+          552,
+          254.1
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.4",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.4",
+      "owner": "b22-Ⅺ.1.2",
+      "title": "플랜지 용접된 편평한 기초",
+      "caption_page": 354,
+      "caption": "그림Ⅺ.4",
+      "clips": [
+        [
+          354,
+          56,
+          310.1,
+          552,
+          491.9
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.5",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.5",
+      "owner": "b22-Ⅺ.1.3",
+      "title": "단 작동 잭",
+      "caption_page": 355,
+      "caption": "그림Ⅺ.5",
+      "clips": [
+        [
+          355,
+          56,
+          63.65,
+          552,
+          530.5
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.6",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.6",
+      "owner": "b22-Ⅺ.1.3",
+      "title": "외부 안내 없는 다단 잭",
+      "caption_page": 356,
+      "caption": "그림Ⅺ.6",
+      "clips": [
+        [
+          356,
+          56,
+          63.65,
+          552,
+          513.7
+        ]
+      ]
+    },
+    {
+      "key": "b22-figure-Ⅺ.7",
+      "src": "b22",
+      "kind": "figure",
+      "num": "Ⅺ.7",
+      "owner": "b22-Ⅺ.1.3",
+      "title": "외부 안내 있는 다단 잭",
+      "caption_page": 357,
+      "caption": "그림Ⅺ.7",
+      "clips": [
+        [
+          357,
+          56,
+          63.65,
+          552,
+          621.3
+        ]
+      ]
+    },
+    {
+      "key": "b24-figure-Ⅲ.1",
+      "src": "b24",
+      "kind": "figure",
+      "num": "Ⅲ.1",
+      "owner": "b24-Ⅲ",
+      "title": "고장안전회로의 초안 작성과 평가를 위한 흐름도",
+      "caption_page": 142,
+      "caption": "그림Ⅲ.1",
+      "clips": [
+        [
+          142,
+          68,
+          100,
+          546,
+          706
+        ]
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "entry": "b22-Ⅻ",
+      "kind": "table",
+      "num": "Ⅱ.1",
+      "target": "b22-table-Ⅻ.1",
+      "note": "원문 본문에는 표 Ⅱ.1로 적혀 있으며, 이어지는 표의 제목은 표 Ⅻ.1입니다."
+    }
+  ],
+  "history_overrides": [
+    {
+      "block": "b22-10.7.5:0",
+      "kind": "figure",
+      "num": "4",
+      "caption_page": 178,
+      "caption": "그림4",
+      "reason": "당시 도해가 이미지로 수록되어 제목 글자가 본문에서 추출되지 않음"
+    },
+    {
+      "block": "b24-5.10:1",
+      "kind": "figure",
+      "num": "2",
+      "caption_page": 66,
+      "caption": "그림2",
+      "reason": "당시 입면도·기호설명·치수표가 두 쪽으로 수록됨"
+    }
+  ],
+  "local_overrides": [
+    {
+      "entry": "std-77",
+      "kind": "figure",
+      "num": "1",
+      "title": "균형추 칸막이 폭 측정",
+      "files": [
+        "std-77_3b3485ec30.webp"
+      ]
+    },
+    {
+      "entry": "std-77",
+      "kind": "figure",
+      "num": "2",
+      "title": "균형추 칸막이 전산 입력",
+      "files": [
+        "std-77_b2c2480344.webp"
+      ]
+    },
+    {
+      "entry": "std-471",
+      "kind": "figure",
+      "num": "1",
+      "title": "자동차압 급기댐퍼·보호난간",
+      "files": [
+        "std-471_a13e39f172.webp"
+      ]
+    },
+    {
+      "entry": "std-471",
+      "kind": "figure",
+      "num": "2",
+      "title": "자동차압 급기댐퍼·보호난간",
+      "files": [
+        "std-471_a13e39f172.webp"
+      ]
+    },
+    {
+      "entry": "std-931",
+      "kind": "figure",
+      "num": "1",
+      "title": "자동차압 급기댐퍼·보호난간",
+      "files": [
+        "std-931_437abd57bb.webp"
+      ]
+    },
+    {
+      "entry": "std-931",
+      "kind": "figure",
+      "num": "2",
+      "title": "자동차압 급기댐퍼·보호난간",
+      "files": [
+        "std-931_437abd57bb.webp"
+      ]
+    },
+    {
+      "entry": "std-874",
+      "kind": "figure",
+      "num": "2",
+      "title": "균형체인 추락방지 추가 보호조치",
+      "files": [
+        "std-874_6ee733f6db.webp"
+      ]
+    },
+    {
+      "entry": "std-874",
+      "kind": "figure",
+      "num": "3",
+      "title": "균형체인 추락방지 추가 보호조치",
+      "files": [
+        "std-874_6ee733f6db.webp"
+      ]
+    },
+    {
+      "entry": "std-653",
+      "kind": "table",
+      "num": "1",
+      "title": "에스컬레이터 시험하중",
+      "files": [
+        "std-653_d6e10a94ed.webp"
+      ]
+    },
+    {
+      "entry": "std-653",
+      "kind": "table",
+      "num": "2",
+      "title": "무빙워크 시험하중",
+      "files": [
+        "std-653_42bfd03412.webp"
+      ]
+    }
+  ],
+  "standard_overrides": [
+    {
+      "entry": "std-426",
+      "kind": "table",
+      "num": "2",
+      "target": "b22-table-2",
+      "reason": "6.5.7.2의 그림5에서 X를 피난공간 높이(표2)로 명시. 현행 표2는 상부공간의 피난공간 크기."
+    }
+  ]
+}

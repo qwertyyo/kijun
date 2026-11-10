@@ -46,6 +46,9 @@ d['fail'] = json.load(open('fail.json'))
 d.pop('old', None); d.pop('links', None)
 d['hist'] = json.load(open('hist_final.json'))   # 엘리베이터 조문번호별 연혁(연혁집)
 d['hist_es'] = json.load(open('hist_es_final.json'))   # 에스컬레이터 조문번호별 연혁(연혁집 v2.0)
+from reference_assets import build_reference_assets, build_context_asset_links
+d['ref_assets'], d['ref_aliases'] = build_reference_assets(d)
+d['std_asset_links'], d['history_asset_links'] = build_context_asset_links(d, d['ref_assets'])
 json.dump(d, open('data.json', 'w', encoding='utf-8'), ensure_ascii=False)
 t = open('template.html', encoding='utf-8').read()
 s = json.dumps(d, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
@@ -56,7 +59,9 @@ out = {'b22': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e i
        'b24': [{**{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')}, **({'figure_refs': e['figure_refs']} if e.get('figure_refs') else {})} for e in d['b24'] if e['text'].strip()],
        'std': [{k: e.get(k, '') for k in ('id', 'num', 'title', 'path', 'year', 'gist', 'sec', 'text', 'img')} for e in d['std'] if e['title'] != '목차'],
        'fail': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e in d['fail']],
-       'hist': d['hist'], 'hist_es': d['hist_es'], 'es_figures': d['es_figures'], 'es_tables': d['es_tables']}
+       'hist': d['hist'], 'hist_es': d['hist_es'], 'es_figures': d['es_figures'], 'es_tables': d['es_tables'],
+       'ref_assets': d['ref_assets'], 'ref_aliases': d['ref_aliases'],
+       'std_asset_links': d['std_asset_links'], 'history_asset_links': d['history_asset_links']}
 json.dump(out, open('app_pkg/kijun_data.json', 'w', encoding='utf-8'), ensure_ascii=False)
 pua = sum(1 for k in ('b22', 'b24') for e in d[k] for c in e['text'] + e['title'] if 0xe000 <= ord(c) <= 0xf8ff)
 print({k: len(v) for k, v in out.items()}, 'PUA left', pua, '[수식] left', sum(e['text'].count('[수식]') for k in ('b22', 'b24') for e in d[k]))

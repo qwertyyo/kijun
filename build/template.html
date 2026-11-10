@@ -433,6 +433,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const REF_ENTRIES = Object.fromEntries(DATA.b22.concat(DATA.b24).map(e => [e.id, e]));
   const ES_FIGURES = DATA.es_figures || {};
   const ES_TABLES = DATA.es_tables || {};
+  const REF_ASSETS = DATA.ref_assets || {};
+  const REF_ALIASES = DATA.ref_aliases || [];
+  const STD_ASSET_LINKS = DATA.std_asset_links || {};
+  const HISTORY_ASSET_LINKS = DATA.history_asset_links || {};
+  const ASSETS_BY_OWNER = {};
+  Object.values(REF_ASSETS).filter(a => !a.historical && !(a.src === 'b24' && a.kind === 'figure' && ES_FIGURES[a.num])).forEach(a => (ASSETS_BY_OWNER[a.owner] ||= []).push(a));
   // 본문 없는 제목만 있는 조문(예: '5.6 손잡이 시스템')과 회차 목차는 검색 대상에서 제외
   // 장(章) 제목: 본문 없는 제목 조문도 목차용으로 보관
   const CH = { b22: {}, b24: {} };
@@ -589,7 +595,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const cs = curStart(e);
     const blockHtml = (b, tag) => {
       const sih = /시행/.test(b.head) && !/종전/.test(b.head) ? (b.siheng ? '<span class="tag2">시행</span>' : '<span class="hn2">시행 표시 없음 — 해당 연도 미시행(연혁집 표기)</span>') : '';
-      return `<div class="hp${tag ? ' now' : ''}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="ht clip">${histText(b.text, null)}</div><button type="button" class="hx">펼치기</button></div>`;
+      return `<div class="hp${tag ? ' now' : ''}" data-ref-history="${e.id}:${e.h.blocks.indexOf(b)}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="ht clip">${histText(b.text, null)}</div><button type="button" class="hx">펼치기</button></div>`;
     };
     let html = `<h4>적용 연혁 <span style="font-weight:400;color:var(--muted)">· 연혁집 기준, 오래된 순 → 현행</span></h4>`;
     const own = sortAsc(e.h.blocks.filter(b => !b.scope)), up = sortAsc(e.h.blocks.filter(b => b.scope));
@@ -1186,7 +1192,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const title = (ai ? `<div class="after ${ai.kind}">${ai.html}</div>` : '') + (e.title ? `<h2>${hl(e.title, re)}</h2>` : '');
     const path = !isStd && e.path ? `<div class="path">${hl(e.path, re)}</div>` : '';
     const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '');
-    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}${esFigureHtml(e)}<div class="hist" hidden></div></article>`;
+    const assets = (ASSETS_BY_OWNER[e.id] || []).map(a => `<button type="button" class="clause-ref" data-ref-assets="${a.key}" aria-haspopup="dialog">${assetLabel(a.kind)} ${a.num} · ${escHtml(a.title)}</button>`).join('<br>');
+    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}${esFigureHtml(e)}${assets ? `<div class="esfigs"><h3>관련 원문 표·그림</h3>${assets}</div>` : ''}<div class="hist" hidden></div></article>`;
   }
 
   // ---- 열람(목차 → 장·회차 단위로 쭉 읽기)
@@ -1460,12 +1467,34 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // ---- 조문 참조: 현재 페이지와 검색 상태를 유지하는 비모달 창
   const REF_NAME = { b22: '엘리베이터', b24: '에스컬레이터' };
   const refRoman = { ...romanA, XI: 'Ⅺ', XII: 'Ⅻ', XIII: 'XⅢ', XIV: 'XⅣ' };
-  const refNum = n => n.replace(/^부속서\s*/, '').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
-  function referenceSource(e, before) {
-    const markers = Array.from(before.matchAll(/별표\s*(2[2-7])|KS\s*[A-Z]|\b(?:EN|ISO|IEC)\s*\d/gi));
+  const refNum = n => n.replace(/^부속서\s*/, '').replace(/\s+/g, '').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
+  const assetLabel = kind => kind === 'table' ? '표' : '그림';
+  const assetNumber = '(?:(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)\\s*\\.\\s*)?\\d+(?:\\.\\d+)*';
+  function assetMentions(text) {
+    const result = [];
+    for (const m of text.matchAll(new RegExp('(?<!별)(표|그\\s*림)\\s*(' + assetNumber + ')(?![\\d.])', 'g'))) {
+      const kind = m[1] === '표' ? 'table' : 'figure';
+      result.push({ at: m.index, end: m.index + m[0].length, text: m[0], kind, num: refNum(m[2]) });
+      let end = m.index + m[0].length;
+      // '그림 1 및 2', '표 8, 9'의 뒤쪽 번호도 같은 자료를 가리킨다.
+      const tail = new RegExp('^\\s*(?:,|및|와|과|또는|~|∼|부터|내지)\\s*(' + assetNumber + ')(?![\\d.])');
+      let next;
+      while ((next = tail.exec(text.slice(end)))) {
+        const at = end + next[0].lastIndexOf(next[1]);
+        end += next[0].length;
+        result.push({ at, end, text: next[1], kind, num: refNum(next[1]) });
+      }
+    }
+    return result.sort((a, b) => a.at - b.at);
+  }
+  function explicitReferenceSource(text) {
+    const markers = Array.from(text.matchAll(/별표\s*(\d+)|KS\s*[A-Z]|\b(?:EN|ISO|IEC)\s*\d|\bSPS[-\s]*[A-Z]/gi));
     const last = markers[markers.length - 1];
-    if (last && !last[1]) return 'unsupported';
-    let source = last ? ({22: 'b22', 24: 'b24'}[last[1]] || 'unsupported') : null;
+    return last ? ({22: 'b22', 24: 'b24'}[last[1]] || 'unsupported') : null;
+  }
+  function referenceSource(e, before) {
+    const sentence = e && e.src === 'std' ? before : before.split(/(?<=[다함음])\.\s*/).pop();
+    let source = explicitReferenceSource(sentence) || (e && e._refSource) || null;
     if (!source && e) {
       if (e.src === 'b22' || e.src === 'b24') source = e.src;
       else if (e.src === 'fail') { const m = /별표(2[2-7])/.exec(e.path || ''); if (m) source = ({22: 'b22', 24: 'b24'}[m[1]] || 'unsupported'); }
@@ -1475,6 +1504,31 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       }
     }
     return source;
+  }
+  function assetTargets(kind, num, e, text, at) {
+    if (e && e.src === 'std') return { assets: (STD_ASSET_LINKS[e.id] || {})[kind + '-' + num] || [] };
+    const source = referenceSource(e, text.slice(0, at));
+    const alias = REF_ALIASES.find(a => e && a.entry === e.id && a.kind === kind && a.num === num);
+    if (alias && source === e.src) return { assets: [alias.target], note: alias.note };
+    let assets = Object.values(REF_ASSETS).filter(a => a.src === source && a.kind === kind && a.num === num);
+    assets = assets.filter(a => !a.historical);
+    // 옛 그림 제목이 현행 본문에 함께 실려 있어도 번호만으로 다른 그림에 잇지 않는다.
+    if (/\[\s*$/.test(text.slice(0, at))) {
+      const end = text.indexOf(']', at);
+      if (end >= 0) {
+        const title = text.slice(at, end).replace(new RegExp('^(?:표|그\\s*림)\\s*' + assetNumber), '').replace(/[^가-힣A-Za-z0-9]/g, '');
+        if (title.length > 5) assets = assets.filter(a => {
+          const expected = a.title.replace(/[^가-힣A-Za-z0-9]/g, '');
+          return expected.includes(title.slice(0, 10)) || title.includes(expected.slice(0, 10));
+        });
+      }
+    }
+    if (assets.length > 1 && e && e.src === source) {
+      const score = a => { const x = a.owner.slice(source.length + 1).split('.'), y = e.num.split('.'); let i = 0; while (i < x.length && i < y.length && x[i] === y[i]) i++; return i; };
+      const best = Math.max(...assets.map(score));
+      if (best) assets = assets.filter(a => score(a) === best);
+    }
+    return { assets: assets.map(a => a.key) };
   }
   function referenceTargets(num, e, text, at) {
     const before = text.slice(0, at), after = text.slice(at + num.length);
@@ -1486,27 +1540,30 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   function linkClauseRefs(root, e) {
     const blocks = new Set(['DIV', 'P', 'SECTION', 'H2', 'H3', 'H4', 'LI', 'TD', 'TH', 'BR']);
-    let nodes = [];
+    let nodes = [], citationSection = false, citationSource = null;
     function flush() {
       if (!nodes.length) return;
       const group = nodes; nodes = [];
       const text = group.map(n => n.textContent).join('');
-      const tables = Array.from(text.matchAll(/(?<!별)표\s*((?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)*)/g));
-      const tableFor = m => referenceSource(e, text.slice(0, m.index)) === 'b24' && ES_TABLES[refNum(m[1])];
+      const entry = citationSource ? { ...e, _refSource: citationSource } : e;
+      const mentions = assetMentions(text);
+      const history = group[0].parentElement.closest('[data-ref-history]');
+      const historical = !!history || group.some(n => n.parentElement.closest('.hist, .ht, .hbody, .hup'));
+      const targetFor = m => historical ? { assets: history ? (HISTORY_ASSET_LINKS[history.dataset.refHistory] || {})[m.kind + '-' + m.num] || [] : [] } : assetTargets(m.kind, m.num, entry, text, m.at);
       const matches = Array.from(text.matchAll(/(?:부속서\s*(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)*|(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)+)/g));
       // '표 Ⅱ.1의 3.1 및 3.6'은 표의 행 번호다. 일반 조문으로 연결하지 않는다.
       const links = matches.flatMap(m => {
-        if (tables.some(t => m.index >= t.index && m.index < t.index + t[0].length)) return [];
-        const table = tables.filter(t => t.index + t[0].length <= m.index).pop();
-        if (table && /^(?:의\s*)?(?:\d+(?:\.\d+)+\s*(?:및|또는|,|·|ㆍ|와|과|~|∼)\s*)*$/.test(text.slice(table.index + table[0].length, m.index).trim())) {
-          const target = tableFor(table);
-          return target ? [{ at: m.index, text: m[0], table: target, page: target.row_pages[m[0]] || 0 }] : [];
+        if (mentions.some(t => m.index >= t.at && m.index < t.end)) return [];
+        const table = mentions.filter(t => t.end <= m.index).pop();
+        if (table && table.kind === 'table' && /^(?:의\s*)?[\(\[]?\s*(?:\d+(?:\.\d+)+\s*[\)\]]?\s*(?:및|또는|,|·|ㆍ|와|과|~|∼)\s*[\(\[]?\s*)*$/.test(text.slice(table.end, m.index).trim())) {
+          const target = targetFor(table), asset = REF_ASSETS[target.assets[0]];
+          return target.assets.length ? [{ at: m.index, text: m[0], ...target, page: (asset.row_pages || {})[m[0]] || 0 }] : [];
         }
         if (/[\d.A-Za-z]/.test(text[m.index - 1] || '') || /^[\dA-Za-z]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) return [];
-        const targets = referenceTargets(m[0], e, text, m.index);
+        const targets = referenceTargets(m[0], entry, text, m.index);
         return targets.length ? [{ at: m.index, text: m[0], targets }] : [];
       });
-      tables.forEach(m => { const table = tableFor(m); if (table) links.push({ at: m.index, text: m[0], table }); });
+      mentions.forEach(m => { const target = targetFor(m); if (target.assets.length) links.push({ at: m.at, text: m.text, ...target }); });
       const offsets = []; let total = 0;
       group.forEach(n => { offsets.push(total); total += n.textContent.length; });
       // 뒤에서부터 바꿔 앞쪽 텍스트 노드의 오프셋과 검색어 강조를 보존한다.
@@ -1517,9 +1574,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
         if (a < 0 || b < 0) continue;
         const range = document.createRange(); range.setStart(group[a], m.at - offsets[a]); range.setEnd(group[b], end - offsets[b]);
         const button = document.createElement('button'); button.type = 'button'; button.className = 'clause-ref';
-        if (m.table) {
-          button.dataset.refTable = m.table.id; button.dataset.refPage = m.page || 0;
-          button.title = `에스컬레이터 표 ${m.table.id} ${m.table.title} 보기`;
+        if (m.assets) {
+          button.dataset.refAssets = m.assets.join(','); button.dataset.refPage = m.page || 0;
+          if (m.note) button.dataset.refNote = m.note;
+          const asset = REF_ASSETS[m.assets[0]], label = assetLabel(asset.kind);
+          if (asset.key === 'b24-table-Ⅱ.1') button.dataset.refTable = asset.num;
+          button.title = m.assets.length > 1 ? `${label} ${asset.num} — 수록 자료 선택` : `${REF_NAME[asset.src] || '표준화'} ${label} ${asset.num} ${asset.title} 보기`;
         } else {
           button.dataset.refIds = m.targets.map(t => t.id).join(','); button.dataset.refNum = refNum(m.text);
           button.title = m.targets.length === 1 ? `${REF_NAME[m.targets[0].src]} ${refNum(m.text)} 조문 보기` : `${refNum(m.text)} 조문 — 기준 선택`;
@@ -1531,10 +1591,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     function walk(node) {
       if (node.nodeType === Node.TEXT_NODE) { nodes.push(node); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
-      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex')) { flush(); return; }
+      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex, .esfigs')) { flush(); return; }
       const block = blocks.has(node.tagName); if (block) flush();
+      const section = e && e.src === 'std' && node.matches('.sec');
+      const savedSection = citationSection, savedSource = citationSource;
+      if (section) { citationSection = /관련|법령|기준|참고|종전/.test(node.querySelector('h3')?.textContent || ''); citationSource = null; }
       Array.from(node.childNodes).forEach(walk);
       if (block) flush();
+      if (citationSection && node.tagName === 'P') citationSource = explicitReferenceSource(node.textContent) || citationSource;
+      if (section) { citationSection = savedSection; citationSource = savedSource; }
     }
     walk(root); flush();
   }
@@ -1597,10 +1662,14 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     refCurrent = state;
     const entries = (state.ids || []).map(id => REF_ENTRIES[id]).filter(Boolean);
     refBack.disabled = !refTrail.length;
-    if (state.table) {
-      const table = ES_TABLES[state.table]; if (!table) return;
-      refTitle.textContent = `에스컬레이터 · 표 ${table.id} (현행)`;
-      refContent.innerHTML = `<section class="ref-table"><h3>표 ${table.id} · ${escHtml(table.title)}</h3><p class="ref-note">표 전체 ${table.pages.length}쪽 · 표를 누르면 확대할 수 있습니다.<br>${escHtml(table.source)} · PDF ${table.pages.map(p => p.page).join('·')}쪽</p>${table.pages.map((p, i) => `<figure data-table-page="${i}"><figcaption>${i + 1}/${table.pages.length} · ${escHtml(p.title)}</figcaption><button type="button" data-fz="fig/${p.file}" aria-label="표 ${table.id} ${i + 1}쪽 크게 보기"><img src="fig/${p.file}" width="${p.width}" height="${p.height}" alt="표 ${table.id} ${escHtml(p.title)}"></button></figure>`).join('')}</section>`;
+    const assets = (state.assets || []).map(key => REF_ASSETS[key]).filter(Boolean);
+    if (assets.length > 1) {
+      refTitle.textContent = `${assetLabel(assets[0].kind)} ${assets[0].num} · 수록 자료 선택`;
+      refContent.innerHTML = '<p class="ref-note">원문에 같은 번호의 자료가 여러 개 있습니다. 제목과 수록 위치를 확인해 선택하세요.</p>' + assets.map(a => `<button type="button" class="ref-choice" data-ref-assets="${a.key}">${REF_NAME[a.src] || '표준화'} · ${escHtml(a.title)} · ${a.historical || a.src === 'std' ? escHtml(a.source) : '현행'} · PDF ${a.pages.map(p => p.page_label || p.page).join('·')}쪽</button>`).join('');
+    } else if (assets.length) {
+      const a = assets[0], label = assetLabel(a.kind);
+      refTitle.textContent = `${REF_NAME[a.src] || '표준화'} · ${label} ${a.num}${a.historical ? ' (적용 연혁)' : a.src === 'std' ? '' : ' (현행)'}`;
+      refContent.innerHTML = `<section class="ref-table" data-asset-key="${a.key}"><h3>${label} ${a.num} · ${escHtml(a.title)}</h3>${state.note ? `<p class="ref-note">${escHtml(state.note)}</p>` : ''}<p class="ref-note">${label} 전체 ${a.pages.length}쪽 · 누르면 확대할 수 있습니다.<br>${escHtml(a.source)} · PDF ${a.pages.map(p => p.page_label || p.page).join('·')}쪽</p>${a.pages.map((p, i) => `<figure data-table-page="${i}"><figcaption>${i + 1}/${a.pages.length}${p.title ? ' · ' + escHtml(p.title) : ''}</figcaption><button type="button" data-fz="${p.folder || 'fig'}/${p.file}" aria-label="${label} ${a.num} ${i + 1}쪽 크게 보기"><img src="${p.folder || 'fig'}/${p.file}" width="${p.width}" height="${p.height}" alt="${label} ${a.num} ${escHtml(p.title || a.title)}"></button></figure>`).join('')}</section>`;
     } else if (entries.length > 1) {
       refTitle.textContent = state.num + ' · 기준 선택';
       refContent.innerHTML = '<p class="ref-note">같은 번호의 조문이 있습니다. 확인할 기준을 선택하세요.</p>' + entries.map(e => `<button type="button" class="ref-choice" data-ref-ids="${e.id}" data-ref-num="${escHtml(e.num)}">${REF_NAME[e.src]} · ${escHtml(e.num)}${e.title ? ' ' + escHtml(e.title) : ''}</button>`).join('');
@@ -1612,21 +1681,21 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       refContent.querySelectorAll('.card').forEach(c => { const entry = REF_ENTRIES[c.id]; c.removeAttribute('id'); linkClauseRefs(c, entry); });
     }
     refContent.scrollTop = scroll || 0;
-    if (scroll == null && state.table && state.page) {
+    if (scroll == null && assets.length === 1 && state.page) {
       const page = refContent.querySelector(`[data-table-page="${state.page}"]`);
       if (page) refContent.scrollTop = page.getBoundingClientRect().top - refContent.getBoundingClientRect().top + refContent.scrollTop;
     }
     refBar.focus({ preventScroll: true });
   }
   document.addEventListener('click', ev => {
-    const button = ev.target.closest('[data-ref-ids], [data-ref-table]'); if (!button) return;
+    const button = ev.target.closest('[data-ref-ids], [data-ref-assets]'); if (!button) return;
     ev.preventDefault();
     if (!refWindow) createRefWindow();
     const wasOpen = !refWindow.hidden;
     if (wasOpen) refTrail.push({ state: refCurrent, scroll: refContent.scrollTop });
     else { refOrigin = button; refTrail.length = 0; lockRefPage(); }
     refWindow.hidden = false;
-    showReference(button.dataset.refTable ? { table: button.dataset.refTable, page: +button.dataset.refPage || 0 } : { ids: button.dataset.refIds.split(','), num: button.dataset.refNum });
+    showReference(button.dataset.refAssets ? { assets: button.dataset.refAssets.split(','), page: +button.dataset.refPage || 0, note: button.dataset.refNote } : { ids: button.dataset.refIds.split(','), num: button.dataset.refNum });
     if (!wasOpen) { const r = refWindow.getBoundingClientRect(); fitRefWindow((innerWidth - r.width) / 2, Math.min(80, (innerHeight - r.height) / 2)); }
   });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && refWindow && !refWindow.hidden && !document.querySelector('#lb:not([hidden])')) { closeRefWindow(); ev.preventDefault(); } });
