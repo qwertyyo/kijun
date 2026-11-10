@@ -47,7 +47,7 @@ class ClauseReferences(unittest.TestCase):
             '__DATA__', json.dumps(data, ensure_ascii=False).replace('</', '<\\/'))
         # A test-only hook exercises every real card/history, without exporting app internals.
         hook_at = body.rfind('})();')
-        body = body[:hook_at] + 'window.__refTest = { card, historyHtml, linkClauseRefs, byId, REF_ENTRIES };\n' + body[hook_at:]
+        body = body[:hook_at] + 'window.__refTest = { card, historyHtml, linkClauseRefs, byId, REF_ENTRIES, ES_TABLES };\n' + body[hook_at:]
         # Preserve the real build wrapper, including its [hidden] rule for the image viewer.
         (site / 'index.html').write_text(original.split('<body>', 1)[0] + '<body>' + body + '</body></html>')
         (site / 'config.json').write_text('{"synApi":""}')
@@ -259,6 +259,88 @@ class ClauseReferences(unittest.TestCase):
         refs.first.click()
         self.assertIn('에스컬레이터', self.page.locator('.ref-title').inner_text())
 
+    def open_table_card(self):
+        self.page.evaluate('KIJUN.setSource("b24")')
+        self.search('안전회로 설계 지침')
+        card = self.page.locator('[id="b24-Ⅳ"]')
+        self.assertEqual(card.count(), 1)
+        if 'open' not in card.get_attribute('class').split():
+            card.locator('.more').click()
+        return card
+
+    def test_annex_table_opens_all_current_pages_and_enlarges(self):
+        card = self.open_table_card()
+        ref = card.locator('.body [data-ref-table="Ⅱ.1"]').filter(has_text='표').first
+        self.assertEqual(card.locator('.body [data-ref-ids="b24-3.1"], .body [data-ref-ids="b24-3.6"]').count(), 0)
+        ref.click()
+        self.assertIn('표 Ⅱ.1', self.page.locator('.ref-title').inner_text())
+        table = self.page.locator('.ref-table')
+        self.assertIn('고장 배제', table.inner_text())
+        images = table.locator('img')
+        self.assertEqual(images.count(), 3)
+        self.assertEqual(images.evaluate_all('(es)=>es.map(e=>e.getAttribute("src"))'),
+                         ['fig/hes_p139_0.webp', 'fig/hes_p140_0.webp', 'fig/hes_p141_1.webp'])
+        for image in images.all():
+            image.evaluate('(e)=>e.decode()')
+            self.assertGreater(image.evaluate('(e)=>e.naturalWidth'), 1000)
+        self.assertEqual(len(self.page.context.pages), 1)
+        self.assertTrue(self.page.locator('body').evaluate('(e)=>e.scrollWidth <= innerWidth'))
+        self.page.screenshot(path='/workspace/kijun-local/table-popup-mobile.png')
+        table.locator('[data-table-page="1"] button').click()
+        self.assertTrue(self.page.locator('#lb').is_visible())
+        self.assertIn('hes_p140_0.webp', self.page.locator('#lb img').get_attribute('src'))
+        self.page.keyboard.press('Escape')
+        self.assertTrue(self.page.locator('.ref-window').is_visible())
+
+    def test_table_row_opens_matching_page_and_preserves_background(self):
+        card = self.open_table_card()
+        for number in ('3.1', '3.6'):
+            ref = card.locator('.body [data-ref-table="Ⅱ.1"]').filter(has_text=re.compile('^' + re.escape(number) + '$'))
+            self.assertEqual(ref.count(), 1)
+            ref.click()
+            before = card.bounding_box()['y']
+            content = self.page.locator('.ref-content')
+            target = self.page.locator('[data-table-page="1"]')
+            self.assertAlmostEqual(target.bounding_box()['y'], content.bounding_box()['y'], delta=2)
+            self.swipe_content(-100)
+            self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
+            self.page.screenshot(path='/workspace/kijun-local/table-row-mobile.png')
+            self.page.locator('[data-ref-close]').click()
+            self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
+
+    def test_clause_to_table_back_and_source_and_highlight_resolution(self):
+        self.page.evaluate('KIJUN.setSource("b24")')
+        self.search('현재의 전자기술')
+        card = self.page.locator('[id="b24-Ⅱ.2"]')
+        if 'open' not in card.get_attribute('class').split():
+            card.locator('.more').click()
+        card.locator('.body [data-ref-ids="b24-Ⅳ"]').click()
+        self.page.locator('.ref-content').evaluate('(e)=>e.scrollTop=30')
+        self.page.locator('.ref-content [data-ref-table="Ⅱ.1"]').first.click()
+        self.page.locator('[data-ref-back]').click()
+        self.assertIn('Ⅳ', self.page.locator('.ref-title').inner_text())
+        self.assertEqual(self.page.locator('.ref-content .ref-table').count(), 0)
+        self.assertEqual(self.page.locator('.ref-content').evaluate('(e)=>e.scrollTop'), 30)
+        cases = self.page.evaluate('''() => {
+          const check = (html, src) => {
+            const root = document.createElement('div');root.innerHTML=html;
+            __refTest.linkClauseRefs(root, {src});
+            return {text:root.textContent, tables:root.querySelectorAll('[data-ref-table]').length,
+              clauses:Array.from(root.querySelectorAll('[data-ref-ids]')).map(e=>e.dataset.refIds),
+              highlight:!!root.querySelector('[data-ref-table] mark')};
+          };
+          return [check('표 <mark>Ⅱ.1</mark>의 3.1 및 3.6에 따른 기준', 'b24'),
+            check('표 II.1의 3.1 및 3.6에 따른 기준', 'b24'),
+            check('표 Ⅱ.1의 3.1 및 3.6에 따른 기준', 'b22'),
+            check('별표24 5.1에 따른 기준', 'std'),
+            check('KS C IEC 60664-1 표 Ⅱ.1의 3.1 및 3.6', 'b24')];
+        }''')
+        self.assertEqual([c['tables'] for c in cases], [3, 3, 0, 0, 0])
+        self.assertTrue(cases[0]['highlight'])
+        self.assertEqual(cases[0]['text'], '표 Ⅱ.1의 3.1 및 3.6에 따른 기준')
+        self.assertEqual(cases[2]['clauses'], [])
+        self.assertEqual(cases[3]['clauses'], ['b24-5.1'])
+
     def test_escalator_figure_previews_load_on_matching_clause(self):
         self.page.evaluate('KIJUN.setSource("b24")')
         self.search('손잡이 외형')
@@ -324,7 +406,9 @@ class ClauseReferences(unittest.TestCase):
             if (root.textContent !== text) throw Error('Text changed: ' + entry.id);
             root.querySelectorAll('.clause-ref').forEach(b => {
               if (b.querySelector('button')) throw Error('Nested button: ' + entry.id);
-              b.dataset.refIds.split(',').forEach(id => { if (!t.REF_ENTRIES[id]) throw Error('Missing target: ' + id); });
+              if (b.dataset.refTable) {
+                if (!t.ES_TABLES[b.dataset.refTable]) throw Error('Missing table: ' + b.dataset.refTable);
+              } else b.dataset.refIds.split(',').forEach(id => { if (!t.REF_ENTRIES[id]) throw Error('Missing target: ' + id); });
               links++;
             });
           };

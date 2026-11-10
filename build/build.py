@@ -39,6 +39,8 @@ d['b22'] = json.load(open('base_el.json'))   # 엘리베이터 현행 조문(연
 d['b24'] = json.load(open('base_es.json'))   # 에스컬레이터 현행 조문(연혁집 v2.0)
 from es_figures import build_figures
 d['es_figures'] = build_figures(d['b24'])   # 별표24 원문 그림을 참조 조문에도 연결
+from es_tables import build_tables
+d['es_tables'] = build_tables(d['b24'])     # 참조 표 → 연혁집 현행 표 전체
 subprocess.run(PY + ['fail_parse.py'], check=True)   # 불합격 내용(줄바꿈 띄어쓰기 판단에 위 현행 조문·표준화 글을 어휘집으로 씀)
 d['fail'] = json.load(open('fail.json'))
 d.pop('old', None); d.pop('links', None)
@@ -54,7 +56,7 @@ out = {'b22': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e i
        'b24': [{**{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')}, **({'figure_refs': e['figure_refs']} if e.get('figure_refs') else {})} for e in d['b24'] if e['text'].strip()],
        'std': [{k: e.get(k, '') for k in ('id', 'num', 'title', 'path', 'year', 'gist', 'sec', 'text', 'img')} for e in d['std'] if e['title'] != '목차'],
        'fail': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e in d['fail']],
-       'hist': d['hist'], 'hist_es': d['hist_es'], 'es_figures': d['es_figures']}
+       'hist': d['hist'], 'hist_es': d['hist_es'], 'es_figures': d['es_figures'], 'es_tables': d['es_tables']}
 json.dump(out, open('app_pkg/kijun_data.json', 'w', encoding='utf-8'), ensure_ascii=False)
 pua = sum(1 for k in ('b22', 'b24') for e in d[k] for c in e['text'] + e['title'] if 0xe000 <= ord(c) <= 0xf8ff)
 print({k: len(v) for k, v in out.items()}, 'PUA left', pua, '[수식] left', sum(e['text'].count('[수식]') for k in ('b22', 'b24') for e in d[k]))

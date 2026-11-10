@@ -348,6 +348,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .ref-content .card .body::after, .ref-content .card > .more { display: none }
 .ref-note { margin: 0 0 10px; font-size: 13px; color: var(--muted) }
 .ref-choice { display: block; width: 100%; text-align: left; font: inherit; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 8px 0; cursor: pointer }
+.ref-table h3 { font-size: 17px; margin: 0 0 8px }
+.ref-table figure { margin: 0 0 18px }
+.ref-table figcaption { font-size: 13px; margin-bottom: 6px; overflow-wrap: anywhere }
+.ref-table button { display: block; width: 100%; padding: 0; border: 1px solid var(--line); background: #fff; cursor: zoom-in }
+.ref-table img { display: block; width: 100%; height: auto }
 .esfigs { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px }
 .esfigs h3 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600 }
 .esfig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr)); gap: 10px }
@@ -427,6 +432,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 제목만 있는 상위 조항도 참조할 수 있도록 검색용 필터링 전에 보관한다.
   const REF_ENTRIES = Object.fromEntries(DATA.b22.concat(DATA.b24).map(e => [e.id, e]));
   const ES_FIGURES = DATA.es_figures || {};
+  const ES_TABLES = DATA.es_tables || {};
   // 본문 없는 제목만 있는 조문(예: '5.6 손잡이 시스템')과 회차 목차는 검색 대상에서 제외
   // 장(章) 제목: 본문 없는 제목 조문도 목차용으로 보관
   const CH = { b22: {}, b24: {} };
@@ -1455,14 +1461,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const REF_NAME = { b22: '엘리베이터', b24: '에스컬레이터' };
   const refRoman = { ...romanA, XI: 'Ⅺ', XII: 'Ⅻ', XIII: 'XⅢ', XIV: 'XⅣ' };
   const refNum = n => n.replace(/^부속서\s*/, '').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
-  function referenceTargets(num, e, text, at) {
-    const before = text.slice(0, at), after = text.slice(at + num.length);
-    // 날짜·치수·그림/표 번호와 외부 규격의 번호를 조문으로 오인하지 않는다.
-    if (/^(?:19|20)\d{2}\./.test(num) || /^\s*(?:mm|cm|m(?:\s|$|[²³/])|kN|N(?:\s|$)|kg|㎜|㎝|㎟|㎠|㎡|㎥|㎧|㎏|㏓|lx|Hz|MPa|kPa|Pa|V(?:\s|$)|A(?:\s|$)|%|초|배|도|년|월|일)/i.test(after)) return [];
-    if (/(?:그림|표)\s*$/.test(before)) return [];
+  function referenceSource(e, before) {
     const markers = Array.from(before.matchAll(/별표\s*(2[2-7])|KS\s*[A-Z]|\b(?:EN|ISO|IEC)\s*\d/gi));
     const last = markers[markers.length - 1];
-    if (last && !last[1]) return [];
+    if (last && !last[1]) return 'unsupported';
     let source = last ? ({22: 'b22', 24: 'b24'}[last[1]] || 'unsupported') : null;
     if (!source && e) {
       if (e.src === 'b22' || e.src === 'b24') source = e.src;
@@ -1472,7 +1474,14 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
         if (el !== es) source = el ? 'b22' : 'b24';
       }
     }
-    const n = refNum(num);
+    return source;
+  }
+  function referenceTargets(num, e, text, at) {
+    const before = text.slice(0, at), after = text.slice(at + num.length);
+    // 날짜·치수·그림/표 번호와 외부 규격의 번호를 조문으로 오인하지 않는다.
+    if (/^(?:19|20)\d{2}\./.test(num) || /^\s*(?:mm|cm|m(?:\s|$|[²³/])|kN|N(?:\s|$)|kg|㎜|㎝|㎟|㎠|㎡|㎥|㎧|㎏|㏓|lx|Hz|MPa|kPa|Pa|V(?:\s|$)|A(?:\s|$)|%|초|배|도|년|월|일)/i.test(after)) return [];
+    if (/(?:그림|표)\s*$/.test(before)) return [];
+    const source = referenceSource(e, before), n = refNum(num);
     return (source ? [source] : ['b22', 'b24']).map(s => REF_ENTRIES[s + '-' + n]).filter(Boolean);
   }
   function linkClauseRefs(root, e) {
@@ -1482,22 +1491,40 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       if (!nodes.length) return;
       const group = nodes; nodes = [];
       const text = group.map(n => n.textContent).join('');
+      const tables = Array.from(text.matchAll(/(?<!별)표\s*((?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)*)/g));
+      const tableFor = m => referenceSource(e, text.slice(0, m.index)) === 'b24' && ES_TABLES[refNum(m[1])];
       const matches = Array.from(text.matchAll(/(?:부속서\s*(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)*|(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)+)/g));
+      // '표 Ⅱ.1의 3.1 및 3.6'은 표의 행 번호다. 일반 조문으로 연결하지 않는다.
+      const links = matches.flatMap(m => {
+        if (tables.some(t => m.index >= t.index && m.index < t.index + t[0].length)) return [];
+        const table = tables.filter(t => t.index + t[0].length <= m.index).pop();
+        if (table && /^(?:의\s*)?(?:\d+(?:\.\d+)+\s*(?:및|또는|,|·|ㆍ|와|과|~|∼)\s*)*$/.test(text.slice(table.index + table[0].length, m.index).trim())) {
+          const target = tableFor(table);
+          return target ? [{ at: m.index, text: m[0], table: target, page: target.row_pages[m[0]] || 0 }] : [];
+        }
+        if (/[\d.A-Za-z]/.test(text[m.index - 1] || '') || /^[\dA-Za-z]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) return [];
+        const targets = referenceTargets(m[0], e, text, m.index);
+        return targets.length ? [{ at: m.index, text: m[0], targets }] : [];
+      });
+      tables.forEach(m => { const table = tableFor(m); if (table) links.push({ at: m.index, text: m[0], table }); });
       const offsets = []; let total = 0;
       group.forEach(n => { offsets.push(total); total += n.textContent.length; });
       // 뒤에서부터 바꿔 앞쪽 텍스트 노드의 오프셋과 검색어 강조를 보존한다.
-      for (const m of matches.reverse()) {
-        if (/[\d.A-Za-z]/.test(text[m.index - 1] || '') || /^[\dA-Za-z]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) continue;
-        const targets = referenceTargets(m[0], e, text, m.index); if (!targets.length) continue;
-        const end = m.index + m[0].length;
-        const a = offsets.findIndex((o, i) => o + group[i].textContent.length > m.index);
+      for (const m of links.sort((a, b) => b.at - a.at)) {
+        const end = m.at + m.text.length;
+        const a = offsets.findIndex((o, i) => o + group[i].textContent.length > m.at);
         const b = offsets.findIndex((o, i) => o + group[i].textContent.length >= end);
         if (a < 0 || b < 0) continue;
-        const range = document.createRange(); range.setStart(group[a], m.index - offsets[a]); range.setEnd(group[b], end - offsets[b]);
+        const range = document.createRange(); range.setStart(group[a], m.at - offsets[a]); range.setEnd(group[b], end - offsets[b]);
         const button = document.createElement('button'); button.type = 'button'; button.className = 'clause-ref';
-        button.dataset.refIds = targets.map(t => t.id).join(','); button.dataset.refNum = refNum(m[0]);
+        if (m.table) {
+          button.dataset.refTable = m.table.id; button.dataset.refPage = m.page || 0;
+          button.title = `에스컬레이터 표 ${m.table.id} ${m.table.title} 보기`;
+        } else {
+          button.dataset.refIds = m.targets.map(t => t.id).join(','); button.dataset.refNum = refNum(m.text);
+          button.title = m.targets.length === 1 ? `${REF_NAME[m.targets[0].src]} ${refNum(m.text)} 조문 보기` : `${refNum(m.text)} 조문 — 기준 선택`;
+        }
         button.setAttribute('aria-haspopup', 'dialog');
-        button.title = targets.length === 1 ? `${REF_NAME[targets[0].src]} ${refNum(m[0])} 조문 보기` : `${refNum(m[0])} 조문 — 기준 선택`;
         button.appendChild(range.extractContents()); range.insertNode(button);
       }
     }
@@ -1545,7 +1572,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function createRefWindow() {
     refWindow = document.createElement('div'); refWindow.className = 'ref-window'; refWindow.hidden = true;
     refWindow.setAttribute('role', 'dialog'); refWindow.setAttribute('aria-labelledby', 'ref-title');
-    refWindow.innerHTML = '<div class="ref-bar" tabindex="0" aria-label="조문 창 이동. 드래그하거나 방향키로 이동"><button type="button" data-ref-back aria-label="이전 조문">← 이전</button><span class="ref-title" id="ref-title"></span><button type="button" data-ref-close aria-label="조문 창 닫기">닫기 ×</button></div><div class="ref-content"></div>';
+    refWindow.innerHTML = '<div class="ref-bar" tabindex="0" aria-label="참조 창 이동. 드래그하거나 방향키로 이동"><button type="button" data-ref-back aria-label="이전 참조">← 이전</button><span class="ref-title" id="ref-title"></span><button type="button" data-ref-close aria-label="참조 창 닫기">닫기 ×</button></div><div class="ref-content"></div>';
     document.body.appendChild(refWindow);
     refBar = refWindow.querySelector('.ref-bar'); refTitle = refWindow.querySelector('.ref-title'); refContent = refWindow.querySelector('.ref-content'); refBack = refWindow.querySelector('[data-ref-back]');
     refWindow.querySelector('[data-ref-close]').addEventListener('click', closeRefWindow);
@@ -1568,9 +1595,13 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   function showReference(state, scroll) {
     refCurrent = state;
-    const entries = state.ids.map(id => REF_ENTRIES[id]).filter(Boolean);
+    const entries = (state.ids || []).map(id => REF_ENTRIES[id]).filter(Boolean);
     refBack.disabled = !refTrail.length;
-    if (entries.length > 1) {
+    if (state.table) {
+      const table = ES_TABLES[state.table]; if (!table) return;
+      refTitle.textContent = `에스컬레이터 · 표 ${table.id} (현행)`;
+      refContent.innerHTML = `<section class="ref-table"><h3>표 ${table.id} · ${escHtml(table.title)}</h3><p class="ref-note">표 전체 ${table.pages.length}쪽 · 표를 누르면 확대할 수 있습니다.<br>${escHtml(table.source)} · PDF ${table.pages.map(p => p.page).join('·')}쪽</p>${table.pages.map((p, i) => `<figure data-table-page="${i}"><figcaption>${i + 1}/${table.pages.length} · ${escHtml(p.title)}</figcaption><button type="button" data-fz="fig/${p.file}" aria-label="표 ${table.id} ${i + 1}쪽 크게 보기"><img src="fig/${p.file}" width="${p.width}" height="${p.height}" alt="표 ${table.id} ${escHtml(p.title)}"></button></figure>`).join('')}</section>`;
+    } else if (entries.length > 1) {
       refTitle.textContent = state.num + ' · 기준 선택';
       refContent.innerHTML = '<p class="ref-note">같은 번호의 조문이 있습니다. 확인할 기준을 선택하세요.</p>' + entries.map(e => `<button type="button" class="ref-choice" data-ref-ids="${e.id}" data-ref-num="${escHtml(e.num)}">${REF_NAME[e.src]} · ${escHtml(e.num)}${e.title ? ' ' + escHtml(e.title) : ''}</button>`).join('');
     } else {
@@ -1581,17 +1612,21 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       refContent.querySelectorAll('.card').forEach(c => { const entry = REF_ENTRIES[c.id]; c.removeAttribute('id'); linkClauseRefs(c, entry); });
     }
     refContent.scrollTop = scroll || 0;
+    if (scroll == null && state.table && state.page) {
+      const page = refContent.querySelector(`[data-table-page="${state.page}"]`);
+      if (page) refContent.scrollTop = page.getBoundingClientRect().top - refContent.getBoundingClientRect().top + refContent.scrollTop;
+    }
     refBar.focus({ preventScroll: true });
   }
   document.addEventListener('click', ev => {
-    const button = ev.target.closest('[data-ref-ids]'); if (!button) return;
+    const button = ev.target.closest('[data-ref-ids], [data-ref-table]'); if (!button) return;
     ev.preventDefault();
     if (!refWindow) createRefWindow();
     const wasOpen = !refWindow.hidden;
     if (wasOpen) refTrail.push({ state: refCurrent, scroll: refContent.scrollTop });
     else { refOrigin = button; refTrail.length = 0; lockRefPage(); }
     refWindow.hidden = false;
-    showReference({ ids: button.dataset.refIds.split(','), num: button.dataset.refNum });
+    showReference(button.dataset.refTable ? { table: button.dataset.refTable, page: +button.dataset.refPage || 0 } : { ids: button.dataset.refIds.split(','), num: button.dataset.refNum });
     if (!wasOpen) { const r = refWindow.getBoundingClientRect(); fitRefWindow((innerWidth - r.width) / 2, Math.min(80, (innerHeight - r.height) / 2)); }
   });
   document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && refWindow && !refWindow.hidden && !document.querySelector('#lb:not([hidden])')) { closeRefWindow(); ev.preventDefault(); } });
