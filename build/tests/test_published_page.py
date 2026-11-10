@@ -2,6 +2,7 @@
 import functools
 import http.server
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -306,9 +307,26 @@ class PublishedPage(unittest.TestCase):
                 expected[entry['id']] = targets
         groups = self.page.locator('.tocitem[data-view]').evaluate_all('(es)=>es.map(e=>({src:e.dataset.view,key:e.dataset.key}))')
         seen = set()
+        ledger = []
         for group in groups:
             selector = '[data-view='+json.dumps(group['src'])+'][data-key='+json.dumps(group['key'],ensure_ascii=False)+']'
             self.page.locator('.tocitem'+selector).click()
+            layout = self.page.locator('#results .card').evaluate_all('''async cards => {
+              await Promise.all(cards.flatMap(c=>Array.from(c.querySelectorAll('img'))).map(async im=>{
+                im.loading='eager'; await im.decode();
+              }));
+              return cards.map(c=>({id:c.id,height:c.getBoundingClientRect().height,
+                images:Array.from(c.querySelectorAll('img')).map(im=>({src:im.getAttribute('src'),
+                  naturalWidth:im.naturalWidth,naturalHeight:im.naturalHeight,width:im.getBoundingClientRect().width,
+                  parentWidth:im.parentElement.getBoundingClientRect().width}))}));
+            }''')
+            for card in layout:
+                self.assertGreater(card['height'], 30, card['id'])
+                for image in card['images']:
+                    self.assertGreater(image['naturalWidth'], 0, image)
+                    self.assertGreater(image['naturalHeight'], 0, image)
+                    self.assertLessEqual(image['width'], image['parentWidth'] + 2, (card['id'], image))
+            ledger.extend(layout)
             cards = self.page.locator('#results .card').evaluate_all('''es=>es.map(c=>({id:c.id,linked:c.dataset.refsLinked,
               clauses:Array.from(c.querySelectorAll('[data-ref-ids]')).flatMap(b=>b.dataset.refIds.split(',')),
               assets:Array.from(c.querySelectorAll('.body [data-ref-assets], h2 [data-ref-assets]')).flatMap(b=>b.dataset.refAssets.split(','))}))''')
@@ -323,6 +341,10 @@ class PublishedPage(unittest.TestCase):
                 seen.add(card['id'])
             self.page.locator('.vnav.top [data-totoc]').click()
         self.assertEqual(len(seen),2461)
+        if os.environ.get('KIJUN_AUDIT_DIR'):
+            output = Path(os.environ['KIJUN_AUDIT_DIR'])
+            output.mkdir(parents=True,exist_ok=True)
+            (output/'browser-card-ledger.json').write_text(json.dumps(ledger,ensure_ascii=False,indent=2))
         print('Published HTML UI audit:',len(groups),'TOC groups;',len(seen),'real cards; missing internal references: 0')
 
 

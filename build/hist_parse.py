@@ -103,6 +103,7 @@ FIGDIR = 'fig'; os.makedirs(FIGDIR, exist_ok=True)
 PUA = re.compile('[-]')
 from restore_eq import M as EQMAP   # 글자로 되살릴 수 있는 수식 글꼴 코드
 from pdf_math import prepare_math_rows
+from reviewed_crops import apply_reviewed_regions, clean_formula_padding
 MATH_ARTIFACTS = []
 def regions(pg, rows):
     """그림(이미지)·선으로 그린 도형/표·수식 줄을 묶어 영역 목록으로"""
@@ -168,7 +169,10 @@ def regions(pg, rows):
         out.append(r)
     return out
 def crop(pg, r, name, versioned=False):
-    pix = pg.get_pixmap(clip=(r + (-2, -1, 2, 1)) & pg.rect, dpi=200)
+    clip = (r + (-2, -1, 2, 1)) & pg.rect
+    clean = clean_formula_padding(pg, r, pymupdf.Rect(clip)) if MODE == 'el' else clip
+    versioned = versioned or clean != clip
+    pix = pg.get_pixmap(clip=clean, dpi=200)
     im = Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
     if versioned:
         # 잘못된 옛 조각과 같은 URL을 재사용해 브라우저에 빈 그림이 남지 않게 한다.
@@ -240,7 +244,7 @@ def main():
             if its and not isinstance(its[-1], list) and len(its[-1]) == 4 and abs(its[-1][2] - lb[1]) < 3 and lb[0] > its[-1][3] - 1:
                 its[-1] = (its[-1][0].rstrip() + ' ' + txt.lstrip(), lb[2] >= FULL, lb[1], lb[2])
             else: its.append((txt, lb[2] >= FULL, lb[1], lb[2]))
-        regs = regions(pg, rows)
+        regs, reviewed = apply_reviewed_regions(MODE, pg, regions(pg, rows))
         # 같은 높이의 오른쪽 '시행' 표시(Gulim 8pt)
         siheng_y = [r[0] for r in rows if r[2] == 'Gulim' and r[3] == 8 and r[4].strip().endswith('시행')]
         # 그림 영역 안에 가운데가 든 줄은 그 그림의 검색용 글자로(줄 윗변이 영역보다 위여도 — 분수식의 'F =' 등)
@@ -277,7 +281,7 @@ def main():
                     if nxt is not None and nxt[3] <= 9 and not nxt[2].startswith(CFG['cur_font']): blk.pop('endy', None)
                     else: ENDFIG.append((pi + 1, round(l.y0), cur)); close()
                 if blk is not None or BASE:
-                    name = f'h{MODE}_p{pi + 1}_{txt}.webp'; name, w, h = crop(pg, l, name, versioned=bool(discarded_math))
+                    name = f'h{MODE}_p{pi + 1}_{txt}.webp'; name, w, h = crop(pg, l, name, versioned=reviewed or bool(discarded_math))
                     fig = [name, w, h, [line_text(m[5]) for m in sorted(members[int(txt)], key=lambda m: (round(m[0]), m[1]))]]
                     (blk['lines'] if blk is not None else BASE[-1]['items']).append(fig)
                 continue

@@ -1,5 +1,7 @@
 """표준화 PDF의 그림을 잘라 해당 안건(std id)에 연결한다."""
 import pymupdf, json, re, os, sys, hashlib
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from reviewed_crops import reviewed_std_clip
 
 PDF = 'stdzip/std.pdf'
 OUT = 'stdimg'
@@ -64,6 +66,7 @@ for pno in range(len(doc)):
         if not oid: continue
         if any(t[0] - 3 <= (x0 + x1) / 2 <= t[2] + 3 and t[1] - 3 <= (y0 + y1) / 2 <= t[3] + 3 for t in TBL.get(pno + 1, [])): continue   # 원문 표 그림(stb_) 안의 사진은 표째로 보인다
         clip = pymupdf.Rect(max(0, x0 - 2), max(0, y0 - 2), min(W, x1 + 2), min(H, y1 + 2))
+        clip = reviewed_std_clip(pno + 1, info['bbox'], clip)
         # 원본 해상도에 맞춰 렌더(작게 배치된 고해상도 스캔도 원본 픽셀을 살림)
         native_dpi = info['width'] / (w / 72) if w else 150
         dpi = int(min(600, max(150, native_dpi * 1.05)))

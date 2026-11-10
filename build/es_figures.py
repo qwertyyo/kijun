@@ -89,7 +89,10 @@ def build_figures(entries, base_dir='.'):
     for e in entries:
         e.pop('figure_refs', None)
         explicit = figure_references(e['text'])
-        inline = set(re.findall(r'\x10([^|]+)\|', e['text']))
+        # 재검토한 쪽의 파일명에는 내용 해시가 붙는다. 연결 소속은 원래
+        # 쪽/그림 번호로 비교해 캐시 갱신 뒤에도 현행 그림 링크를 유지한다.
+        inline = {re.sub(r'_[0-9a-f]{10}(?=\.webp$)', '', name)
+                  for name in re.findall(r'\x10([^|]+)\|', e['text'])}
         linked = []
         for spec in config['figures']:
             key = spec['id']

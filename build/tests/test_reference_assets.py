@@ -71,7 +71,7 @@ class ReferenceAssets(unittest.TestCase):
                 self.assertEqual(image.size, dimensions, filename)
                 self.assertLess(image.convert('L').getextrema()[0],245,'Empty image: '+filename)
                 image.verify()
-        self.assertEqual(len(files), 676)
+        self.assertEqual(len(files), 670)
         print('Original card/history image files verified:', len(files))
 
     def test_multi_page_tables_include_first_rows_and_last_page(self):

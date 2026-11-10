@@ -43,6 +43,8 @@ def build_reference_assets(data, base=None):
                 pix = page.get_pixmap(clip=rect, dpi=200)
                 image = Image.open(io.BytesIO(pix.tobytes('png'))).convert('RGB')
                 filename = 'ref_' + key.replace('-', '_').replace('.', '_') + f'_{i}.webp'
+                if spec.get('versioned'):
+                    filename = filename.removesuffix('.webp') + '_' + hashlib.sha256(image.tobytes()).hexdigest()[:10] + '.webp'
                 image.save(output / filename, 'WEBP', quality=88, method=6)
                 pages.append(dict(file=filename, width=image.width, height=image.height, page=pn))
             inline = {m[1]: (int(m[2]), int(m[3])) for m in re.finditer(
