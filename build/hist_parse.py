@@ -19,6 +19,12 @@ CFG = {
                cur_font=('TT5CF94827',), cur_min=11, head_x=80, mark_font='TT5CF94827', skip_fonts=('TTE7E4FEC1',), num_fonts=('TT7FCCDD19', 'HaansoftBatang')),
 }[MODE]
 SRC = CFG['src']
+# 조문 뒤에 모아 실은 공통 도해는 직전의 마지막 조문에 속하지 않는다.
+# (PDF 쪽, 시작 y, 실제 소속, 직전 조문). 좌표와 소속은 원문으로 확인했다.
+FIGURE_SECTIONS = {
+    'el': [(330, 0, 'Ⅶ.1', 'Ⅶ.5')],
+    'es': [(64, 460, '5', '5.10'), (132, 0, 'Ⅰ', 'Ⅰ.6')],
+}[MODE]
 # ---- 조문 번호 순서(부속서는 100+로마숫자)
 ROMAN = 'ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫ'
 RV = {c: i + 1 for i, c in enumerate(ROMAN)}; RV['XⅢ'] = 13; RV['XⅣ'] = 14
@@ -200,6 +206,7 @@ def para_join(items):
 def main():
     d = pymupdf.open(SRC)
     hist = {}; cur = None; blk = None; prev = None; cur_annex = None
+    target = None; shared_from = None
     BASE = []        # [{'num', 'rest', 'items': [줄 또는 그림]}]
     annex_title = None; annex_y = 0   # '부속서 Ⅰ' 바로 아래 가운데 제목 줄을 기다리는 중
     def close():
@@ -240,7 +247,7 @@ def main():
         FULL = pg.rect.width * 0.82
         def add_cur(txt, l):
             """현행 본문 줄 추가. 같은 높이에서 오른쪽에 이어지는 줄('F' | ': 멈춤 쇠 장치가 …', '… 및 그' | '작동수단')은 한 줄로"""
-            its = BASE[-1]['items']; lb = l['bbox']
+            its = target['items']; lb = l['bbox']
             if its and not isinstance(its[-1], list) and len(its[-1]) == 4 and abs(its[-1][2] - lb[1]) < 3 and lb[0] > its[-1][3] - 1:
                 its[-1] = (its[-1][0].rstrip() + ' ' + txt.lstrip(), lb[2] >= FULL, lb[1], lb[2])
             else: its.append((txt, lb[2] >= FULL, lb[1], lb[2]))
@@ -267,7 +274,15 @@ def main():
                 # 제목 띠 바로 아래 점선은 블록 윗줄, 쪽 맨 위 점선은 앞 쪽에서 이어지는 블록의 윗줄(블록이 안 끝남)
                 rows.append((yy, 0, '__END__' if yy > 135 else '__CONT__', 0, '', None))
         rows.sort(key=lambda r: (round(r[0]), r[1]))
+        pending = next((s for s in FIGURE_SECTIONS if s[0] == pi + 1), None)
         for ri, (y, x, font, size, txt, l) in enumerate(rows):
+            if pending and y >= pending[1]:
+                _, _, destination, expected = pending
+                if cur != expected:
+                    raise ValueError(f'{MODE} {pi + 1}쪽 공통 그림 경계: {expected} 대신 {cur}')
+                close()  # 마지막 조문 자체의 적용 연혁은 먼저 확정한다.
+                target = next(e for e in BASE if e['num'] == destination)
+                cur = destination; shared_from = expected; pending = None
             if font == '__END__':
                 if blk is not None: blk['endy'] = (pi, y)
                 continue
@@ -283,7 +298,7 @@ def main():
                 if blk is not None or BASE:
                     name = f'h{MODE}_p{pi + 1}_{txt}.webp'; name, w, h = crop(pg, l, name, versioned=reviewed or bool(discarded_math))
                     fig = [name, w, h, [line_text(m[5]) for m in sorted(members[int(txt)], key=lambda m: (round(m[0]), m[1]))]]
-                    (blk['lines'] if blk is not None else BASE[-1]['items']).append(fig)
+                    (blk['lines'] if blk is not None else target['items']).append(fig)
                 continue
             st = txt.strip()
             if font == 'Gulim' and (size == 10 and re.fullmatch(r'\d+', st) or size == 8): continue   # 쪽번호, '시행' 표시
@@ -293,6 +308,7 @@ def main():
                 close()
                 hd = st.replace('➥', '').strip()
                 blk = {'head': hd, 'lines': [], 'y': y, 'pi': pi, 'siheng': any(abs(sy - y) < 4 for sy in siheng_y)}
+                if shared_from: blk['gist_source'] = shared_from
                 continue
             if font == 'H2gtrE' and blk is not None and not blk['head']:
                 blk['head'] = st; blk['siheng'] = blk['siheng'] or any(abs(sy - y) < 4 for sy in siheng_y); continue
@@ -308,7 +324,8 @@ def main():
                     k = key(ma.group(1))
                     if plausible(prev, k):
                         close(); cur = ma.group(1); cur_annex = cur; prev = k; DET.append(cur)
-                        BASE.append({'num': cur, 'rest': '', 'items': []}); annex_title = []; annex_y = y
+                        BASE.append({'num': cur, 'rest': '', 'items': []}); target = BASE[-1]; shared_from = None
+                        annex_title = []; annex_y = y
                     continue
                 if annex_title is not None:
                     if x > 90 and abs((l['bbox'][0] + l['bbox'][2]) / 2 - pg.rect.width / 2) < 50 and not HEADRE.match(st) and y - annex_y < 30:
@@ -319,9 +336,15 @@ def main():
                     close(); cur = hh[0]; prev = key(cur); DET.append(cur)
                     # 머리 줄 끝에 공백을 남기고 끊긴 제목('10.2 추락방지안전장치 및 그␣␣' / '작동수단')도 다음 줄로 잇는다
                     BASE.append({'num': cur, 'rest': hh[1], 'items': [(' ' + txt.lstrip()[len(cur):].lstrip('.'), l['bbox'][2] >= FULL or txt[-1:].isspace(), l['bbox'][1], l['bbox'][2])]})
+                    target = BASE[-1]; shared_from = None
                 else:
-                    if blk is not None: close()   # 현행 본문이 이어지면 블록 끝
-                    if BASE: add_cur(txt, l)
+                    if blk is not None and shared_from:
+                        # 공통 도해의 옛 판에도 현행과 같은 글꼴의 기호설명·표제가
+                        # 쓰인다. 글꼴만 보고 연혁을 닫으면 옛 표가 현행에 섞인다.
+                        blk['lines'].append(line_text(l))
+                    else:
+                        if blk is not None: close()   # 현행 본문이 이어지면 블록 끝
+                        if BASE: add_cur(txt, l)
                 continue
             if blk is None and BASE and size >= 9 and font not in ('Gulim',):
                 add_cur(txt, l); continue
@@ -335,6 +358,7 @@ def main():
         for b in h['blocks']:
             f, t, basis = classify(b['head'])
             bl.append({'head': re.sub(r'\s+', ' ', b['head']), 'from': f, 'to': t, 'basis': basis, 'siheng': b['siheng'], 'text': b['text']})
+            if b.get('gist_source'): bl[-1]['gist_source'] = b['gist_source']
         out[n] = {'cur': h['cur'], 'blocks': bl}
     json.dump(out, open(CFG['out'], 'w', encoding='utf-8'), ensure_ascii=False)
     # ---- 현행 조문 목록(사이트 카드): 제목은 번호 뒤 짧은 머리말(40자 이하, 문장 아님), 경로는 상위 조문 제목

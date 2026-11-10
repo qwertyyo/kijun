@@ -1275,7 +1275,7 @@
       "src": "b22",
       "kind": "figure",
       "num": "Ⅷ.1",
-      "owner": "b22-Ⅶ.5",
+      "owner": "b22-Ⅶ.1",
       "title": "피트 사다리의 종류(형식)",
       "caption_page": 330,
       "caption": "그림Ⅷ.1",
@@ -1734,7 +1734,7 @@
       "reason": "당시 도해가 이미지로 수록되어 제목 글자가 본문에서 추출되지 않음"
     },
     {
-      "block": "b24-5.10:1",
+      "block": "b24-5:1",
       "kind": "figure",
       "num": "2",
       "caption_page": 66,

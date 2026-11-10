@@ -283,6 +283,28 @@ class PublishedPage(unittest.TestCase):
         self.assertIn('원문 본문은 그림 Ⅸ.1',self.page.locator('.ref-content').inner_text())
         self.assertIn('ref_b22_figure_Ⅹ_1',self.page.locator('.ref-content img').get_attribute('src'))
 
+    def test_power_supply_has_no_unrelated_figures_and_related_clause_opens_its_figure(self):
+        for width, height in [(390, 844), (960, 600)]:
+            self.page.set_viewport_size({'width': width, 'height': height})
+            self.page.locator('.tocitem[data-view="b24"][data-key="Ⅰ"]').click()
+            power = self.page.locator('[id="b24-Ⅰ.6"]')
+            self.assertIn('KS C IEC 60204-1', power.locator('.body').inner_text())
+            self.assertEqual(power.locator('img, .esfigs, [data-ref-assets]').count(), 0)
+            self.assertNotIn('기호설명', power.inner_text())
+            self.assertNotIn('2013', power.inner_text())
+            power.locator('[data-hist]').click()
+            self.assertEqual(power.locator('.hist img').count(), 0)
+            self.assertNotIn('기호설명', power.locator('.hist').inner_text())
+            related = self.page.locator('[id="b24-Ⅰ.2.4"] .body [data-ref-assets="b24-figure-Ⅰ.2"]')
+            related.first.click()
+            self.assertIn('막는 조치 및 안전 보호판', self.page.locator('.ref-content').inner_text())
+            images = self.page.locator('.ref-content img')
+            self.assertEqual(images.count(), 1)
+            self.assertTrue(images.first.get_attribute('src').endswith('es_figure_Ⅰ_2.webp'))
+            images.first.evaluate('(im)=>im.decode()')
+            self.page.locator('[data-ref-close]').click()
+            self.page.locator('.vnav.top [data-totoc]').click()
+
     def test_all_toc_groups_using_published_html(self):
         entries = {e['id']:e for src in ('b22','b24','std','fail') for e in self.data[src]}
         clauses = {e['id'] for src in ('b22','b24') for e in self.data[src]}
@@ -340,7 +362,7 @@ class PublishedPage(unittest.TestCase):
                     self.assertTrue(set(card['assets'])&allowed,(card['id'],allowed))
                 seen.add(card['id'])
             self.page.locator('.vnav.top [data-totoc]').click()
-        self.assertEqual(len(seen),2461)
+        self.assertEqual(len(seen),2462)
         if os.environ.get('KIJUN_AUDIT_DIR'):
             output = Path(os.environ['KIJUN_AUDIT_DIR'])
             output.mkdir(parents=True,exist_ok=True)

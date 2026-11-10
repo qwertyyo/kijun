@@ -59,7 +59,7 @@ class ReviewedCrops(unittest.TestCase):
         self.assertTrue(asset['versioned'])
 
     def test_decorative_header_is_not_an_escalator_figure(self):
-        entry = next(e for e in self.data['b24'] if e['id'] == 'b24-Ⅰ.6')
+        entry = next(e for e in self.data['b24'] if e['id'] == 'b24-Ⅰ')
         self.assertNotIn('hes_p134_1.webp', entry['text'])
         figures = re.findall(r'\x10([^|]+)\|(\d+)\|(\d+)\x0e', entry['text'])
         self.assertTrue(figures)

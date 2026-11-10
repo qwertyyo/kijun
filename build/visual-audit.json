@@ -1,7 +1,7 @@
 {
   "date": "2026-11-10",
   "baseline_commit": "86c9c7aed6923016afe67953281b1ae8b2633bb8",
-  "release": "02d85ac5cb1ec3b3",
+  "release": "77536bac3b8abc7e",
   "method": {
     "manual_before": {
       "assets": 755,
@@ -19,9 +19,9 @@
       "restored_es_figure_preview": true
     },
     "automated_cards": {
-      "total": 2461,
+      "total": 2462,
       "b22": 881,
-      "b24": 327,
+      "b24": 328,
       "std": 816,
       "fail": 437,
       "toc_groups": 190,
@@ -29,10 +29,6 @@
         [
           390,
           844
-        ],
-        [
-          960,
-          600
         ]
       ],
       "checks": [
@@ -46,12 +42,14 @@
   },
   "current_unique_assets": 749,
   "card_history_assets": 670,
-  "reference_targets": 175,
+  "reference_targets": 176,
   "current_reference_assets": 121,
   "changed_cards": {
     "b22": [
       "b22-6.1.8.8",
       "b22-11.2.3.5",
+      "b22-Ⅶ.1",
+      "b22-Ⅶ.5",
       "b22-Ⅷ.3",
       "b22-Ⅷ.4",
       "b22-Ⅷ.5",
@@ -69,6 +67,9 @@
       "b22-Ⅺ.1.3"
     ],
     "b24": [
+      "b24-5",
+      "b24-5.10",
+      "b24-Ⅰ",
       "b24-Ⅰ.6"
     ],
     "std": [
@@ -3094,7 +3095,7 @@
       "path": "fig/hel_p330_0.webp",
       "sha256": "b1b3a48a9b97c376b5e8674d9cf674c685f99ef72048d73760c3df3e01c9d56e",
       "owners": [
-        "b22-Ⅶ.5"
+        "b22-Ⅶ.1"
       ],
       "source_clips": [
         [
@@ -3112,7 +3113,7 @@
       "path": "fig/ref_b22_figure_Ⅷ_1_0.webp",
       "sha256": "c568fc82f2a625b1c874d546c242b8d467617e03e4554abec7b105cf82df01d7",
       "owners": [
-        "b22-Ⅶ.5"
+        "b22-Ⅶ.1"
       ],
       "source_clips": [
         [
@@ -5564,7 +5565,7 @@
       "path": "fig/hes_p64_0.webp",
       "sha256": "b537c966f4022c0907a27bdef1b241908d5b5ce0b1e314aeaecf0643a1b0974f",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5582,7 +5583,7 @@
       "path": "fig/hes_p65_0.webp",
       "sha256": "f5ef2535afd08f293fc1c8f6ce16f1e61397a82393372ba2dec530484efe6701",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5600,8 +5601,8 @@
       "path": "fig/hes_p66_0.webp",
       "sha256": "671f50d9cf31ff72bd6d59d7f82510af0ed8601c8fd87e9ee99e70f8a5946140",
       "owners": [
-        "b24-5.10",
-        "b24-5.10:history-1"
+        "b24-5",
+        "b24-5:history-1"
       ],
       "source_clips": [
         [
@@ -5619,8 +5620,8 @@
       "path": "fig/hes_p66_1.webp",
       "sha256": "ccf7e0990abe19b82b0baf06e765b2228607e67b13e620a96b710bbdb590726c",
       "owners": [
-        "b24-5.10",
-        "b24-5.10:history-1"
+        "b24-5",
+        "b24-5:history-1"
       ],
       "source_clips": [
         [
@@ -5638,8 +5639,8 @@
       "path": "fig/hes_p67_0.webp",
       "sha256": "c0931a7f2a5321568ae6927792258a0da1b7848cc5a3bd986995c9649699993b",
       "owners": [
-        "b24-5.10",
-        "b24-5.10:history-1"
+        "b24-5",
+        "b24-5:history-1"
       ],
       "source_clips": [
         [
@@ -5657,7 +5658,7 @@
       "path": "fig/hes_p68_0.webp",
       "sha256": "c5a4cd66dd389a2577276cf5903d0ea9ff2e44fe56f39271548c45a32733451c",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5675,7 +5676,7 @@
       "path": "fig/hes_p68_1.webp",
       "sha256": "2ac939748d94e8c8d13a5c7c842e4186c0493acd723961f3c76857f00d83876c",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5693,7 +5694,7 @@
       "path": "fig/hes_p68_2.webp",
       "sha256": "eb84b9675500d03cbf487dc44e7112ae5a86b4d878ef2e2432cf971f83b22a2c",
       "owners": [
-        "b24-5.10:history-2"
+        "b24-5:history-2"
       ],
       "source_clips": [
         [
@@ -5711,7 +5712,7 @@
       "path": "fig/hes_p69_0.webp",
       "sha256": "c9d21dcb8403ef7a9e452fab786a2bd1d736ed4fddcf173e603e671cec7dd126",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5729,7 +5730,7 @@
       "path": "fig/hes_p69_1.webp",
       "sha256": "c1af404dc21a883e94d66d1dbf14a8dae2de7d673443d30c766c91db8dd49ac1",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5747,7 +5748,7 @@
       "path": "fig/hes_p70_1.webp",
       "sha256": "0fe0592c7f11e2e1c0769a5436617fabefb0316dae73425aaad87cbcaf59c7c4",
       "owners": [
-        "b24-5.10:history-3"
+        "b24-5:history-3"
       ],
       "source_clips": [
         [
@@ -5765,7 +5766,7 @@
       "path": "fig/hes_p70_0.webp",
       "sha256": "859e5c141792c5978c608b7be9b967ad15560e37ce96ca3926472c7bb7e7f1cb",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5783,7 +5784,7 @@
       "path": "fig/hes_p70_2.webp",
       "sha256": "5e16c3ab4e67ab3b9ae4efdb920e3467d961f51f00de0c139b5fa27f843c80f6",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5801,7 +5802,7 @@
       "path": "fig/hes_p71_1.webp",
       "sha256": "be046644215f8187971bf40e7f43b4d231a67e4198fd6a8820d32ed7252cc35c",
       "owners": [
-        "b24-5.10:history-4"
+        "b24-5:history-4"
       ],
       "source_clips": [
         [
@@ -5819,7 +5820,7 @@
       "path": "fig/hes_p71_0.webp",
       "sha256": "64fa1a57ac659a34517ee2bcb3c991d352b6b0b3256cfc899952c9cdb9f58610",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5837,7 +5838,7 @@
       "path": "fig/hes_p72_0.webp",
       "sha256": "f12c267b6071c4f731d388b8db12dcfb718f2a6daeb42a97d7def1bab3d8059c",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5855,7 +5856,7 @@
       "path": "fig/hes_p73_0.webp",
       "sha256": "116aa95a2b4e8db55df224571ab7fc3702949dd9b9bc70e9d313c9adc0122936",
       "owners": [
-        "b24-5.10:history-5"
+        "b24-5:history-5"
       ],
       "source_clips": [
         [
@@ -5873,7 +5874,7 @@
       "path": "fig/hes_p73_1.webp",
       "sha256": "4a4b974b639d32b158577f444ce81be020dc9d659f877c8768c74af9e13d4632",
       "owners": [
-        "b24-5.10:history-5"
+        "b24-5:history-5"
       ],
       "source_clips": [
         [
@@ -5891,7 +5892,7 @@
       "path": "fig/hes_p74_0.webp",
       "sha256": "748961894b56e125197a396a172b4392145e3cd8e6244fd202f2cc2df6472f95",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -5909,7 +5910,7 @@
       "path": "fig/hes_p74_1.webp",
       "sha256": "fd1dba9b390e800ca2e0ecfbcd7f0bd3d3a8585d4d2405a13e941e90c3d03b73",
       "owners": [
-        "b24-5.10:history-6"
+        "b24-5:history-6"
       ],
       "source_clips": [
         [
@@ -6345,7 +6346,7 @@
       "path": "fig/hes_p132_0.webp",
       "sha256": "7c039a82c260f63b19f6378ca9413d137f3f9a8708939df84bfde4979e65443e",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -6363,7 +6364,7 @@
       "path": "fig/hes_p132_1.webp",
       "sha256": "c24ef70a7f66e064c7b68b3b71d29bec9383afd4421a3fffc6bde0afacaa12a0",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -6381,7 +6382,8 @@
       "path": "fig/hes_p133_0.webp",
       "sha256": "8bd4f3898c0f9e5f1ab9f73ba5cf1042b5ee7b9563808371749b8f9f67046577",
       "owners": [
-        "b24-Ⅰ.6:history-0"
+        "b24-Ⅰ",
+        "b24-Ⅰ:history-0"
       ],
       "source_clips": [
         [
@@ -6399,7 +6401,8 @@
       "path": "fig/hes_p133_1.webp",
       "sha256": "85dbfa1887d30ebbff6fb01d1c9769006de32ea62cae3cd79345996784ad559c",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ",
+        "b24-Ⅰ:history-0"
       ],
       "source_clips": [
         [
@@ -6417,7 +6420,7 @@
       "path": "fig/hes_p134_0_eb51df8707.webp",
       "sha256": "5405e25828cc4ac55114e23410f6909a133767eb900f3c3a2a4fb5642d36e818",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -6435,8 +6438,8 @@
       "path": "fig/hes_p134_1_e1b667d3f1.webp",
       "sha256": "3c6d4a586fcc4e6813dd6da31d16df55c9bce47b22738479c1ceded181b7e193",
       "owners": [
-        "b24-Ⅰ.6",
-        "b24-Ⅰ.6:history-1"
+        "b24-Ⅰ",
+        "b24-Ⅰ:history-1"
       ],
       "source_clips": [
         [
@@ -6454,7 +6457,7 @@
       "path": "fig/hes_p135_0.webp",
       "sha256": "7f79442feab9225778718ff4e6f57f13e677ff6fd0418e495fe302dca93d5bbe",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -6472,8 +6475,8 @@
       "path": "fig/hes_p135_1.webp",
       "sha256": "2548b5587148a217b56e682f0d8215032989c563c53f9932ee6942ea2232e3df",
       "owners": [
-        "b24-Ⅰ.6",
-        "b24-Ⅰ.6:history-2"
+        "b24-Ⅰ",
+        "b24-Ⅰ:history-2"
       ],
       "source_clips": [
         [
@@ -6491,7 +6494,7 @@
       "path": "fig/hes_p136_0.webp",
       "sha256": "c42b023fc4c4022c4c038d910b365d71cbd4f91f435f1a8b34afdecadd9b98c0",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -6855,7 +6858,7 @@
       "path": "fig/es_figure_5.webp",
       "sha256": "300d42d3271f9e356f3a2e4af28694f089541d52362acae5c76419cb31e38870",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -6881,7 +6884,7 @@
       "path": "fig/es_figure_6.webp",
       "sha256": "90efc56354df583b559e923064e43d7d44f88b381450ebbf06251df725c5109b",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -6899,7 +6902,7 @@
       "path": "fig/es_figure_7.webp",
       "sha256": "25133c8dd266002497110222302c5691bb80800701aac919d64ee97bac6f4e3e",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -6917,7 +6920,7 @@
       "path": "fig/es_figure_8.webp",
       "sha256": "aa6299b03625005f1e368067a7e6fcb7c90cc336fd24f53fa5529ab30bf92576",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -6935,7 +6938,7 @@
       "path": "fig/es_figure_9.webp",
       "sha256": "ac3ea2a99fa0be329b51bbe12595af884ba2947c0174aa87ff6d50af22654cd1",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -6953,7 +6956,7 @@
       "path": "fig/es_figure_10.webp",
       "sha256": "92e7d8795f63c8a717359cfbdcac714732cd79d0a97b7c5fed4813cde879e68d",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -6971,7 +6974,7 @@
       "path": "fig/es_figure_11.webp",
       "sha256": "32ba129c35053e85bb55cc200b7d84f0fb83331ec90443e8dc024f8ef225fac2",
       "owners": [
-        "b24-5.10"
+        "b24-5"
       ],
       "source_clips": [
         [
@@ -7043,7 +7046,7 @@
       "path": "fig/es_figure_Ⅰ_1.webp",
       "sha256": "a2f8168b27adb96228f48d6e98b3bb695eaca8dd2bac02f9cdeaff36f708b3e2",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -7061,7 +7064,7 @@
       "path": "fig/es_figure_Ⅰ_2.webp",
       "sha256": "13e67f36c174104bc483ceb7b6b44ded8945acfc293943366e68e056f1d60d6e",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -7079,7 +7082,7 @@
       "path": "fig/es_figure_Ⅰ_3.webp",
       "sha256": "b46172a0470ad06c35b9ae6c21646da4f024756d9ef46d9141f565c42e151a71",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -7097,7 +7100,7 @@
       "path": "fig/es_figure_Ⅰ_4.webp",
       "sha256": "9b70f5f445a457ddd34c1175aaed1d57413017b0e7e0507182a3bee7c12c2cc1",
       "owners": [
-        "b24-Ⅰ.6"
+        "b24-Ⅰ"
       ],
       "source_clips": [
         [
@@ -13628,13 +13631,7 @@
       "review": "visually_checked_unchanged"
     }
   ],
-  "final_internal_checks": {
-    "current_assets": 749,
-    "changed_assets": 59,
-    "all_current_el_es_hangul_characters_preserved": true,
-    "std_pdf_744_text_layers_identical": true
-  },
-  "validation": {
+  "previous_validation": {
     "tests": 61,
     "seconds": 192.055,
     "result": "passed",
@@ -13643,6 +13640,128 @@
     "reference_popups": 175,
     "histories_rendered": 1002,
     "internal_reference_links": 6456,
+    "missing_current_internal_named_references": 0
+  },
+  "ownership_correction": {
+    "baseline_commit": "4ce104c",
+    "prior_review_limit": "Image/source equality and display checks did not establish the correct clause association. Wrong ownership was found after that review.",
+    "scopes": [
+      {
+        "from": "b24-Ⅰ.6",
+        "to": "b24-Ⅰ",
+        "pdf_pages": [
+          132,
+          133,
+          134,
+          135,
+          136
+        ]
+      },
+      {
+        "from": "b24-5.10",
+        "to": "b24-5",
+        "start": [
+          64,
+          460
+        ],
+        "end_before": "5.11 on PDF page 74"
+      },
+      {
+        "from": "b22-Ⅶ.5",
+        "to": "b22-Ⅶ.1",
+        "pdf_pages": [
+          330
+        ]
+      }
+    ],
+    "asset_files_unchanged": true,
+    "reassigned_asset_metadata": 42,
+    "combined_current_history_source_characters_preserved": true,
+    "old_dimensions_and_caption_11_moved_to_history": true,
+    "power_source_paragraph_exact_match": true,
+    "power_transport_and_related_popup_test_viewports": [
+      [
+        390,
+        844
+      ],
+      [
+        960,
+        600
+      ]
+    ],
+    "new_current_card_count": 2462,
+    "changed_current_cards": {
+      "b22": [
+        "b22-Ⅶ.1",
+        "b22-Ⅶ.5"
+      ],
+      "b24": [
+        "b24-5",
+        "b24-5.10",
+        "b24-Ⅰ",
+        "b24-Ⅰ.6"
+      ]
+    }
+  },
+  "cropping_changed_cards": {
+    "b22": [
+      "b22-6.1.8.8",
+      "b22-11.2.3.5",
+      "b22-Ⅷ.3",
+      "b22-Ⅷ.4",
+      "b22-Ⅷ.5",
+      "b22-Ⅷ.6",
+      "b22-Ⅷ.7.2.1.1",
+      "b22-Ⅷ.7.2.1.2",
+      "b22-Ⅷ.7.2.1.3",
+      "b22-Ⅷ.7.2.1.4",
+      "b22-Ⅷ.7.2.1.5",
+      "b22-Ⅸ.3",
+      "b22-Ⅸ.3.1",
+      "b22-Ⅹ.2.2",
+      "b22-Ⅹ.3",
+      "b22-Ⅹ.4",
+      "b22-Ⅺ.1.3"
+    ],
+    "b24": [
+      "b24-Ⅰ.6"
+    ],
+    "std": [
+      "std-44",
+      "std-223",
+      "std-234",
+      "std-348",
+      "std-836",
+      "std-392",
+      "std-402",
+      "std-413",
+      "std-539",
+      "std-680"
+    ],
+    "fail": []
+  },
+  "previous_crop_internal_checks": {
+    "current_assets": 749,
+    "changed_assets": 59,
+    "all_current_el_es_hangul_characters_preserved": true,
+    "std_pdf_744_text_layers_identical": true
+  },
+  "final_internal_checks": {
+    "current_assets": 749,
+    "all_asset_bytes_unchanged_from_4ce104c": true,
+    "combined_current_history_source_characters_preserved": true,
+    "power_source_paragraph_exact_match": true,
+    "std_and_fail_cards_unchanged_from_4ce104c": true
+  },
+  "validation": {
+    "tests": 68,
+    "seconds": 178.829,
+    "result": "passed",
+    "phone_all_2462_cards": "passed",
+    "power_transport_related_popup_phone_and_tablet": "passed",
+    "reference_popups": 176,
+    "histories_rendered": 1003,
+    "internal_reference_links": 6463,
     "missing_current_internal_named_references": 0
   }
 }

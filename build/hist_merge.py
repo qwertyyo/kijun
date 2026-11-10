@@ -37,7 +37,9 @@ if os.path.exists(GKF):
     for n, v in out.items():
         if n in GK['cur']: v['curg'] = GK['cur'][n]
         for x in v['blocks']:
-            hk = n + '|' + x['head'] + '|' + x.get('scope', '')
+            # 공통 그림의 소속을 바로잡아도 이미 검토한 연혁 요지는 보존한다.
+            gist_source = x.pop('gist_source', None)
+            hk = (gist_source or n) + '|' + x['head'] + '|' + x.get('scope', '')
             g = GK['blk'].get(hk + '|' + pl(x['text']))
             if not g and len(byhead.get(hk, [])) == 1: g = byhead[hk][0]   # 그림 때문에 앞부분 글자가 달라진 블록
             if not g and hk in byhead:   # 같은 제목 블록이 여럿이면 앞부분 글자가 가장 비슷한 것
@@ -45,6 +47,10 @@ if os.path.exists(GKF):
                 cands = [(difflib.SequenceMatcher(None, k.rsplit('|', 1)[1], pl(x['text'])).ratio(), gg) for k, gg in GK['blk'].items() if k.rsplit('|', 1)[0] == hk]
                 best = max(cands, key=lambda c: c[0])
                 if best[0] >= 0.5: g = best[1]
+            if gist_source and '\x10' in x['text'] and (not g or '내용 없음' in g):
+                caption = re.search(r'\[\s*그림\s*([Ⅰ-Ⅻ\d.]+)\s*[-―–.]?\s*([^\]]+)\]', x['text'], re.S)
+                g = ('그림 ' + caption[1] + ': ' + re.sub(r'\s+', ' ', caption[2]).strip()
+                     if caption else '당시 기준의 원문 그림')
             if g: x['g'] = g
             elif hk in byhead: miss += 1
     print('gist misses', miss)

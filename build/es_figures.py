@@ -85,7 +85,9 @@ def build_figures(entries, base_dir='.'):
             table_refs[key] = refs
             catalog[key] = dict(id=key, title=spec['title'], file=filename, width=width,
                                 height=height, pages=list(dict.fromkeys(c[0] for c in spec['clips'])),
-                                source=config['source_title'], edition=config['edition'])
+                                source=config['source_title'], edition=config['edition'], owner='b24-' + spec['owner'])
+            if spec['owner'] not in by_num:
+                raise ValueError(f'그림 {key}: 소속 조문이 없음: {spec["owner"]}')
     for e in entries:
         e.pop('figure_refs', None)
         explicit = figure_references(e['text'])

@@ -72,11 +72,8 @@ def build_reference_assets(data, base=None):
             catalog[key] = item
         for num, figure in data['es_figures'].items():
             key = f'b24-figure-{num}'
-            owner = {'1': '5.3.3.2.2', '2': '5.3.3.2.2', '3': '5.5.3.4', '4': '5.8.2.1',
-                     '12': '5.12.3.8.1', '13': '6.1.2.1', '14': '7.2.1'}.get(num,
-                     'Ⅰ.6' if num.startswith('Ⅰ.') else 'Ⅴ' if num.startswith('Ⅴ.') else '5.10')
             catalog[key] = dict(key=key, src='b24', kind='figure', num=num, title=figure['title'],
-                                source=figure['source'], owner='b24-' + owner,
+                                source=figure['source'], owner=figure['owner'],
                                 pages=[dict(file=figure['file'], width=figure['width'], height=figure['height'],
                                             page=figure['pages'][0], page_label='·'.join(map(str, figure['pages'])))])
     finally:

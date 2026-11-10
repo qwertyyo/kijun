@@ -59,7 +59,10 @@ class EscalatorFigures(unittest.TestCase):
         self.assertEqual(self.refs('Ⅰ.2.3'), {'Ⅰ.1'})
         self.assertEqual(self.refs('Ⅰ.2.7'), {'Ⅰ.3'})
         self.assertEqual(self.refs('Ⅰ.5'), {'Ⅰ.3', 'Ⅰ.4'})
-        self.assertEqual(self.refs('Ⅰ.6'), {'Ⅰ.1', 'Ⅰ.2', 'Ⅰ.3', 'Ⅰ.4'})
+        self.assertEqual(self.refs('Ⅰ.6'), set())
+        self.assertEqual(self.refs('Ⅰ'), {'Ⅰ.1', 'Ⅰ.2', 'Ⅰ.3', 'Ⅰ.4'})
+        self.assertEqual(self.refs('5.10'), set())
+        self.assertEqual(self.refs('5'), {'5', '6', '7', '8', '9', '10', '11'})
         self.assertEqual(self.refs('Ⅴ'), {'Ⅴ.1', 'Ⅴ.2'})
         reasons = {r['id']: r['reason'] for r in self.by_num['5.6.2.1']['figure_refs']}
         self.assertIn('본문 참조', reasons['6'])
