@@ -16,6 +16,7 @@
 - `config.json` — `{"synApi": "<Apps Script /exec 주소>"}` 공용 현장용어 서버. 비면 기능 꺼짐. 여기서 고쳐도 됨.
 - `gas/` — 공용 현장용어 서버(Google Apps Script). 아래 SETUP.
 - `build/` — **원본 자료 + 빌드 스크립트 전부.**
+- `build/hist_es/standard_2022.pdf` — 사용자가 제공한 별표24(KC 2050-53:2022), **그림 보완용**. 현행 조문·연혁의 원본은 계속 `hist_es/hist.pdf`를 쓴다. `es_figures_map.json`에 원본 SHA-256·그림별 쪽/자르기 영역을 기록하고 `es_figures.py`가 도해·기호설명·치수표·그림 제목을 함께 잘라 `fig/es_figure_*.webp`를 만든다. 그림 5의 두 쪽은 합친다. 본문에서 참조한 그림과 그림 치수/기호표에 조문 번호가 적힌 그림을 카드 하단 및 조문 창에 연결(`figure_refs`, `DATA.es_figures`)하며, 연결 근거와 PDF 쪽을 표시한다. 과거 연혁의 그림 번호는 현행 그림으로 자동 연결하지 않는다. 일부 본문 참조 번호와 실제 치수표의 번호가 달라도 원문은 고치지 않고 두 근거를 구분해 보인다. 검증: `python build/tests/test_es_figures.py -v` 및 `python build/tests/test_clause_refs.py -v`.
 - `yolo/` — 사용자의 다른 프로젝트(객체인식 AI 엘리베이터 검사보조)용 YOLO 클래스 1차 확정본(75개, 2026-10-20: 74 점형블록 추가). 사이트와 무관. `data.yaml` 번호는 바꾸지 말 것(`build_xlsx.py` 의 `FIXED` 로 고정, 추가는 맨 뒤에). 자세한 건 `yolo/README.md`.
 
 ## 빌드·배포 (build/ 에서)

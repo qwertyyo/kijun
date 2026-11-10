@@ -36,7 +36,7 @@ class ClauseReferences(unittest.TestCase):
         lines = ['5.1에 따른 기준', '5.1 m 이상', '그림 5.1 참조',
                  '2014.07.01부터 적용', '19.3.5.1에 따른 기준',
                  'KS B ISO 4190-1의 5.1 참조', '부속서 Ⅰ.2.4 참조',
-                 '6.1.8.3에 따른 기준', '6.1.8.8 참조']
+                 '6.1.8.3에 따른 기준', '6.1.8.8 참조', '5.6.2.1에 따른 기준']
         data['std'].append(dict(src='std', id='std-ref-test', num='999',
                                 title='조문연결시험', path='시험', year='2026',
                                 text='\n'.join(lines), sec=[dict(h='표준화', p=lines)]))
@@ -258,6 +258,45 @@ class ClauseReferences(unittest.TestCase):
         self.assertTrue(all(r.startswith('b24-') for r in refs.evaluate_all('(es)=>es.map(e=>e.dataset.refIds)')))
         refs.first.click()
         self.assertIn('에스컬레이터', self.page.locator('.ref-title').inner_text())
+
+    def test_escalator_figure_previews_load_on_matching_clause(self):
+        self.page.evaluate('KIJUN.setSource("b24")')
+        self.search('손잡이 외형')
+        card = self.page.locator('[id="b24-5.6.2.1"]')
+        self.assertEqual(card.count(), 1)
+        self.assertEqual(card.locator('[data-es-figure="6"]').count(), 1)
+        figure = card.locator('[data-es-figure="7"]')
+        self.assertIn('치수·기호표', figure.inner_text())
+        image = figure.locator('img');image.scroll_into_view_if_needed()
+        image.evaluate('(e)=>e.decode()')
+        self.assertGreater(image.evaluate('(e)=>e.naturalWidth'), 400)
+        self.assertTrue(figure.is_visible())  # 전체 보기를 누르기 전에도 그림이 보인다.
+        self.assertTrue(self.page.locator('body').evaluate('(e)=>e.scrollWidth <= innerWidth'))
+        self.page.screenshot(path='/workspace/kijun-local/es-figure-card-mobile.png')
+        figure.locator('button').click()
+        self.assertTrue(self.page.locator('#lb').is_visible())
+        self.assertIn('es_figure_7.webp', self.page.locator('#lb img').get_attribute('src'))
+
+    def test_escalator_figures_also_show_in_reference_window_and_long_image_viewer(self):
+        self.search('조문연결시험')
+        self.page.locator('#std-ref-test .more').click()
+        self.page.locator('#std-ref-test [data-ref-num="5.6.2.1"]').click()
+        if self.page.locator('.ref-choice').count():
+            self.page.locator('.ref-choice').filter(has_text='에스컬레이터').click()
+        self.assertEqual(self.page.locator('.ref-content [data-es-figure="7"]').count(), 1)
+        # A two-page figure must be reachable from its top to its final caption.
+        self.page.locator('[data-ref-close]').click()
+        self.page.evaluate('KIJUN.setSource("b24")')
+        self.search('손잡이 외형')
+        self.page.locator('[id="b24-5.6.2.1"] .path .clause-ref').filter(has_text='5.6').first.click()
+        figure = self.page.locator('.ref-content [data-es-figure="5"]').first
+        figure.locator('button').click()
+        viewer = self.page.locator('#lb .lbscroll');image = viewer.locator('img')
+        image.evaluate('(e)=>e.decode()')
+        self.assertGreaterEqual(image.bounding_box()['y'], viewer.bounding_box()['y'] - 1)
+        viewer.evaluate('(e)=>e.scrollTop = e.scrollHeight')
+        a,b=image.bounding_box(),viewer.bounding_box()
+        self.assertLessEqual(a['y']+a['height'],b['y']+b['height']+1)
 
     def test_popup_figures_and_escape_layer_order(self):
         self.search('조문연결시험')

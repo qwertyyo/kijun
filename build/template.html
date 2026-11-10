@@ -63,8 +63,8 @@ header.top { position: relative; z-index: 5; background: var(--bg); padding-bloc
 .figrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; margin: 8px 0; white-space: normal }
 .figrow .fig { margin: 0 }
 .figtag { display: block; font-size: 11px; color: var(--muted); margin-top: 2px }
-.lb .lbscroll { flex: 1; width: 100%; overflow: auto; display: flex; align-items: center; justify-content: center; -webkit-overflow-scrolling: touch }
-.lb .lbscroll img { max-height: none }
+.lb .lbscroll { flex: 1; min-height: 0; width: 100%; overflow: auto; display: flex; align-items: flex-start; justify-content: center; -webkit-overflow-scrolling: touch }
+.lb .lbscroll img { max-height: none; margin-block: auto }
 .brand { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 10px }
 .brand h1 { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.01em }
 .brand .sub { font-size: 12px; color: var(--muted) }
@@ -348,6 +348,14 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .ref-content .card .body::after, .ref-content .card > .more { display: none }
 .ref-note { margin: 0 0 10px; font-size: 13px; color: var(--muted) }
 .ref-choice { display: block; width: 100%; text-align: left; font: inherit; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 8px 0; cursor: pointer }
+.esfigs { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 12px }
+.esfigs h3 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600 }
+.esfig-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(140px, 100%), 1fr)); gap: 10px }
+.esfig-grid figure { margin: 0; min-width: 0 }
+.esfig-grid button { display: block; width: 100%; padding: 5px; border: 1px solid var(--line); border-radius: 8px; background: #fff; cursor: zoom-in }
+.esfig-grid img { display: block; width: 100%; height: 180px; object-fit: contain }
+.esfig-grid figcaption { font-size: 12px; line-height: 1.5; margin-top: 5px; overflow-wrap: anywhere }
+.esfig-grid figcaption span { display: block; font-size: 11px; color: var(--muted) }
 </style>
 
 <div class="wrap">
@@ -418,6 +426,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const DATA = JSON.parse(document.getElementById('data').textContent);
   // 제목만 있는 상위 조항도 참조할 수 있도록 검색용 필터링 전에 보관한다.
   const REF_ENTRIES = Object.fromEntries(DATA.b22.concat(DATA.b24).map(e => [e.id, e]));
+  const ES_FIGURES = DATA.es_figures || {};
   // 본문 없는 제목만 있는 조문(예: '5.6 손잡이 시스템')과 회차 목차는 검색 대상에서 제외
   // 장(章) 제목: 본문 없는 제목 조문도 목차용으로 보관
   const CH = { b22: {}, b24: {} };
@@ -1134,6 +1143,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (e.h) for (const b of e.h.blocks) { const pt = plainH(b.text); if (R.test(pt)) return snip(pt, '연혁에서 찾음 · ' + escHtml(b.head)); }
     return '';
   }
+  function esFigureHtml(e) {
+    if (e.src !== 'b24' || !e.figure_refs || !e.figure_refs.length) return '';
+    const figures = e.figure_refs.map(r => ({ r, f: ES_FIGURES[r.id] })).filter(x => x.f);
+    if (!figures.length) return '';
+    return `<div class="esfigs"><h3>관련 원문 그림 · 누르면 확대</h3><div class="esfig-grid">${figures.map(({ r, f }) => `<figure data-es-figure="${f.id}"><button type="button" data-fz="fig/${f.file}" aria-label="그림 ${f.id} ${escHtml(f.title)} 크게 보기"><img src="fig/${f.file}" loading="lazy" width="${f.width}" height="${f.height}" alt="그림 ${f.id} ${escHtml(f.title)}"></button><figcaption>그림 ${f.id} · ${escHtml(f.title)}<span title="${escHtml(f.source)}">${escHtml(r.reason)} · 별표24(${f.edition}) ${f.pages.join('·')}쪽</span></figcaption></figure>`).join('')}</div></div>`;
+  }
   function card(e, re) {
     const isStd = e.src === 'std', isOld = e.src === 'old';
     let body;
@@ -1165,7 +1180,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const title = (ai ? `<div class="after ${ai.kind}">${ai.html}</div>` : '') + (e.title ? `<h2>${hl(e.title, re)}</h2>` : '');
     const path = !isStd && e.path ? `<div class="path">${hl(e.path, re)}</div>` : '';
     const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '');
-    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}<div class="hist" hidden></div></article>`;
+    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${(e.src === 'b22' || e.src === 'b24') ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}${esFigureHtml(e)}<div class="hist" hidden></div></article>`;
   }
 
   // ---- 열람(목차 → 장·회차 단위로 쭉 읽기)
