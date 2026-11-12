@@ -49,6 +49,10 @@ d['hist_es'] = json.load(open('hist_es_final.json'))   # 에스컬레이터 조�
 from reference_assets import build_reference_assets, build_context_asset_links
 d['ref_assets'], d['ref_aliases'] = build_reference_assets(d)
 d['std_asset_links'], d['history_asset_links'] = build_context_asset_links(d, d['ref_assets'])
+from incline_parse import build_incline
+d['b23'], d['hist_incline'], incline_assets, incline_history_links = build_incline()
+d['ref_assets'].update(incline_assets)
+d['history_asset_links'].update(incline_history_links)
 json.dump(d, open('data.json', 'w', encoding='utf-8'), ensure_ascii=False)
 t = open('template.html', encoding='utf-8').read()
 s = json.dumps(d, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
@@ -58,7 +62,8 @@ json.dump({'version': release}, open('app_pkg/release.json', 'w', encoding='utf-
 body = t.replace('__BUILD__', release).replace('__DATA__', s); open('kijun.html', 'w', encoding='utf-8').write(body)
 full = '<!doctype html>\n<html lang="ko">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body + '\n</body>\n</html>\n'
 open('app_pkg/kijun.html', 'w', encoding='utf-8').write(full)
-out = {'b22': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e in d['b22'] if e['text'].strip()],
+out = {'b23': d['b23'], 'hist_incline': d['hist_incline'],
+       'b22': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e in d['b22'] if e['text'].strip()],
        'b24': [{**{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')}, **({'figure_refs': e['figure_refs']} if e.get('figure_refs') else {})} for e in d['b24'] if e['text'].strip()],
        'std': [{k: e.get(k, '') for k in ('id', 'num', 'title', 'path', 'year', 'gist', 'sec', 'text', 'img')} for e in d['std'] if e['title'] != '목차'],
        'fail': [{k: e[k] for k in ('id', 'num', 'title', 'path', 'text')} for e in d['fail']],

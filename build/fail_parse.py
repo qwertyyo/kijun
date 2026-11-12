@@ -124,6 +124,16 @@ def main():
                 n += 1
                 e = {'src': 'fail', 'id': f'fail-{n}', 'num': num.replace('\n', ' · '), 'title': title.replace('\n', ' '), 'path': sec + ' 안전기준', 'text': text, 'p': pi + 1}
                 out.append(e); prevrow = e
+        # 새 MuPDF는 다음 쪽의 단일 병합 셀을 표로 반환하지 않는다.
+        # 앞 쪽에서 시작한 '※ 추가사항'의 이어지는 원문을 그대로 보존한다.
+        if notepre and not tabs:
+            rect = pymupdf.Rect(0, 83, pg.rect.width, pg.rect.height)
+            rows = lines_in(bl, rect)
+            if rows and rows[0][3].replace(' ', '').startswith('위의불합격항목'):
+                txt = notepre + ' ' + cell_text(rows, rect)
+                out.append({'src':'fail', 'id':f'fail-{sec.split()[0]}-note', 'num':'',
+                            'title':'비고', 'path':sec + ' 안전기준', 'text':txt})
+                notepre = None
     # 글머리 '․'(한 점 리더)는 가운뎃점으로, 목차는 별표 표를 먼저·지침 본문은 뒤로
     for e in out: e['text'] = re.sub(r'(?m)^․\s*', '· ', e['text'])
     out = [e for e in out if not e['path'].startswith('판정 지침')] + [e for e in out if e['path'].startswith('판정 지침')]

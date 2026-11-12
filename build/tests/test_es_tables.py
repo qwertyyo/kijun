@@ -6,6 +6,7 @@ import re
 import sys
 import tempfile
 import unittest
+from browser_support import browser_path, link_directory
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'build'))
@@ -17,8 +18,8 @@ class EscalatorTables(unittest.TestCase):
     def setUpClass(cls):
         cls.temp = tempfile.TemporaryDirectory()
         cls.base = Path(cls.temp.name)
-        (cls.base / 'fig').symlink_to(ROOT / 'fig', target_is_directory=True)
-        (cls.base / 'hist_es').symlink_to(ROOT / 'build/hist_es', target_is_directory=True)
+        link_directory(cls.base / 'fig', ROOT / 'fig')
+        link_directory(cls.base / 'hist_es', ROOT / 'build/hist_es')
 
     @classmethod
     def tearDownClass(cls):

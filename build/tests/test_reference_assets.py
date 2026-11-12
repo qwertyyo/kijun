@@ -8,6 +8,7 @@ import shutil
 import sys
 import tempfile
 import unittest
+from browser_support import browser_path, link_directory
 
 from PIL import Image
 
@@ -23,8 +24,8 @@ class ReferenceAssets(unittest.TestCase):
         cls.base = Path(cls.temp.name)
         (cls.base / 'fig').mkdir()
         for name in ('hist_src', 'hist_es'):
-            (cls.base / name).symlink_to(ROOT / 'build' / name, target_is_directory=True)
-        (cls.base / 'stdimg').symlink_to(ROOT / 'stdimg', target_is_directory=True)
+            link_directory(cls.base / name, ROOT / 'build' / name)
+        link_directory(cls.base / 'stdimg', ROOT / 'stdimg')
         shutil.copy2(ROOT / 'build/reference_assets_map.json', cls.base / 'reference_assets_map.json')
         for p in (ROOT / 'fig').glob('*.webp'):
             if not p.name.startswith('ref_'):

@@ -9,6 +9,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from browser_support import browser_path, link_directory, screenshot_path
 
 from playwright.sync_api import sync_playwright
 
@@ -34,12 +35,12 @@ class PublishedPage(unittest.TestCase):
         (site / 'config.json').write_text('{"synApi":""}')
         (site / 'release.json').write_bytes((ROOT / 'release.json').read_bytes())
         for name in ('fig','stdimg','katex'):
-            (site / name).symlink_to(ROOT / name, target_is_directory=True)
+            link_directory(site / name, ROOT / name)
         cls.server = http.server.ThreadingHTTPServer(('127.0.0.1',0), functools.partial(QuietHandler,directory=str(site)))
         threading.Thread(target=cls.server.serve_forever,daemon=True).start()
         cls.url = f'http://127.0.0.1:{cls.server.server_port}/'
         cls.pw = sync_playwright().start()
-        cls.browser = cls.pw.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox'])
+        cls.browser = cls.pw.chromium.launch(executable_path=browser_path(),args=['--no-sandbox'])
 
     @classmethod
     def tearDownClass(cls):
@@ -218,7 +219,7 @@ class PublishedPage(unittest.TestCase):
         self.page.add_style_tag(content='body { transform:translateZ(0); }')
         self.open_table_window()
         self.assert_usable_window()
-        self.page.screenshot(path='/workspace/kijun-local/tablet-transformed-popup.png')
+        self.page.screenshot(path=screenshot_path('tablet-transformed-popup.png'))
         self.page.locator('[data-ref-close]').click()
         self.assertNotEqual(self.page.locator('body').evaluate('(e)=>getComputedStyle(e).position'),'fixed')
 
@@ -277,7 +278,7 @@ class PublishedPage(unittest.TestCase):
         self.assertIn('Sf = 안전율',card.inner_text())
         ref=card.locator('.body [data-ref-assets]').filter(has_text='그림 Ⅸ.1')
         self.assertEqual(ref.get_attribute('data-ref-assets'),'b22-figure-Ⅹ.1')
-        card.screenshot(path='/workspace/kijun-local/safety-factor-clean-card.png')
+        card.screenshot(path=screenshot_path('safety-factor-clean-card.png'))
         ref.click()
         self.assertIn('그림 Ⅹ.1',self.page.locator('.ref-title').inner_text())
         self.assertIn('원문 본문은 그림 Ⅸ.1',self.page.locator('.ref-content').inner_text())
@@ -306,8 +307,8 @@ class PublishedPage(unittest.TestCase):
             self.page.locator('.vnav.top [data-totoc]').click()
 
     def test_all_toc_groups_using_published_html(self):
-        entries = {e['id']:e for src in ('b22','b24','std','fail') for e in self.data[src]}
-        clauses = {e['id'] for src in ('b22','b24') for e in self.data[src]}
+        entries = {e['id']:e for src in ('b22','b23','b24','std','fail') for e in self.data[src]}
+        clauses = {e['id'] for src in ('b22','b23','b24') for e in self.data[src]}
         catalog = self.data['ref_assets']
         expected = {}
         for src in ('b22','b24'):
@@ -338,12 +339,16 @@ class PublishedPage(unittest.TestCase):
                 im.loading='eager'; await im.decode();
               }));
               return cards.map(c=>({id:c.id,height:c.getBoundingClientRect().height,
+                bodyText:c.querySelector('.body').textContent, bodyImages:c.querySelectorAll('.body img').length,
                 images:Array.from(c.querySelectorAll('img')).map(im=>({src:im.getAttribute('src'),
                   naturalWidth:im.naturalWidth,naturalHeight:im.naturalHeight,width:im.getBoundingClientRect().width,
                   parentWidth:im.parentElement.getBoundingClientRect().width}))}));
             }''')
             for card in layout:
                 self.assertGreater(card['height'], 30, card['id'])
+                self.assertNotRegex(card['bodyText'], r'[\x0e\x10\x11]', card['id']+' 그림 내부 코드 노출')
+                if card['id'].startswith('b23-'):
+                    self.assertEqual(card['bodyImages'], entries[card['id']]['text'].count('\x10'), card['id']+' 원문 이미지 누락')
                 for image in card['images']:
                     self.assertGreater(image['naturalWidth'], 0, image)
                     self.assertGreater(image['naturalHeight'], 0, image)
@@ -362,7 +367,7 @@ class PublishedPage(unittest.TestCase):
                     self.assertTrue(set(card['assets'])&allowed,(card['id'],allowed))
                 seen.add(card['id'])
             self.page.locator('.vnav.top [data-totoc]').click()
-        self.assertEqual(len(seen),2462)
+        self.assertEqual(len(seen),2462 + sum(bool(e['text'].strip()) for e in self.data['b23']))
         if os.environ.get('KIJUN_AUDIT_DIR'):
             output = Path(os.environ['KIJUN_AUDIT_DIR'])
             output.mkdir(parents=True,exist_ok=True)

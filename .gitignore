@@ -2,3 +2,5 @@ gas/secret.gs
 gas/.clasp.json
 .clasp.json
 __pycache__/
+.venv/
+tmp/

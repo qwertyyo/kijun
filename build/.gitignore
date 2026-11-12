@@ -17,3 +17,8 @@ __pycache__/
 std_geo.json
 std_li.json
 fail.json
+base_incline.json
+hist_incline_final.json
+incline_assets.json
+incline_history_links.json
+hist_incline/hist.pdf

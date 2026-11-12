@@ -12,6 +12,7 @@ import re
 import tempfile
 import threading
 import unittest
+from browser_support import browser_path, link_directory, screenshot_path
 
 from playwright.sync_api import sync_playwright
 
@@ -41,7 +42,7 @@ class ClauseReferences(unittest.TestCase):
                                 title='조문연결시험', path='시험', year='2026',
                                 text='\n'.join(lines), sec=[dict(h='표준화', p=lines)]))
         data['fail'].append(dict(src='fail', id='fail-ref-test', num='5.1',
-                                 title='미보유기준시험', path='별표23 경사형 엘리베이터 안전기준',
+                                 title='미보유기준시험', path='별표25 소형화물용 엘리베이터 안전기준',
                                  text='5.1에 따른 기준'))
         body = (ROOT / 'build/template.html').read_text().replace(
             '__DATA__', json.dumps(data, ensure_ascii=False).replace('</', '<\\/'))
@@ -52,13 +53,13 @@ class ClauseReferences(unittest.TestCase):
         (site / 'index.html').write_text(original.split('<body>', 1)[0] + '<body>' + body + '</body></html>')
         (site / 'config.json').write_text('{"synApi":""}')
         for name in ['fig', 'stdimg', 'katex']:
-            (site / name).symlink_to(ROOT / name, target_is_directory=True)
+            link_directory(site / name, ROOT / name)
         cls.server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), functools.partial(QuietHandler, directory=str(site)))
         cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
         cls.thread.start()
         cls.url = f'http://127.0.0.1:{cls.server.server_port}/'
         cls.pw = sync_playwright().start()
-        cls.browser = cls.pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH', '/usr/bin/chromium'), args=['--no-sandbox'])
+        cls.browser = cls.pw.chromium.launch(executable_path=browser_path(), args=['--no-sandbox'])
 
     @classmethod
     def tearDownClass(cls):
@@ -137,7 +138,8 @@ class ClauseReferences(unittest.TestCase):
         self.assertEqual(card.locator('[data-ref-num="Ⅰ.2.4"]').get_attribute('data-ref-ids'), 'b24-Ⅰ.2.4')
         card.locator('[data-ref-num="5.1"]').click()
         choices = self.page.locator('.ref-choice')
-        self.assertEqual(choices.count(), 2)
+        self.assertEqual(choices.count(), 3)
+        self.assertEqual(choices.filter(has_text='경사형').count(), 1)
         choices.filter(has_text='에스컬레이터').click()
         self.assertIn('승강기번호', self.page.locator('.ref-content').inner_text())
         self.page.locator('[data-ref-close]').click()
@@ -196,7 +198,7 @@ class ClauseReferences(unittest.TestCase):
         self.assertEqual(self.page.locator('.ref-bar').evaluate('(e)=>getComputedStyle(e).touchAction'), 'none')
         self.assertNotEqual(self.page.locator('.ref-content').evaluate('(e)=>getComputedStyle(e).touchAction'), 'none')
         self.assertTrue(self.page.locator('body').evaluate('(e)=>e.scrollWidth <= innerWidth'))
-        self.page.screenshot(path='/workspace/kijun-local/clause-mobile.png')
+        self.page.screenshot(path=screenshot_path('clause-mobile.png'))
 
     def swipe_content(self, distance):
         box = self.page.locator('.ref-content').bounding_box()
@@ -285,7 +287,7 @@ class ClauseReferences(unittest.TestCase):
             self.assertGreater(image.evaluate('(e)=>e.naturalWidth'), 1000)
         self.assertEqual(len(self.page.context.pages), 1)
         self.assertTrue(self.page.locator('body').evaluate('(e)=>e.scrollWidth <= innerWidth'))
-        self.page.screenshot(path='/workspace/kijun-local/table-popup-mobile.png')
+        self.page.screenshot(path=screenshot_path('table-popup-mobile.png'))
         table.locator('[data-table-page="1"] button').click()
         self.assertTrue(self.page.locator('#lb').is_visible())
         self.assertIn('hes_p140_0.webp', self.page.locator('#lb img').get_attribute('src'))
@@ -304,7 +306,7 @@ class ClauseReferences(unittest.TestCase):
             self.assertAlmostEqual(target.bounding_box()['y'], content.bounding_box()['y'], delta=2)
             self.swipe_content(-100)
             self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
-            self.page.screenshot(path='/workspace/kijun-local/table-row-mobile.png')
+            self.page.screenshot(path=screenshot_path('table-row-mobile.png'))
             self.page.locator('[data-ref-close]').click()
             self.assertAlmostEqual(card.bounding_box()['y'], before, delta=1)
 
@@ -354,7 +356,7 @@ class ClauseReferences(unittest.TestCase):
         self.assertGreater(image.evaluate('(e)=>e.naturalWidth'), 400)
         self.assertTrue(figure.is_visible())  # 전체 보기를 누르기 전에도 그림이 보인다.
         self.assertTrue(self.page.locator('body').evaluate('(e)=>e.scrollWidth <= innerWidth'))
-        self.page.screenshot(path='/workspace/kijun-local/es-figure-card-mobile.png')
+        self.page.screenshot(path=screenshot_path('es-figure-card-mobile.png'))
         figure.locator('button').click()
         self.assertTrue(self.page.locator('#lb').is_visible())
         self.assertIn('es_figure_7.webp', self.page.locator('#lb img').get_attribute('src'))
@@ -432,7 +434,8 @@ class ClauseReferences(unittest.TestCase):
           return {checked,missing,external};
         }''')
         self.assertGreater(audit['checked'], 150)
-        self.assertEqual(audit['missing'], [])
+        self.assertEqual(audit['missing'], ['b23-8.2.3.3: 그림 11'])
+        self.assertIn('수록 위치를 확인하지 못했습니다', self.page.evaluate('Object.values(__refTest.REF_ENTRIES).find(e=>e.id==="b23-8.2.3.3").unresolved_refs[0].note'))
         print('Current named-reference audit:', audit)
 
     def test_duplicate_numbers_external_standards_and_old_captions(self):

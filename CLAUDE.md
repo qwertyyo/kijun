@@ -21,6 +21,16 @@
 - `yolo/` — 사용자의 다른 프로젝트(객체인식 AI 엘리베이터 검사보조)용 YOLO 클래스 1차 확정본(75개, 2026-10-20: 74 점형블록 추가). 사이트와 무관. `data.yaml` 번호는 바꾸지 말 것(`build_xlsx.py` 의 `FIXED` 로 고정, 추가는 맨 뒤에). 자세한 건 `yolo/README.md`.
 
 ## 빌드·배포 (build/ 에서)
+
+### 경사형 연혁집 추가 (2026-11-12)
+- `incline_parse.py`는 사용자가 제공한 「경사형 엘리베이터 안전기준 연혁집」 초안 v0.2(207쪽)에서 `b23` 카드와 `hist_incline` 연혁을 만든다. 별도 고시 파일로 대체하지 않는다.
+- 원본은 `build/hist_incline/hist.pdf`에 로컬로 둔다. 공문 인적사항이 있어 Git에 포함하지 않는다. 입력 해시·설치 방법은 `build/hist_incline/README.md` 참조.
+- 기존 카드 CSS·렌더러·연혁·참조 창을 재사용한다. 경사형은 별도 탭이며 참조 번호가 같아도 다른 연혁집으로 연결하지 않는다.
+- 표·그림과 윤곽선 수식은 `fig/hin_*` 원문 영역으로 보존하며, 그림 안의 글자도 검색한다. 영역·원문 쪽·공개용 가림 위치는 `build/incline-audit.json`에 기록한다.
+- 수록본 날짜는 시행일로 간주하지 않는다. PDF 36쪽의 ‘그림 11’은 제공 연혁집에서 수록 위치가 확인되지 않아 조문 카드에 안내하며 다른 그림으로 대체하지 않는다.
+- 기존 내용은 추가 전 커밋의 내장 데이터와 비교한다. PyMuPDF 버전을 고정하고 `fail_parse.py`에서 단일 병합 셀로만 이어지는 비고도 보존한다.
+- Windows에서도 전체 회귀 검사를 실행할 수 있다: `python -X utf8 -m unittest discover -s build/tests -v`. 설치된 Chromium 계열 브라우저를 쓰며 `CHROMIUM_PATH`로 지정할 수 있다. 테스트 의존성은 `build/requirements-test.txt`.
+
 ```
 pip install -r requirements.txt        # pymupdf, pillow (Python 3.10+)
 python build.py                         # → app_pkg/kijun.html (약 1~2분)
