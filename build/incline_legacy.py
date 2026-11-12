@@ -34,12 +34,12 @@ def supplement_history(entries, histories, catalog, history_links, base=BASE):
             if '수록본' in old:
                 block['source_head']=old
                 block['head']='적용일 미확인 · '+re.sub(r'^\d{4}\.\d{2} 수록본\s*·\s*','',old)
-                block.update(when_label=block['head'],date_unknown=True,legacy_numbering=True,
+                block.update(when_label='적용일 미확인',date_unknown=True,legacy_numbering=True,
                              date_note='특례 원인정일과 적용 대상 설비는 개별 인정서 확인 필요')
                 block.pop('sortdate',None)
             elif old.startswith('2020. 3. 28.'):
                 block.update(source_head=old,head='2020년 3월 28일 이후 출고·통관 제어반부터 적용',
-                             when_label='2020년 3월 28일 이후 출고·통관 제어반부터 적용',basis='출고',**{'from':'2020.03.28'})
+                             when_label='2020.03.28~ 출고·통관분',basis='출고',**{'from':'2020.03.28'})
     by_num = {e['num']:e for e in entries.values()}
     for key,gist in review['original_gists'].items():
         num,index=key.rsplit(':',1)

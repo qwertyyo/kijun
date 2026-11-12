@@ -122,7 +122,7 @@ def sort_history(block):
 
 
 def history_panel(block,styles):
-    label=block.get('when_label') or block['head']
+    label=block['head']+(' · 유압식 준용기준' if block.get('legacy_supplement') else '')
     rows=[[Paragraph('<b>종전 · '+markup(label)+'</b>',styles['history_head'])]]
     if label!=block['head'] and not block.get('legacy_supplement'):
         rows.append([Paragraph(markup(block['head']),styles['history_source'])])

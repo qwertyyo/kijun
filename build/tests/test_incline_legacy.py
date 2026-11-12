@@ -30,7 +30,8 @@ class LegacyTechnical(unittest.TestCase):
             self.assertIsNone(block['to'])
             self.assertTrue(block['legacy_numbering'])
             self.assertTrue(block['reference_only'])
-            self.assertIn('준용기준',block['when_label'])
+            self.assertIn('유압식 준용',block['when_label'])
+            self.assertLessEqual(len(block['when_label']),30)
             self.assertNotIn('수록',block['when_label'])
             self.assertRegex(block['head'],r'년 \d+월 \d+일(?:부터 시행| 이후의 건축허가분부터 적용)')
         for num in ('9.17.4','15.2.3.3'):
