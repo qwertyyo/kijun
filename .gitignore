@@ -4,3 +4,4 @@ gas/.clasp.json
 __pycache__/
 .venv/
 tmp/
+output/

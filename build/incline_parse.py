@@ -272,6 +272,8 @@ def build_incline(base=BASE):
     report = dict(source='hist_incline/hist.pdf', sha256=digest, pages=len(doc),
                   clauses=len(entries)-47, supplement_pages=47, history_blocks=sum(len(h['blocks']) for h in histories.values()),
                   crops=crops, coverage=coverage, images=images, redactions=redactions)
+    from incline_legacy import supplement_history
+    report['legacy_review'] = supplement_history(entries, histories, catalog, history_links, base)
     (base / 'incline-audit.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     doc.close()
     print('incline', {k:v for k,v in report.items() if k not in ('coverage', 'images')})

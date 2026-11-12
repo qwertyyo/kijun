@@ -6005,5 +6005,14 @@
       511,
       750
     ]
+  },
+  "legacy_review": {
+    "review_version": "v0.3",
+    "added_blocks": 42,
+    "layout_current": 471,
+    "layout_history": 38,
+    "rechecked_special_blocks": 7,
+    "published_history_blocks": 97,
+    "scope_note": "날짜는 건축허가분 적용일과 시행일로 구분했다. 2019년 이전 유압식 준용기준의 기술 연혁은 해당 일반기준의 적용일이다. 개별 경사형 설비에는 인정받은 대체기준과 준용판을 함께 대조해야 한다. 원인정일이 확인되지 않은 특례는 적용일 미확인으로 표시하며, 유압식 특례를 권상식에 확대 적용하지 않는다."
   }
 }

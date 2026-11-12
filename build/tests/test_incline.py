@@ -46,13 +46,15 @@ class InclineData(unittest.TestCase):
 
     def test_all_55_history_blocks_and_book_dates_are_not_enactment_dates(self):
         blocks = [b for h in self.data['hist_incline'].values() for b in h['blocks']]
-        self.assertEqual(len(blocks),55)
+        self.assertEqual(sum(not b.get('legacy_supplement') for b in blocks),55)
+        self.assertEqual(sum(bool(b.get('legacy_supplement')) for b in blocks),42)
         for block in blocks:
             self.assertTrue(block['text'].strip(),block['head'])
-            if '수록본' in block['head']:
+            if block.get('date_unknown'):
                 self.assertIsNone(block['from'])
                 self.assertIsNone(block['to'])
-                self.assertEqual(block['basis'],'수록')
+                self.assertIn('적용일 미확인',block['head'])
+            self.assertNotIn('수록본',block['head'])
         current = self.entries['b23-3.1']['text']
         self.assertIn('문열림출발',self.entries['b23-3.1']['title'])
         self.assertNotIn('개문출발',current)
@@ -60,7 +62,7 @@ class InclineData(unittest.TestCase):
 
     def test_all_substantive_source_lines_are_represented(self):
         content = ''.join(e['num'] + e['title'] + e['text'] for e in self.entries.values())
-        content += ''.join(b['head'] + b['text'] for h in self.data['hist_incline'].values() for b in h['blocks'])
+        content += ''.join(b['head'] + b.get('source_head','') + b['text'] for h in self.data['hist_incline'].values() for b in h['blocks'])
         content = re.sub(r'\s+', '', content)
         missing = []
         with pymupdf.open(ROOT / 'build/hist_incline/hist.pdf') as doc:
@@ -158,9 +160,11 @@ class InclineBrowser(unittest.TestCase):
     def search(self,text):
         self.page.get_by_role('searchbox',name='검색어').fill(text)
         self.page.get_by_role('button',name='검색',exact=True).click()
+        # 입력 지연 검색이 남아 연혁을 연 직후 결과를 다시 그리지 않도록 기다린다.
+        self.page.wait_for_timeout(200)
 
     def test_mobile_tabs_history_and_no_other_source_leakage(self):
-        self.assertTrue(self.page.get_by_role('heading',name='경사형 엘리베이터 연혁집 · 초안 v0.2').is_visible())
+        self.assertTrue(self.page.get_by_role('heading',name='경사형 엘리베이터 연혁집 · 보완 v0.3').is_visible())
         for button in self.page.locator('.srcbar button').all():
             rect=button.bounding_box();self.assertGreaterEqual(rect['x'],0);self.assertLessEqual(rect['x']+rect['width'],391)
         self.search('문열림출발')
@@ -195,6 +199,26 @@ class InclineBrowser(unittest.TestCase):
         image=self.page.locator('#lb img')
         image.evaluate('(im)=>im.decode()')
         self.assertGreater(image.evaluate('(im)=>im.naturalWidth'),100)
+
+    def test_legacy_history_preserves_scope_and_its_original_figure(self):
+        self.search('과부하')
+        card=self.page.locator('[id="b23-15.2.5.2"]')
+        card.get_by_role('button',name='적용 연혁').click()
+        legacy=card.locator('.hp').filter(has_text='구 14.2.5.2')
+        self.assertIn('65 ㎏',legacy.inner_text())
+        self.assertIn('유압식',legacy.inner_text())
+        self.assertEqual(legacy.locator('[data-ref-ids]').count(),0)
+        self.assertNotIn('PDF',card.locator('.path').inner_text())
+        self.search('문열림출발')
+        card=self.page.locator('[id="b23-10.11.5"]')
+        card.get_by_role('button',name='적용 연혁').click()
+        legacy=card.locator('.hp').filter(has_text='구 9.13.5')
+        self.assertIn('1.2 m',legacy.inner_text())
+        image=legacy.locator('img[src*="legacy_hydraulic_2014_figure4"]')
+        self.assertEqual(image.count(),1)
+        legacy.locator('[data-ref-assets]').first.click()
+        self.assertIn('카의 의도되지 않은 움직임',self.page.locator('.ref-content').inner_text())
+        self.assertEqual(self.page.locator('.ref-content img').evaluate('(im)=>im.decode().then(()=>im.naturalWidth)'),1210)
 
 
 if __name__=='__main__':

@@ -472,7 +472,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   DATA.b23.forEach(e => { const h = HIST_INCLINE[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
   DATA.b22.forEach(e => { const h = HIST[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
   DATA.b24.forEach(e => { const h = HIST_ES[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
-  const HSRC = { b23: '「경사형 엘리베이터 안전기준 연혁집」 초안 v0.2(2026.11)', b22: '「승강기 안전기준 연혁집(안)」 엘리베이터(한국승강기안전공단 검사총괄실, 2025.10)', b24: '「승강기 안전기준 연혁집」 별표24 에스컬레이터 v2.0(한국승강기안전공단 안전총괄처 검사총괄실, 2026.9)' };
+  const HSRC = { b23: '「경사형 엘리베이터 안전기준 연혁집」 보완 v0.3(2026.11)', b22: '「승강기 안전기준 연혁집(안)」 엘리베이터(한국승강기안전공단 검사총괄실, 2025.10)', b24: '「승강기 안전기준 연혁집」 별표24 에스컬레이터 v2.0(한국승강기안전공단 안전총괄처 검사총괄실, 2026.9)' };
   // 그림 표식 \x10파일|폭|높이(\x0e검색용 글자)\x11, 수식 표식 \x05한 줄 텍스트\x0eLaTeX\x06
   const FIGRE = /\x10([^|\x11]+)\|(\d+)\|(\d+)(?:\x0e([^\x11]*))?\x11/g;
   const EQRE = /\x05([^\x0e\x06]*)\x0e([^\x06]*)\x06/g;
@@ -525,9 +525,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 범위(scope) 묶음별로 기준일에 적용되던 블록: from ≤ D(< to) 인 것 중 가장 최근. 없으면 to 만 있는 종전 기준 중 D < to
   function pickBlock(blocks, D) {
     let best = null;
-    blocks.forEach(b => { if (!enacted(b)) return; if (b.from && b.from <= D && (!b.to || D < b.to)) { if (!best || (best.from || '') < b.from) best = b; } });
+    blocks.forEach(b => { if (!enacted(b) || b.reference_only) return; if (b.from && b.from <= D && (!b.to || D < b.to)) { if (!best || (best.from || '') < b.from) best = b; } });
     if (best) return best;
-    blocks.forEach(b => { if (!enacted(b) || b.from) return; if (b.to && D < b.to && (!best || b.to < best.to)) best = b; });
+    blocks.forEach(b => { if (!enacted(b) || b.from || b.reference_only) return; if (b.to && D < b.to && (!best || b.to < best.to)) best = b; });
     return best;
   }
   const ACACHE = {};
@@ -567,6 +567,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   const dotD = d => d;   // 'YYYY.MM.DD'
   function blkWhen(b) {
+    if (b.when_label) return b.when_label;
     const enact = enacted(b) ? '' : ' (미시행)';
     if (b.from && b.to) return `${b.from}~${b.to} 전${b.basis === '허가' ? ' 허가분' : ''}${enact}`;
     if (b.from) return `${b.from}~${b.basis === '허가' ? ' 허가분' : b.basis === '시행' ? ' 시행' : ''}${enact}`;
@@ -613,7 +614,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const cs = curStart(e);
     const blockHtml = (b, tag) => {
       const sih = /시행/.test(b.head) && !/종전/.test(b.head) ? (b.siheng ? '<span class="tag2">시행</span>' : '<span class="hn2">시행 표시 없음 — 해당 연도 미시행(연혁집 표기)</span>') : '';
-      return `<div class="hp${tag ? ' now' : ''}" data-ref-history="${e.id}:${e.h.blocks.indexOf(b)}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="ht clip">${histText(b.text, null)}</div><button type="button" class="hx">펼치기</button></div>`;
+      const context = b.legacy_supplement ? `<p>구 ${escHtml(b.old_num)} · ${escHtml(b.applies_to)} · 준용한 일반기준의 적용일이며, 개별 특례 인정일·준용판을 함께 확인해야 합니다.</p>` : b.date_unknown ? `<p>${escHtml(b.date_note)}</p>` : '';
+      return `<div class="hp${tag ? ' now' : ''}" data-ref-history="${e.id}:${e.h.blocks.indexOf(b)}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div>${context}<div class="ht clip">${histText(b.text, null)}</div><button type="button" class="hx">펼치기</button></div>`;
     };
     let html = `<h4>적용 연혁 <span style="font-weight:400;color:var(--muted)">· 연혁집 기준, 오래된 순 → 현행</span></h4>`;
     const own = sortAsc(e.h.blocks.filter(b => !b.scope)), up = sortAsc(e.h.blocks.filter(b => b.scope));
@@ -623,7 +625,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       html += `<h4 style="margin-top:8px">상위 조항 ${escHtml(up[0].scope)}의 연혁 <span style="font-weight:400;color:var(--muted)">· 오래된 순</span></h4>`;
       up.forEach(b => { html += blockHtml(b, a && a.upPick === b); });
     }
-    html += `<div class="hfoot">출처: ${HSRC[e.src] || ''}. ${e.src === 'b23' ? '수록본 날짜는 시행일과 구분하며, 특례는 원문에 표시된 구조·제품의 범위에 따릅니다.' : '<span class="hg">초록</span>은 개정으로 바뀐 내용, <span class="hr">빨강</span>은 강조. 연혁집은 참고자료이므로 해석·적용 시 고시문을 대조하세요.'}</div>`;
+    html += `<div class="hfoot">출처: ${HSRC[e.src] || ''}. ${e.src === 'b23' ? '건축허가분 적용일·시행일을 구분합니다. 특례는 인정받은 구조·제품과 준용판의 범위에 따릅니다.' : '<span class="hg">초록</span>은 개정으로 바뀐 내용, <span class="hr">빨강</span>은 강조. 연혁집은 참고자료이므로 해석·적용 시 고시문을 대조하세요.'}</div>`;
     return html;
   }
 
@@ -1263,7 +1265,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       return items;
     };
     const applied = () => { const vi = AV(); const gs = groupsOf('old').filter(g => g.key.startsWith(vi + '|')); return `<div class="dnote">${escHtml(applyLabel())}${APPLY.before ? ' (받은 판 중 가장 오래된 판)' : ''}</div><div class="toclist">${gs.map(g => { const ch = g.key.split('|')[1]; return `<button type="button" class="tocitem" data-view="old" data-key="${g.key}"><span>${escHtml(ch + ' ' + (OCH[vi][ch] || ''))}</span><em>${g.n}</em></button>`; }).join('')}</div>`; };
-    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b23' ? ' <span class="h2s">연혁집 · 초안 v0.2</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : s === 'fail' ? ' <span class="h2s">검사결과 판정 및 확인검사 지침(2019.9.27) 별표2</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
+    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b23' ? ' <span class="h2s">연혁집 · 보완 v0.3</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : s === 'fail' ? ' <span class="h2s">검사결과 판정 및 확인검사 지침(2019.9.27) 별표2</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
   }
   function renderView() {
     const s = view.src, gs = groupsOf(s), i = gs.findIndex(g => g.key === view.key);
@@ -1570,6 +1572,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       const mentions = assetMentions(text);
       const history = group[0].parentElement.closest('[data-ref-history]');
       const historical = !!history || group.some(n => n.parentElement.closest('.hist, .ht, .hbody, .hup'));
+      const legacyNumbering = history && e && e.h && e.h.blocks[+history.dataset.refHistory.split(':').pop()]?.legacy_numbering;
       const targetFor = m => historical ? { assets: history ? (HISTORY_ASSET_LINKS[history.dataset.refHistory] || {})[m.kind + '-' + m.num] || [] : [] } : assetTargets(m.kind, m.num, entry, text, m.at);
       const matches = Array.from(text.matchAll(/(?:부속서\s*(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)*|(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)+)/g));
       // '표 Ⅱ.1의 3.1 및 3.6'은 표의 행 번호다. 일반 조문으로 연결하지 않는다.
@@ -1581,7 +1584,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
           return target.assets.length ? [{ at: m.index, text: m[0], ...target, page: (asset.row_pages || {})[m[0]] || 0 }] : [];
         }
         if (/[\d.A-Za-z]/.test(text[m.index - 1] || '') || /^[\dA-Za-z]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) return [];
-        const targets = referenceTargets(m[0], entry, text, m.index);
+        const targets = legacyNumbering ? [] : referenceTargets(m[0], entry, text, m.index);
         return targets.length ? [{ at: m.index, text: m[0], targets }] : [];
       });
       mentions.forEach(m => { const target = targetFor(m); if (target.assets.length) links.push({ at: m.at, text: m.text, ...target }); });
