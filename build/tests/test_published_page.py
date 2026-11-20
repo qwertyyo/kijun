@@ -367,7 +367,7 @@ class PublishedPage(unittest.TestCase):
                     self.assertTrue(set(card['assets'])&allowed,(card['id'],allowed))
                 seen.add(card['id'])
             self.page.locator('.vnav.top [data-totoc]').click()
-        self.assertEqual(len(seen),2462 + sum(bool(e['text'].strip()) for e in self.data['b23']))
+        self.assertEqual(len(seen),2462 + sum(bool(e['text'].strip() or e['id'] in self.data.get('incline_book', {})) for e in self.data['b23']))
         if os.environ.get('KIJUN_AUDIT_DIR'):
             output = Path(os.environ['KIJUN_AUDIT_DIR'])
             output.mkdir(parents=True,exist_ok=True)

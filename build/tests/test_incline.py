@@ -96,6 +96,24 @@ class InclineData(unittest.TestCase):
             for marker in re.findall(r'\x10[^\x11]*\x11', text):
                 self.assertNotIn('\n', marker)
 
+    def test_verified_book_stages_are_connected_to_the_published_cards(self):
+        source = json.loads((ROOT / 'build/incline_book_history.json').read_text(encoding='utf-8'))
+        book = self.data['incline_book']
+        expected_stages = {s for card in source['cards'].values() for s in card['stages']}
+        self.assertEqual(len(expected_stages), source['stage_count'])
+        self.assertEqual(set(book), set(source['cards']))
+        self.assertEqual({s for card in book.values() for s in card['stages']}, expected_stages)
+        for card_id, card in book.items():
+            self.assertIn(card_id, self.entries)
+            self.assertTrue(card['summary'])
+            for row in card['summary']:
+                self.assertRegex(row['label'], r'^\d{4}년 \d{1,2}월 \d{1,2}일')
+            for block in card['blocks']:
+                for key in block['links']:
+                    asset = self.data['ref_assets'][key]
+                    self.assertTrue(asset['historical'])
+                    self.assertTrue(all((ROOT / 'fig' / p['file']).is_file() for p in asset['pages']))
+
     def test_unlocated_source_reference_and_public_letter_redaction(self):
         note = self.entries['b23-8.2.3.3']['unresolved_refs']
         self.assertEqual([(r['kind'],r['num']) for r in note],[('figure','11')])
@@ -188,6 +206,23 @@ class InclineBrowser(unittest.TestCase):
         self.page.locator('[data-ref-close]').click()
         self.search('자동구출운전')
         self.assertGreater(self.page.locator('[id^="b23-methods-"]').count(),0)
+
+    def test_mobile_reviewed_summary_distinguishes_dates_and_opens_source_table(self):
+        self.search('로봇 탑승용')
+        card = self.page.locator('[id="b23-14.6"]')
+        summary = card.locator('.hsum')
+        self.assertIn('2022년 3월 2일 건축허가·심의 신청 또는 건축신고분부터 적용', summary.inner_text())
+        self.assertIn('15 mm 이상 표시', summary.inner_text())
+        card.get_by_role('button', name='적용 연혁').click()
+        self.assertIn('해당 규정 없음', card.locator('.hist').inner_text())
+        self.search('플랫벨트')
+        card = self.page.locator('[id="b23-methods-p192"]')
+        self.assertIn('2022년 10월 21일부터 검사판정 적용', card.locator('.hsum').inner_text())
+        card.get_by_role('button', name='적용 연혁').click()
+        card.get_by_role('button', name='플랫벨트 마모·손상 판정기준 원문 보기').click()
+        figures = self.page.locator('.ref-content figure img')
+        self.assertEqual(figures.count(), 4)
+        self.assertTrue(figures.evaluate_all('(imgs) => Promise.all(imgs.map(i => i.decode())).then(() => imgs.every(i => i.naturalWidth > 500))'))
 
     def test_source_images_load_and_formula_can_be_enlarged(self):
         self.page.locator('[data-view="b23"][data-key="Ⅷ"]').click()

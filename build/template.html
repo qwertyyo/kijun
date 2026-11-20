@@ -190,6 +190,9 @@ main { padding-top: 14px }
 .hd .here { font-size: 11px; color: var(--old); border: 1px solid var(--old); border-radius: 4px; padding: 0 5px }
 .hd .tag2 { font-size: 11px; color: #fff; background: var(--old); border-radius: 4px; padding: 0 5px }
 .ht { white-space: pre-wrap; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere }
+.ht .history-table { width: 100%; border-collapse: collapse; margin: 5px 0; font-size: 13px }
+.history-table :is(th, td) { border: 1px solid var(--line); padding: 3px 6px; text-align: left; vertical-align: top }
+.history-table th { background: var(--surface) }
 .ht.clip { max-height: 9.6em; overflow: hidden; -webkit-mask-image: linear-gradient(#000 70%, transparent) ; mask-image: linear-gradient(#000 70%, transparent) }
 .ht ins { text-decoration: none; background: var(--el-soft); color: var(--el); font-weight: 600; border-radius: 3px }
 .ht del { color: var(--muted); text-decoration: line-through; text-decoration-color: #c0392b }
@@ -208,6 +211,7 @@ main { padding-top: 14px }
 .hsum li:first-child { border-top: 0 }
 .hsum .sw { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums }
 .hsum .sw i { font-style: normal; color: var(--old) }
+.b23 .hsum :is(.sw, .sg), .b23 .ht { word-break: keep-all; overflow-wrap: anywhere }
 .hsum li.cur .sw { color: var(--el); font-weight: 600 }
 .hsum li.on { background: var(--old-soft); border-radius: 4px }
 .hsum li.on .sg { font-weight: 600 }
@@ -444,6 +448,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const DATA = JSON.parse(document.getElementById('data').textContent);
   // 제목만 있는 상위 조항도 참조할 수 있도록 검색용 필터링 전에 보관한다.
   DATA.b23 = DATA.b23 || [];
+  const INCLINE_BOOK = DATA.incline_book || {};
   const CLAUSE_SOURCES = ['b22', 'b23', 'b24'];
   const isClause = e => CLAUSE_SOURCES.includes(e.src);
   const REF_ENTRIES = Object.fromEntries(CLAUSE_SOURCES.flatMap(s => DATA[s]).map(e => [e.id, e]));
@@ -459,7 +464,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 장(章) 제목: 본문 없는 제목 조문도 목차용으로 보관
   const CH = { b22: {}, b23: {}, b24: {} };
   CLAUSE_SOURCES.forEach(s => (DATA[s] || []).forEach(e => { if (e.num.split('.').length <= 2) CH[s][e.num] = e.title || ''; }));
-  DATA.b23 = DATA.b23.filter(e => (e.text || '').trim());
+  DATA.b23 = DATA.b23.filter(e => (e.text || '').trim() || INCLINE_BOOK[e.id]);
   DATA.b24 = DATA.b24.filter(e => (e.text || '').trim());
   DATA.b22 = (DATA.b22 || []).filter(e => (e.text || '').trim());
   DATA.std = DATA.std.filter(e => e.title !== '목차');
@@ -469,7 +474,19 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   DATA.fail = DATA.fail || [];   // 불합격 내용(검사결과 판정 및 확인검사 지침 별표2 + 지침 본문)
   const ALL = DATA.b22.concat(DATA.b23, DATA.b24, DATA.std, DATA.fail);
   const HIST = DATA.hist || {}, HIST_ES = DATA.hist_es || {}, HIST_INCLINE = DATA.hist_incline || {};
-  DATA.b23.forEach(e => { const h = HIST_INCLINE[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
+  DATA.b23.forEach(e => {
+    const h = HIST_INCLINE[e.num], book = INCLINE_BOOK[e.id];
+    if (!book) { if (h && (h.blocks.length || h.cur)) e.h = h; return; }
+    const blocks = (h?.blocks || []).map((b, i) => {
+      const head = book.legacy[i] || b.head;
+      return { ...b, head, when_label: head, date_unknown: false,
+        context: b.date_unknown ? b.head.split(' · ').slice(1).join(' · ') : '' };
+    });
+    const key = b => b.head + '\n' + b.text.replace(/[\s\x01-\x04]/g, '');
+    const originals = new Set(blocks.map(key));
+    blocks.push(...book.blocks.filter(b => b.context || b.links.length || !originals.has(key(b))));
+    e.h = { ...h, blocks, summary: book.summary, curg: book.current || '' };
+  });
   DATA.b22.forEach(e => { const h = HIST[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
   DATA.b24.forEach(e => { const h = HIST_ES[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
   const HSRC = { b23: '「경사형 엘리베이터 안전기준 연혁집」 보완 v0.3(2026.11)', b22: '「승강기 안전기준 연혁집(안)」 엘리베이터(한국승강기안전공단 검사총괄실, 2025.10)', b24: '「승강기 안전기준 연혁집」 별표24 에스컬레이터 v2.0(한국승강기안전공단 안전총괄처 검사총괄실, 2026.9)' };
@@ -576,6 +593,16 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   // 카드 상단 '적용 연혁 요약': 연혁집 블록별 요지를 오래된 순으로, 마지막 줄은 현행
   function summaryHtml(e, re) {
+    if (e.h?.summary) {
+      const dates = new Map();
+      e.h.summary.forEach(({label, text}) => {
+        if (!dates.has(label)) dates.set(label, []);
+        dates.get(label).push(hl(text, re));
+      });
+      const rows = Array.from(dates, ([label, texts]) => `<li><span class="sw">${escHtml(label).replace(/^(\d+년 \d+월 \d+일)/, '<span style="white-space:nowrap">$1</span>')}</span><span class="sg">${texts.join('<br>')}</span></li>`);
+      if (e.h.curg && !e.group) rows.push(`<li class="cur"><span class="sw">현행</span><span class="sg">${hl(e.h.curg, re)}</span></li>`);
+      return `<div class="hsum"><div class="hst">적용 연혁 요약 <span>연혁집</span></div><ol>${rows.join('')}</ol></div>`;
+    }
     if (!e.h || !e.h.blocks.some(b => plainH(b.text).trim())) return '';
     const a = APPLY ? applicable(e, APPLY.d) : null;
     const rows = sortAsc(e.h.blocks).filter(b => plainH(b.text).trim()).map(b => {
@@ -609,18 +636,28 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 연혁 블록을 날짜 오름차순으로: '○○ 전의 … 종전 기준'(to 만 있음)은 그 날짜에 시작하는 블록보다 앞
   const ascKey = b => b.from ? b.from + '1' : (b.to ? b.to + '0' : b.sortdate || '9');
   const sortAsc = bl => bl.slice().reverse().sort((x, y) => ascKey(x) < ascKey(y) ? -1 : ascKey(x) > ascKey(y) ? 1 : 0);
+  function reviewedHistoryText(text) {
+    // 원문의 전송기기 출력 한계는 2열 표로 표시한다.
+    return text.split(/(^[ \t]*회로[ \t]*구분[ \t]*\n[ \t]*최대[ \t]*출력[ \t]*\n[^\n]*\n[^\n]*\n[^\n]*\n[^\n]*)/m).map((part, index) => {
+      if (index % 2 === 0) return histText(part, null);
+      const cells = part.split('\n').map(value => escHtml(value.trim()));
+      return `<table class="history-table"><thead><tr><th scope="col">${cells[0]}</th><th scope="col">${cells[1]}</th></tr></thead><tbody><tr><td>${cells[2]}</td><td>${cells[3]}</td></tr><tr><td>${cells[4]}</td><td>${cells[5]}</td></tr></tbody></table>`;
+    }).join('');
+  }
   function historyHtml(e) {
     const a = APPLY ? applicable(e, APPLY.d) : null;
     const cs = curStart(e);
     const blockHtml = (b, tag) => {
-      const sih = /시행/.test(b.head) && !/종전/.test(b.head) ? (b.siheng ? '<span class="tag2">시행</span>' : '<span class="hn2">시행 표시 없음 — 해당 연도 미시행(연혁집 표기)</span>') : '';
-      const context = b.legacy_supplement ? `<p>구 ${escHtml(b.old_num)} · ${escHtml(b.applies_to)} · 준용한 일반기준의 적용일이며, 개별 특례 인정일·준용판을 함께 확인해야 합니다.</p>` : b.date_unknown ? `<p>${escHtml(b.date_note)}</p>` : '';
-      return `<div class="hp${tag ? ' now' : ''}" data-ref-history="${e.id}:${e.h.blocks.indexOf(b)}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div>${context}<div class="ht clip">${histText(b.text, null)}</div><button type="button" class="hx">펼치기</button></div>`;
+      const sih = !e.h.summary && /시행/.test(b.head) && !/종전/.test(b.head) ? (b.siheng ? '<span class="tag2">시행</span>' : '<span class="hn2">시행 표시 없음 — 해당 연도 미시행(연혁집 표기)</span>') : '';
+      const context = b.legacy_supplement ? `<p>구 ${escHtml(b.old_num)} · ${escHtml(b.applies_to)} · 준용한 일반기준의 적용일이며, 개별 특례 인정일·준용판을 함께 확인해야 합니다.</p>` : b.context ? `<p>${escHtml(b.context)}</p>` : b.date_unknown ? `<p>${escHtml(b.date_note)}</p>` : '';
+      const links = (b.links || []).map(key => `<button type="button" class="clause-ref" data-ref-assets="${escHtml(key)}" aria-haspopup="dialog">${escHtml(REF_ASSETS[key].title)} 원문 보기</button>`).join('<br>');
+      const body = links || (e.h.summary ? reviewedHistoryText(b.text) : histText(b.text, null));
+      return `<div class="hp${tag ? ' now' : ''}" data-ref-history="${e.id}:${e.h.blocks.indexOf(b)}"><div class="hd"><b>${escHtml(b.head)}</b>${sih}${tag ? '<span class="apply">기준일 적용</span>' : ''}</div>${context}<div class="ht clip">${body}</div><button type="button" class="hx">펼치기</button></div>`;
     };
     let html = `<h4>적용 연혁 <span style="font-weight:400;color:var(--muted)">· 연혁집 기준, 오래된 순 → 현행</span></h4>`;
     const own = sortAsc(e.h.blocks.filter(b => !b.scope)), up = sortAsc(e.h.blocks.filter(b => b.scope));
     own.forEach(b => { html += blockHtml(b, a && a.kind === 'blk' && a.blk === b); });
-    html += `<div class="hp${a && a.kind === 'cur' ? ' now' : ''}"><div class="hd"><b>현행 ${escHtml(e.num)}</b>${cs && cs.marked ? `<span>${escHtml(csLabel(cs))}</span>` : ''}${a && a.kind === 'cur' ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="hn">위 카드 본문이 현행 문구입니다.</div></div>`;
+    if (!e.group && e.text.trim()) html += `<div class="hp${a && a.kind === 'cur' ? ' now' : ''}"><div class="hd"><b>현행 ${escHtml(e.num)}</b>${cs && cs.marked ? `<span>${escHtml(csLabel(cs))}</span>` : ''}${a && a.kind === 'cur' ? '<span class="apply">기준일 적용</span>' : ''}</div><div class="hn">위 카드 본문이 현행 문구입니다.</div></div>`;
     if (up.length) {
       html += `<h4 style="margin-top:8px">상위 조항 ${escHtml(up[0].scope)}의 연혁 <span style="font-weight:400;color:var(--muted)">· 오래된 순</span></h4>`;
       up.forEach(b => { html += blockHtml(b, a && a.upPick === b); });
