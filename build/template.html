@@ -477,11 +477,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   DATA.b23.forEach(e => {
     const h = HIST_INCLINE[e.num], book = INCLINE_BOOK[e.id];
     if (!book) { if (h && (h.blocks.length || h.cur)) e.h = h; return; }
-    const blocks = (h?.blocks || []).map((b, i) => {
-      const head = book.legacy[i] || b.head;
-      return { ...b, head, when_label: head, date_unknown: false,
-        context: b.date_unknown ? b.head.split(' · ').slice(1).join(' · ') : '' };
-    });
+    const blocks = (h?.blocks || []).slice();
     const key = b => b.head + '\n' + b.text.replace(/[\s\x01-\x04]/g, '');
     const originals = new Set(blocks.map(key));
     blocks.push(...book.blocks.filter(b => b.context || b.links.length || !originals.has(key(b))));
@@ -489,7 +485,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   });
   DATA.b22.forEach(e => { const h = HIST[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
   DATA.b24.forEach(e => { const h = HIST_ES[e.num]; if (h && (h.blocks.length || h.cur)) e.h = h; });
-  const HSRC = { b23: '「경사형 엘리베이터 안전기준 연혁집」 보완 v0.3(2026.11)', b22: '「승강기 안전기준 연혁집(안)」 엘리베이터(한국승강기안전공단 검사총괄실, 2025.10)', b24: '「승강기 안전기준 연혁집」 별표24 에스컬레이터 v2.0(한국승강기안전공단 안전총괄처 검사총괄실, 2026.9)' };
+  const HSRC = { b23: '「경사형 엘리베이터 안전기준 연혁집」 보완본(2026.11)', b22: '「승강기 안전기준 연혁집(안)」 엘리베이터(한국승강기안전공단 검사총괄실, 2025.10)', b24: '「승강기 안전기준 연혁집」 별표24 에스컬레이터 v2.0(한국승강기안전공단 안전총괄처 검사총괄실, 2026.9)' };
   // 그림 표식 \x10파일|폭|높이(\x0e검색용 글자)\x11, 수식 표식 \x05한 줄 텍스트\x0eLaTeX\x06
   const FIGRE = /\x10([^|\x11]+)\|(\d+)\|(\d+)(?:\x0e([^\x11]*))?\x11/g;
   const EQRE = /\x05([^\x0e\x06]*)\x0e([^\x06]*)\x06/g;
@@ -1302,7 +1298,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       return items;
     };
     const applied = () => { const vi = AV(); const gs = groupsOf('old').filter(g => g.key.startsWith(vi + '|')); return `<div class="dnote">${escHtml(applyLabel())}${APPLY.before ? ' (받은 판 중 가장 오래된 판)' : ''}</div><div class="toclist">${gs.map(g => { const ch = g.key.split('|')[1]; return `<button type="button" class="tocitem" data-view="old" data-key="${g.key}"><span>${escHtml(ch + ' ' + (OCH[vi][ch] || ''))}</span><em>${g.n}</em></button>`; }).join('')}</div>`; };
-    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b23' ? ' <span class="h2s">연혁집 · 보완 v0.3</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : s === 'fail' ? ' <span class="h2s">검사결과 판정 및 확인검사 지침(2019.9.27) 별표2</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
+    return srcs.map(s => false ? `<section class="toc"><h2>${SRCNAME[s]} <span class="h2s">${escHtml(verName(AV()))} · ${escHtml(OLD.vers[AV()].doc)}</span></h2>${applied()}</section>` : `<section class="toc"><h2 class="t-${s}">${SRCNAME[s]}${s === 'b22' ? ' <span class="h2s">현행 별표22</span>' : s === 'b23' ? ' <span class="h2s">연혁집 · 보완본</span>' : s === 'b24' ? ' <span class="h2s">현행 별표24</span>' : s === 'fail' ? ' <span class="h2s">검사결과 판정 및 확인검사 지침(2019.9.27) 별표2</span>' : ''}</h2>${sec(s)}${s === 'b22' && OV.length ? `<details class="tocver oldwrap"${view && view.src === 'old' ? ' open' : ''}><summary><b>개정 전 판</b><span>${OV[0].slice(0, 4)}~${OV[OV.length - 1].slice(0, 4)} · ${OV.length}개 판 — 설치 당시 기준 확인용</span></summary><div class="oldin">${sec('old')}</div></details>` : ''}</section>`).join('');
   }
   function renderView() {
     const s = view.src, gs = groupsOf(s), i = gs.findIndex(g => g.key === view.key);

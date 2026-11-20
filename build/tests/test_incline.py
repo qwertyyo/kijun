@@ -50,15 +50,33 @@ class InclineData(unittest.TestCase):
         self.assertEqual(sum(bool(b.get('legacy_supplement')) for b in blocks),42)
         for block in blocks:
             self.assertTrue(block['text'].strip(),block['head'])
-            if block.get('date_unknown'):
-                self.assertIsNone(block['from'])
-                self.assertIsNone(block['to'])
-                self.assertIn('적용일 미확인',block['head'])
+            self.assertNotIn('date_unknown',block)
             self.assertNotIn('수록본',block['head'])
         current = self.entries['b23-3.1']['text']
         self.assertIn('문열림출발',self.entries['b23-3.1']['title'])
         self.assertNotIn('개문출발',current)
         self.assertIn('개문출발',self.data['hist_incline']['3.1']['blocks'][0]['text'])
+
+    def test_public_site_and_download_keep_the_reviewed_special_dates(self):
+        html = (ROOT / 'index.html').read_text(encoding='utf-8')
+        self.assertNotRegex(html,r'적용일\s*미확인')
+        source = json.loads((ROOT / 'build/data.json').read_text(encoding='utf-8'))
+        book = json.loads((ROOT / 'build/incline_book_history.json').read_text(encoding='utf-8'))
+        for number, history in source['hist_incline'].items():
+            for index, prior in enumerate(history['blocks']):
+                if not prior.get('date_unknown'):
+                    continue
+                published = self.data['hist_incline'][number]['blocks'][index]
+                self.assertEqual(published['head'],book['cards']['b23-'+number]['legacy'][str(index)])
+                self.assertEqual(published['text'],prior['text'])
+                self.assertEqual(published['context'],prior['head'].partition(' · ')[2])
+                self.assertTrue(published['reference_only'])
+                self.assertIsNone(published['from'])
+        pdf = ROOT / 'download/incline-history-v0.3.pdf'
+        self.assertEqual(hashlib.sha256(pdf.read_bytes()).hexdigest(),book['book_sha256'])
+        with pymupdf.open(pdf) as doc:
+            for page in doc:
+                self.assertNotRegex(page.get_text(),r'적용일\s*미확인',f'PDF {page.number+1}')
 
     def test_all_substantive_source_lines_are_represented(self):
         content = ''.join(e['num'] + e['title'] + e['text'] for e in self.entries.values())
@@ -182,7 +200,7 @@ class InclineBrowser(unittest.TestCase):
         self.page.wait_for_timeout(200)
 
     def test_mobile_tabs_history_and_no_other_source_leakage(self):
-        self.assertTrue(self.page.get_by_role('heading',name='경사형 엘리베이터 연혁집 · 보완 v0.3').is_visible())
+        self.assertTrue(self.page.get_by_role('heading',name='경사형 엘리베이터 연혁집 · 보완본').is_visible())
         for button in self.page.locator('.srcbar button').all():
             rect=button.bounding_box();self.assertGreaterEqual(rect['x'],0);self.assertLessEqual(rect['x']+rect['width'],391)
         self.search('문열림출발')

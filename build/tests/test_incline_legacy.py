@@ -18,6 +18,7 @@ class LegacyTechnical(unittest.TestCase):
     def setUpClass(cls):
         cls.review=json.loads((BUILD/'hist_incline/legacy_technical.json').read_text(encoding='utf-8'))
         cls.data=page_data((ROOT/'index.html').read_text(encoding='utf-8'))
+        cls.base=json.loads((BUILD/'data.json').read_text(encoding='utf-8'))
         cls.audit=json.loads((BUILD/'incline-book-audit.json').read_text(encoding='utf-8'))
         cls.pdf=ROOT/'output/pdf/경사형_엘리베이터_안전기준_연혁집_v0.3.pdf'
 
@@ -64,15 +65,15 @@ class LegacyTechnical(unittest.TestCase):
             for index,block in enumerate(history['blocks']):
                 now=self.data['hist_incline'][num]['blocks'][index]
                 self.assertEqual(compact(now['text']),compact(block['text']),(num,index))
-                self.assertEqual(now.get('source_head',now['head']) if now.get('date_unknown') else block['head'],block['head'])
+                self.assertEqual(now.get('source_head',block['head']),block['head'])
         figures=[a for a in self.data['ref_assets'].values() if a['key'].startswith('history-legacy-')]
         self.assertEqual(len(figures),1)
         figure=figures[0]
         self.assertTrue(figure['historical']);self.assertEqual(figure['num'],'4')
         self.assertEqual(figure['owner'],'b23-10.11.5')
 
-    def test_book_and_site_use_identical_data_and_all_appendices(self):
-        canonical=json.dumps({'b23':self.data['b23'],'hist_incline':self.data['hist_incline']},ensure_ascii=False,sort_keys=True).encode()
+    def test_archived_v03_book_preserves_its_source_data_and_all_appendices(self):
+        canonical=json.dumps({'b23':self.base['b23'],'hist_incline':self.base['hist_incline']},ensure_ascii=False,sort_keys=True).encode()
         self.assertEqual(hashlib.sha256(canonical).hexdigest(),self.audit['canonical_sha256'])
         self.assertEqual(hashlib.sha256(self.pdf.read_bytes()).hexdigest(),self.audit['pdf_sha256'])
         self.assertEqual(len(self.audit['clause_pages']),889)
