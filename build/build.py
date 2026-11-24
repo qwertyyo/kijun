@@ -58,6 +58,7 @@ from incline_book_site import apply_book_history
 apply_book_history(d)
 d['std_legacy_refs'] = json.load(open('std_legacy_refs.json', encoding='utf-8'))
 d['clause_citations'] = json.load(open('clause_citations.json', encoding='utf-8'))
+d['alternative_criteria'] = json.load(open('alternative_criteria.json', encoding='utf-8'))
 t = open('template.html', encoding='utf-8').read()
 s = json.dumps(d, ensure_ascii=False, separators=(',', ':')).replace('</', '<\\/')
 import hashlib
@@ -75,7 +76,7 @@ out = {'b23': d['b23'], 'hist_incline': d['hist_incline'],
        'ref_assets': d['ref_assets'], 'ref_aliases': d['ref_aliases'],
        'std_asset_links': d['std_asset_links'], 'history_asset_links': d['history_asset_links'],
        'incline_book': d['incline_book'], 'std_legacy_refs': d['std_legacy_refs'],
-       'clause_citations': d['clause_citations']}
+       'clause_citations': d['clause_citations'], 'alternative_criteria': d['alternative_criteria']}
 json.dump(out, open('app_pkg/kijun_data.json', 'w', encoding='utf-8'), ensure_ascii=False)
 pua = sum(1 for k in ('b22', 'b24') for e in d[k] for c in e['text'] + e['title'] if 0xe000 <= ord(c) <= 0xf8ff)
 print({k: len(v) for k, v in out.items()}, 'PUA left', pua, '[수식] left', sum(e['text'].count('[수식]') for k in ('b22', 'b24') for e in d[k]))

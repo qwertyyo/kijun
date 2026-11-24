@@ -114,7 +114,7 @@ header.top { position: relative; z-index: 5; background: var(--bg); padding-bloc
 .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
 .filters { display: block }
 /* 자료 종류: 한 줄 꽉 찬 탭 묶음(휴대폰 폭에서도 줄바꿈 없이) */
-.srcbar { display: flex; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 3px; gap: 2px }
+.srcbar { display: flex; flex-wrap: wrap; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 3px; gap: 2px }
 .srcbar .chip { flex: 1 1 auto; border: 0; border-radius: 7px; padding: 6px 4px; font-size: clamp(12px, 3.4vw, 14px); white-space: nowrap; background: none; text-align: center }
 .srcbar .chip[aria-pressed="true"] { background: var(--accent); color: #fff }
 .srcbar .chip::before { width: 7px !important; height: 7px !important; margin-right: 4px !important }
@@ -178,6 +178,24 @@ main { padding-top: 14px }
 .hbtn { font: inherit; font-size: 12px; color: var(--old); background: none; border: 1px solid var(--line); border-radius: 6px; padding: 1px 8px; cursor: pointer }
 .hbtn[aria-expanded="true"] { background: var(--old-soft); border-color: var(--old) }
 .meta .hbtn:first-of-type { margin-left: auto }
+.card.alt::before { width: 6px; background: var(--accent) }
+.card.alt { padding-left: 18px }
+.card.alt .badge { padding: 3px 10px; font-size: 13.5px; color: #fff; background: var(--accent) }
+.alt-panel { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line) }
+.alt-content + .alt-content { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line) }
+.alt-content { word-break: keep-all; overflow-wrap: anywhere }
+.alt-content h3 { margin: 0 0 6px; font-size: 15px }
+.alt-content .gist { background: var(--accent-soft) }
+.alt-content .gist .tag { color: var(--accent) }
+.alt-picker, .alt-edition { font-size: 13px; line-height: 1.55 }
+.alt-picker { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 6px }
+.alt-picker select { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 3px 4px; max-width: 100% }
+.alt-edition :is(p, ul) { margin: 0 0 6px }
+.alt-edition ul { padding-left: 1.25em }
+.alt-edition .alt-source { color: var(--muted); display: flex; gap: 4px 10px; flex-wrap: wrap }
+.alt-edition a, .alt-edition summary { color: var(--accent) }
+.alt-edition summary { cursor: pointer; padding: 4px 0 }
+.alt-edition h4 { margin: 8px 0 3px; font-size: 13px }
 .hist { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px }
 .hist h4 { margin: 0 0 6px; font-size: 13px; color: var(--old) }
 .hp { position: relative; padding: 0 0 12px 18px; border-left: 2px solid var(--line); margin-left: 5px }
@@ -381,7 +399,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 
 <div class="wrap">
 <header class="top">
-  <div class="brand"><h1>검사기준 통합검색</h1><span class="sub">엘리베이터·경사형·에스컬레이터 안전기준(현행) + 적용 연혁(승강기 안전기준 연혁집, 1990년대~) + 검사방법 표준화 2016~2026 + 불합격 내용(검사결과 판정 지침)</span></div>
+  <div class="brand"><h1>검사기준 통합검색</h1><span class="sub">엘리베이터·경사형·에스컬레이터 안전기준(현행) + 적용 연혁(승강기 안전기준 연혁집, 1990년대~) + 검사방법 표준화 2016~2026 + 불합격 내용(검사결과 판정 지침) + 특례 대체기준</span></div>
   <form class="searchrow" id="f" autocomplete="off">
     <input id="q" type="search" aria-label="검색어" enterkeyhint="search">
     <button type="submit">검색</button>
@@ -395,6 +413,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     <button class="chip" data-src="b24" aria-pressed="false">에스컬레이터</button>
     <button class="chip" data-src="std" aria-pressed="false">표준화</button>
     <button class="chip" data-src="fail" aria-pressed="false">불합격</button>
+    <button class="chip" data-src="alt" aria-pressed="false">대체기준</button>
     </div>
     <div class="optbar">
     <span class="ywrap" id="vwrap" hidden style="display:none"><button type="button" class="chip ysel" id="vbtn" aria-expanded="false" aria-controls="vpop">판: 전체</button><div class="ypop" id="vpop" hidden role="group" aria-label="구기준 판 선택(여러 개 가능)"><div class="ygrid v2" id="vers"></div><div class="yfoot"><span class="hint">시행일 · 여러 개 선택 가능</span><button type="button" class="chip" id="vclear">전체</button><button type="button" class="chip" id="vclose">닫기</button></div></div></span>
@@ -455,6 +474,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const REF_ENTRIES = Object.fromEntries(CLAUSE_SOURCES.flatMap(s => DATA[s]).map(e => [e.id, e]));
   const CITATIONS = DATA.clause_citations || {};
   const ARCHIVE_DOCS = CITATIONS.documents || {};
+  const ALTERNATIVES = DATA.alternative_criteria || { topics: [], sources: {} };
+  DATA.alt = ALTERNATIVES.topics;
+  const ALT_BY_ID = Object.fromEntries(DATA.alt.map(topic => [topic.id, topic]));
+  const ALT_BY_CLAUSE = {};
+  for (const topic of DATA.alt) {
+    const latest = topic.versions.at(-1);
+    topic.text = latest.body.join('\n');
+    for (const id of topic.related) (ALT_BY_CLAUSE[id] ||= []).push(topic);
+  }
   // 카드와 본문 블록마다 [표기, 위치, 앞 문구, 뒤 문구, 조항 ID 목록]을 보관한다.
   const REVIEWED_CITATIONS = CITATIONS.rules || {};
   for (const [doc, clauses] of Object.entries(CITATIONS.archives || {})) {
@@ -490,7 +518,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const OLD = { vers: [], texts: [] }; const OV = []; const OCH = []; DATA.old = [];
   function verRange() { return ''; }
   DATA.fail = DATA.fail || [];   // 불합격 내용(검사결과 판정 및 확인검사 지침 별표2 + 지침 본문)
-  const ALL = DATA.b22.concat(DATA.b23, DATA.b24, DATA.std, DATA.fail);
+  const ALL = DATA.b22.concat(DATA.b23, DATA.b24, DATA.std, DATA.fail, DATA.alt);
   const HIST = DATA.hist || {}, HIST_ES = DATA.hist_es || {}, HIST_INCLINE = DATA.hist_incline || {};
   DATA.b23.forEach(e => {
     const h = HIST_INCLINE[e.num], book = INCLINE_BOOK[e.id];
@@ -684,7 +712,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 에스컬레이터에서만 쓰는 말: 이 말로 찾으면 에스컬레이터 것(별표24 조문·불합격, 제목에 에스컬레이터·무빙워크가 든 표준화)만
   // 같은 묶음의 다른 말(예: 손잡이)로도 찾고, 엘리베이터 쪽은 이 말이 글에 그대로 있을 때만 걸리며 에스컬레이터 것 뒤로 간다
   const ES_ONLY = new Set(['핸드레일', '핸드 레일'].map(w => w.replace(/\s/g, '')));
-  const isEsEntry = e => e.src === 'b24' || (e.src === 'fail' && /^별표24/.test(e.path || '')) || (e.src === 'std' && /에스컬레이터|무빙워크|e\/s|m\/w/.test(e.nt));   // 표준화는 제목으로
+  const isEsEntry = e => e.src === 'b24' || (e.src === 'fail' && /^별표24/.test(e.path || '')) || ((e.src === 'std' || e.src === 'alt') && /에스컬레이터|무빙워크|e\/s|m\/w/.test(e.nt));
   const BASE_SYN = [
     ['핸드레일','손잡이','핸드 레일'],
     ['스텝','디딤판','발판','계단'],
@@ -897,6 +925,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       const main = searchText(concl.map(s => s.p.join(' ')).join(' '));
       e.s = normSp((e.title || '') + ' ' + (e.path || '') + ' ' + main + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
       e.nb = norm(searchText(bg.map(s => s.p.join(' ')).join(' ')));
+    } else if (e.src === 'alt') {
+      const metadata = e.versions.flatMap(v => [v.scope, ...(v.refs || []), ...(v.checks || [])]).filter(Boolean);
+      e.s = normSp([e.title, e.scope, e.gist, e.keywords, ...metadata].join(' ')); e.n = e.s.replace(/ /g, '');
+      e.nb = '';
     } else {
       e.s = normSp((e.src === 'fail' ? e.num + ' ' : '') + (e.title || '') + ' ' + (e.path || '') + ' ' + searchText(e.text) + ' ' + (e.gist || '')); e.n = e.s.replace(/ /g, '');
       e.nb = '';
@@ -986,7 +1018,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 엘리베이터 조문 +3, 에스컬레이터 조문·표준화 0 — 엘리베이터 검색에 에스컬레이터 것이 앞서지 않게(에스컬레이터 말은 에스컬레이터 것만 걸림)
   function srcBonus(e, about) {
     if (e.src === 'fail') { const p = e.path || ''; return /^별표22/.test(p) ? (about ? 10 : 3) : /^별표24/.test(p) && about ? 1 : 0; }
-    if (e.src === 'b24') return 0;
+    if (e.src === 'b24' || e.src === 'alt') return 0;
     return e.src === 'std' || e.src === 'old' ? 0 : 3;
   }
   // 짧은 글에 든 검색어일수록 그 글의 주제(긴 조문 속 한 번 나온 말보다 앞). 0.6~1.4배
@@ -1072,7 +1104,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // 기준일이 있으면 엘리베이터 카드가 그날 적용되던 문구(연혁집)를 보여준다. '이후 바뀐 조문만'이면 기준일 이후 바뀐 엘리베이터 조문만
   const srcOK = e => {
     const el = src === 'all' || src === 'b22';
-    if (CHG && APPLY) { if (src === 'std' || src === 'fail') return e.src === src; return (src === 'all' || e.src === src) && isClause(e) && !!afterInfo(e); }
+    if (CHG && APPLY) { if (src === 'std' || src === 'fail' || src === 'alt') return e.src === src; return (src === 'all' || e.src === src) && isClause(e) && !!afterInfo(e); }
     return src === 'all' || e.src === src;
   };
   const pass = e => srcOK(e) && yOK(e) && vOK(e);
@@ -1109,6 +1141,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const total = list.length;
     list = list.slice(0, 80);
     const re = hlRegex(groups);
+    if (!q.trim() && src === 'alt' && !view) {
+      $('status').textContent = `대체기준 ${DATA.alt.length}건`;
+      $('results').innerHTML = DATA.alt.map(e => card(e, null)).join('');
+      measure(); return;
+    }
     if (!q.trim() && CHG && APPLY && !view) {
       const all = DATA.b22.concat(DATA.b23, DATA.b24).filter(e => srcOK(e)); all.sort((x, y) => (afterInfo(x).kind === 'chg' ? 0 : 1) - (afterInfo(y).kind === 'chg' ? 0 : 1));
       const nC = all.filter(e => afterInfo(e).kind === 'chg').length;
@@ -1119,12 +1156,13 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     }
     if (!q.trim()) {
       if (view) { renderView(); return; }
-      $('status').innerHTML = `<span>${APPLY ? applyLabel() : `엘리베이터 ${DATA.b22.length}건 · 경사형 ${DATA.b23.length}건 · 에스컬레이터 ${DATA.b24.length}건 · 표준화 ${DATA.std.length}건 · 불합격 ${DATA.fail.length}건`}</span><span>목차에서 골라 쭉 읽거나, 검색어를 넣으세요</span>`;
+      $('status').innerHTML = `<span>${APPLY ? applyLabel() : `엘리베이터 ${DATA.b22.length}건 · 경사형 ${DATA.b23.length}건 · 에스컬레이터 ${DATA.b24.length}건 · 표준화 ${DATA.std.length}건 · 불합격 ${DATA.fail.length}건 · 대체기준 ${DATA.alt.length}건`}</span><span>목차에서 골라 쭉 읽거나, 검색어를 넣으세요</span>`;
       $('results').innerHTML = toc();
       return;
     }
     view = null;
-    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${({ all: '전체', b24: '에스컬레이터', b22: '엘리베이터', b23: '경사형', std: '표준화', fail: '불합격', old: '엘리베이터' })[src]}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
+    const sourceName = src === 'all' ? '전체' : src === 'old' ? '엘리베이터' : SRCNAME[src];
+    $('status').innerHTML = `<span>${total}건${total > 80 ? ' (상위 80건 표시)' : ''}</span><span>${sourceName}${APPLY && (src === 'all' || src === 'b22') ? ' · ' + applyLabel() : ''}${VS.size && src === 'old' ? ' · ' + vLabel() : ''}</span>`;
     if (!total) { const first = q.trim().split(/\s+/)[0]; $('results').innerHTML = `<div class="empty">결과 없음. 단어를 띄어서 줄이거나 다른 말로 바꿔보세요.<br>초성 검색도 됩니다: <code>ㅅㅋㅌ</code> → 스커트<br><br>현장에서 쓰는 말이라면 <button type="button" class="link" data-addterm="${escHtml(first)}">‘${escHtml(first)}’을 기준 용어에 연결</button>하세요.</div>`; return; }
     $('results').innerHTML = list.map((h, i) => (h.weak && (i === 0 || !list[i - 1].weak) ? `<div class="weakdiv">아래는 검색어가 다른 낱말 속에 들어 있는 경우입니다 (예: ‘${escHtml(groups[0].term)}’가 낱말 가운데에 있음)</div>` : '') + card(h.e, re)).join('');
     measure();
@@ -1232,7 +1270,36 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (!figures.length) return '';
     return `<div class="esfigs"><h3>관련 원문 그림 · 누르면 확대</h3><div class="esfig-grid">${figures.map(({ r, f }) => `<figure data-es-figure="${f.id}"><button type="button" data-fz="fig/${f.file}" aria-label="그림 ${f.id} ${escHtml(f.title)} 크게 보기"><img src="fig/${f.file}" loading="lazy" width="${f.width}" height="${f.height}" alt="그림 ${f.id} ${escHtml(f.title)}"></button><figcaption>그림 ${f.id} · ${escHtml(f.title)}<span title="${escHtml(f.source)}">${escHtml(r.reason)} · 별표24(${f.edition})</span></figcaption></figure>`).join('')}</div></div>`;
   }
+  function alternativeEdition(topic, version, re, kind) {
+    const source = ALTERNATIVES.sources[version.source];
+    const sections = version.sections?.filter(section => !kind || section.kind === kind);
+    const kinds = sections?.map(section => section.title) || version.displayKinds;
+    const bodyText = lines => `<div class="ht">${hl(lines.join('\n'), re)}</div>`;
+    const body = sections
+      ? sections.map(section => `<h4>${escHtml(section.title)}</h4>${bodyText(version.body.slice(section.start, section.end))}`).join('')
+      : bodyText(version.body);
+    return `<p><b>적용 조건</b> · ${hl(version.scope || topic.scope, re)}</p>
+      ${kinds && !kind ? `<p class="alt-kinds">${kinds.map(escHtml).join(' · ')}</p>` : ''}
+      ${version.applied ? `<p><b>시행·적합 기한</b> · ${escHtml(version.applied)}</p>` : ''}
+      ${version.checks ? `<p><b>검사 항목</b></p><ul>${version.checks.map(check => `<li>${hl(check, re)}</li>`).join('')}</ul>` : ''}
+      <details><summary>대체기준 문구 보기</summary>${body}</details>
+      <p class="alt-source">${source.posted ? `<span>공단 게시 ${source.posted}</span>` : ''}<a href="${escHtml(source.url)}" target="_blank" rel="noopener noreferrer">공단 원문</a></p>`;
+  }
+  function alternativeContent(topic, re, kind = '') {
+    const versions = topic.versions.filter(version => !kind || (version.sections
+      ? version.sections.some(section => section.kind === kind)
+      : !version.kinds || version.kinds.includes(kind)));
+    const shown = versions.at(-1);
+    const options = [...versions].reverse().map(version => `<option value="${version.source}">${escHtml(ALTERNATIVES.sources[version.source].edition)}</option>`);
+    const picker = versions.length > 1
+      ? `<label class="alt-picker">판본 <select data-alt-version aria-label="${escHtml(topic.title).replace(/"/g, '&quot;')} 판본">${options.join('')}</select></label>`
+      : `<div class="alt-picker">판본 <span>${escHtml(ALTERNATIVES.sources[shown.source].edition)}</span></div>`;
+    return `<section class="alt-content" data-alt-topic="${topic.id}" data-alt-kind="${kind}">${kind ? `<h3>${hl(topic.title, re)}</h3>` : ''}
+      <div class="gist"><span class="tag">요지</span><span>${hl(topic.gist, re)}</span></div>
+      ${picker}<div class="alt-edition">${alternativeEdition(topic, shown, re, kind)}</div></section>`;
+  }
   function card(e, re) {
+    if (e.src === 'alt') return `<article class="card alt open" id="${e.id}"><div class="meta"><span class="badge">대체기준</span>${e.category === '여러 기종' ? '' : `<span>${escHtml(e.category)}</span>`}</div><h2>${hl(e.title, re)}</h2>${alternativeContent(e, re)}</article>`;
     const isStd = e.src === 'std', isOld = e.src === 'old';
     let body;
     if (isStd && e.sec && e.sec.length) {
@@ -1264,8 +1331,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     const cardPath = e.src === 'b23' && e.group ? '경사형 연혁집 › ' + e.collection : e.path;
     const path = (!isStd && cardPath ? `<div class="path">${hl(cardPath, re)}</div>` : '') + (e.unresolved_refs || []).map(r => `<div class="hfound">${escHtml(r.note)}</div>`).join('');
     const ctx = (hasHistory(e) ? `<button type="button" class="hbtn" data-hist="${e.id}" aria-expanded="false">적용 연혁</button>` : '');
+    const alt = ALT_BY_CLAUSE[e.id] ? `<button type="button" class="hbtn" data-alt-clause="${e.id}" aria-expanded="false">대체기준</button>` : '';
     const assets = (ASSETS_BY_OWNER[e.id] || []).map(a => `<button type="button" class="clause-ref" data-ref-assets="${a.key}" aria-haspopup="dialog">${assetLabel(a.kind)} ${a.num} · ${escHtml(a.title)}</button>`).join('<br>');
-    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}</div>${title}${path}${isClause(e) ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${figs}${esFigureHtml(e)}${assets ? `<div class="esfigs"><h3>관련 원문 표·그림</h3>${assets}</div>` : ''}<div class="hist" hidden></div></article>`;
+    return `<article class="card ${isStd ? 'std' : e.src} ${re ? '' : 'open short'}" id="${e.id}"><div class="meta">${meta}${ctx}${alt}</div>${title}${path}${isClause(e) ? failHtml(e, re) : ''}${e.h ? summaryHtml(e, re) : ''}${found}<div class="body">${body}</div><button class="more" type="button">전체 보기</button>${alt ? '<div class="alt-panel" hidden></div>' : ''}${figs}${esFigureHtml(e)}${assets ? `<div class="esfigs"><h3>관련 원문 표·그림</h3>${assets}</div>` : ''}<div class="hist" hidden></div></article>`;
   }
 
   // ---- 열람(목차 → 장·회차 단위로 쭉 읽기)
@@ -1279,6 +1347,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function groupKey(e) {
     if (e.src === 'old') { const vi = oldVi(e); return vi + '|' + oldCh(e.num, vi); }
     if (e.src === 'std' || e.src === 'fail') return e.path;
+    if (e.src === 'alt') return e.id;
     if (e.src === 'b23' && e.group) return e.group;
     const p = e.num.split('.');
     return (BIG[e.src][p[0]] > 80 && p.length > 1) ? p[0] + '.' + p[1] : p[0];
@@ -1295,10 +1364,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     });
     return order.map(k => ({ key: k, n: seen[k] }));
   }
-  function groupLabel(s, k) { if (s === 'b23' && ({install:1,precision:1,methods:1})[k]) return ({install:'설치검사기준',precision:'정밀안전검사기준',methods:'검사방법·판정기준'})[k]; if (s === 'old') { const [vi, ch] = k.split('|'); return OV[vi] + ' · ' + ch + ' ' + (OCH[vi][ch] || ''); } return s === 'std' || s === 'fail' ? k : (/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫX]/.test(k) ? '부속서 ' : '') + k + ' ' + (CH[s][k] || ''); }
-  const SRCNAME = { b22: '엘리베이터', b23: '경사형 엘리베이터', b24: '에스컬레이터', std: '표준화', fail: '불합격', old: '엘리베이터 · 개정 전 판' };
+  function groupLabel(s, k) { if (s === 'alt') return ALT_BY_ID[k].title; if (s === 'b23' && ({install:1,precision:1,methods:1})[k]) return ({install:'설치검사기준',precision:'정밀안전검사기준',methods:'검사방법·판정기준'})[k]; if (s === 'old') { const [vi, ch] = k.split('|'); return OV[vi] + ' · ' + ch + ' ' + (OCH[vi][ch] || ''); } return s === 'std' || s === 'fail' ? k : (/^[ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩⅪⅫX]/.test(k) ? '부속서 ' : '') + k + ' ' + (CH[s][k] || ''); }
+  const SRCNAME = { b22: '엘리베이터', b23: '경사형 엘리베이터', b24: '에스컬레이터', std: '표준화', fail: '불합격', alt: '대체기준', old: '엘리베이터 · 개정 전 판' };
+  const SOURCE_FILTERS = ['all', 'b22', 'b23', 'b24', 'std', 'fail', 'alt'];
   function toc() {
-    const srcs = src === 'all' ? ['b22', 'b23', 'b24', 'std', 'fail'] : [src === 'old' ? 'b22' : src];
+    const srcs = src === 'all' ? SOURCE_FILTERS.slice(1) : [src === 'old' ? 'b22' : src];
     const sec = s => {
       const gs = groupsOf(s);
       let items;
@@ -1361,8 +1431,9 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (ev.target.closest('[data-totoc]')) { savePos(); clearTimeout(st); view = null; try { localStorage.setItem('kview', ''); } catch (e) {} render(); restorePos('toc'); return; }
   });
 
-  $('f').addEventListener('submit', ev => { ev.preventDefault(); render(); $('q').blur(); });
-  let timer; $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 160); });
+  let timer;
+  $('f').addEventListener('submit', ev => { ev.preventDefault(); clearTimeout(timer); render(); $('q').blur(); });
+  $('q').addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(render, 160); });
   $('bgtog').setAttribute('aria-pressed', String(withBg));
   $('filters').addEventListener('click', ev => {
     const b = ev.target.closest('button.chip'); if (!b) return;
@@ -1374,11 +1445,27 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (ev.target.closest('[data-more]')) { SHOWN += 80; const y = getY(); render(); setY(y); return; }
     const gs = ev.target.closest('[data-gosrc]'); if (gs) { src = gs.dataset.gosrc; srcSync(); render(); setY(0); return; }
     const hb = ev.target.closest('[data-hist]'); if (hb) { const c = hb.closest('.card'), box = c.querySelector('.hist'); const open = box.hidden; box.hidden = !open; if (open && !box.innerHTML) { const e = byId[hb.dataset.hist]; box.innerHTML = historyHtml(e); linkClauseRefs(box, e); box.querySelectorAll('.ht').forEach(x => { if (x.scrollHeight <= x.clientHeight + 4) { x.classList.remove('clip'); x.nextElementSibling.remove(); } }); } box.hidden = !open; hb.setAttribute('aria-expanded', String(open)); return; }
+    const alt = ev.target.closest('[data-alt-clause]');
+    if (alt) {
+      const box = alt.closest('.card').querySelector('.alt-panel');
+      const id = alt.dataset.altClause;
+      if (!box.firstElementChild) box.innerHTML = ALT_BY_CLAUSE[id].map(topic => alternativeContent(topic, null, byId[id].src)).join('');
+      box.hidden = !box.hidden;
+      alt.setAttribute('aria-expanded', String(!box.hidden));
+      return;
+    }
     const hx = ev.target.closest('.hx'); if (hx) { const ht = hx.previousElementSibling; const cl = ht.classList.toggle('clip'); hx.textContent = cl ? '펼치기' : '접기'; return; }
     const bt = ev.target.closest('.bgtoggle'); if (bt) { const bg = bt.nextElementSibling; const open = bg.hidden; bg.hidden = !open; bt.setAttribute('aria-expanded', String(open)); bt.textContent = (open ? '근거·배경 접기' : bt.textContent.replace('접기', '보기')); const c = bt.closest('.card'); if (open) { c.classList.add('open'); const mm = c.querySelector('.more'); if (mm) mm.textContent = '접기'; } return; }
     const m = ev.target.closest('.more'); if (m) { const c = m.closest('.card'); c.classList.toggle('open'); m.textContent = c.classList.contains('open') ? '접기' : '전체 보기'; }
   }
   $('results').addEventListener('click', cardClick);
+  document.addEventListener('change', ev => {
+    const picker = ev.target.closest('[data-alt-version]'); if (!picker) return;
+    const section = picker.closest('[data-alt-topic]');
+    const topic = ALT_BY_ID[section.dataset.altTopic];
+    const version = topic.versions.find(v => v.source === picker.value);
+    section.querySelector('.alt-edition').innerHTML = alternativeEdition(topic, version, null, section.dataset.altKind);
+  });
 
   // ---- 용어 사전 UI
   const baseWords = () => Array.from(new Set(dictRows().flatMap(r => r.g))).sort((a, b) => a.localeCompare(b, 'ko'));
@@ -1701,7 +1788,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     function walk(node) {
       if (node.nodeType === Node.TEXT_NODE) { nodes.push(node); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
-      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex, .esfigs, .hfound')) { flush(); return; }
+      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex, .esfigs, .hfound, .alt-content')) { flush(); return; }
       const block = blocks.has(node.tagName); if (block) flush();
       const section = e && e.src === 'std' && node.matches('.sec');
       const savedSection = citationSection, savedSource = citationSource;
@@ -1908,7 +1995,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     // 검색어를 넣고 화면을 갱신. 반환: 상위 n건 [{src,num,title,gist,text,path}]
     search(q, n) { $('q').value = q || ''; render(); return this.results(n); },
     results(n) { const q = $('q').value; const { hits } = search(q); return hits.filter(h => pass(h.e)).slice(0, n || 20).map(h => ({ src: h.e.src, num: h.e.num, title: h.e.title || '', gist: h.e.gist || '', path: h.e.path || '', text: h.e.text, vers: h.e.vers ? h.e.vers.map(i => OV[i]) : undefined })); },
-    setSource(s) { src = ['all', 'b22', 'b23', 'b24', 'std', 'fail'].includes(s) ? s : 'all'; srcSync(); refilter(); },
+    setSource(s) { src = SOURCE_FILTERS.includes(s) ? s : 'all'; srcSync(); refilter(); },
     addTerm(a, bs) { if (addPair(a, Array.isArray(bs) ? bs : String(bs).split(/[,，/]/))) { saveSyn(); renderDict(); render(); return true; } return false; },
     expand(t) { return expandTerm(t); },
     // 앱 테마 주입: KIJUN.setTheme({bg:'#0b0f14', surface:'#141a22', fg:'#e8edf2', muted:'#8a97a6', line:'#263140', accent:'#5ec8ff', accentSoft:'#102a3a', mark:'#4a3f00', stripe:'#ffd400', std:'#c79be3', stdSoft:'#33243f', el:'#6fcf97', elSoft:'#1d3a2a', fontBody:'...', fontMono:'...'})
@@ -1939,7 +2026,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   try { const v = JSON.parse(localStorage.getItem('kview') || 'null'); if (v && !$('q').value.trim() && !location.hash) view = v; } catch (e) {}
   let refreshState = null;
   try { refreshState = JSON.parse(sessionStorage.getItem('krefresh') || 'null'); sessionStorage.removeItem('krefresh'); } catch (e) {}
-  if (refreshState && refreshState.q === $('q').value && ['all','b22','b23','b24','std','fail'].includes(refreshState.src)) src = refreshState.src;
+  if (refreshState && refreshState.q === $('q').value && SOURCE_FILTERS.includes(refreshState.src)) src = refreshState.src;
   $('q').addEventListener('change', () => { try { localStorage.setItem('kq', $('q').value); } catch (e) {} });
   srcSync();
   render();

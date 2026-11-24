@@ -306,6 +306,78 @@ class PublishedPage(unittest.TestCase):
             self.page.locator('[data-ref-close]').click()
             self.page.locator('.vnav.top [data-totoc]').click()
 
+    def test_monitor_opens_alternative_next_to_history(self):
+        self.page.locator('#q').fill('모니터')
+        self.page.locator('#q').press('Enter')
+        card = self.page.locator('[id="b22-6.1.2.1"]')
+        button = card.locator('[data-hist] + [data-alt-clause]')
+        body = card.locator('.body').inner_text()
+        panel = card.locator('.alt-panel')
+        self.assertFalse(panel.is_visible())
+        button.click()
+        self.assertEqual(button.get_attribute('aria-expanded'), 'true')
+        self.assertEqual(panel.locator('h3').all_text_contents(), ['승강기 내 유·무선 전송기기'])
+        self.assertIn('카 또는 승강로 내 유선·무선 전송기기 설치', panel.inner_text())
+        self.assertIn('공단 게시 2020.04.10', panel.inner_text())
+        self.assertEqual(card.locator('.body').inner_text(), body)
+        self.assertEqual(self.page.locator('[id="b22-XⅢ.2"] [data-alt-clause]').count(), 0)
+        self.assertNotIn('당시 기본 조항', panel.inner_text())
+        panel.get_by_text('대체기준 문구 보기', exact=True).click()
+        self.assertEqual(panel.locator('h4').all_text_contents(), ['엘리베이터'])
+        self.assertIn('6.1.2.1.1 승강로는', panel.locator('.ht').inner_text())
+        panel.get_by_text('대체기준 문구 보기', exact=True).click()
+        card.screenshot(path=screenshot_path('alternative-monitor-mobile.png'))
+        button.click()
+        self.assertFalse(panel.is_visible())
+        self.page.locator('[data-src="b23"]').click()
+        self.page.locator('#q').fill('승강로의 사용 제한')
+        self.page.locator('#q').press('Enter')
+        incline = self.page.locator('[id="b23-6.8"]')
+        incline.locator('[data-alt-clause]').click()
+        incline.locator('.alt-panel').get_by_text('대체기준 문구 보기', exact=True).click()
+        self.assertEqual(incline.locator('.alt-panel h4').all_text_contents(), ['경사형 엘리베이터'])
+        self.assertIn('6.8.1 승강로에', incline.locator('.alt-panel .ht').inner_text())
+
+    def test_all_alternative_criteria_and_editions(self):
+        catalog = self.data['alternative_criteria']
+        self.page.get_by_role('button', name='대체기준', exact=True).click()
+        self.assertEqual(self.page.locator('.card.alt').count(), 19)
+        count = 0
+        for topic in catalog['topics']:
+            card = self.page.locator('#' + topic['id'])
+            for version in topic['versions']:
+                source = catalog['sources'][version['source']]
+                if len(topic['versions']) > 1:
+                    card.locator('[data-alt-version]').select_option(version['source'])
+                self.assertEqual(card.get_by_role('link', name='공단 원문').get_attribute('href'), source['url'])
+                card.get_by_text('대체기준 문구 보기', exact=True).click()
+                if version.get('sections'):
+                    self.assertEqual(card.locator('.alt-edition h4').all_text_contents(),
+                                     ['엘리베이터', '경사형 엘리베이터', '수직형 휠체어리프트'])
+                    expected = ['\n'.join(version['body'][part['start']:part['end']]) for part in version['sections']]
+                else:
+                    expected = ['\n'.join(version['body'])]
+                self.assertEqual(card.locator('.alt-edition .ht').all_text_contents(), expected)
+                card.get_by_text('대체기준 문구 보기', exact=True).click()
+                count += 1
+        self.assertEqual(count, 63)
+        self.page.locator('#q').fill('핸드레일 살균기')
+        self.page.locator('#q').press('Enter')
+        self.assertEqual(set(self.page.locator('.card.alt').evaluate_all('cards => cards.map(c => c.id)')),
+                         {'alt-sterilizer-electric', 'alt-sterilizer-self'})
+        self.assertEqual(self.page.locator('#alt-sterilizer-electric option').all_text_contents(), ['2020.09', '2020.07'])
+        self.assertEqual(self.page.locator('#alt-sterilizer-self option').all_text_contents(), ['2019.11', '2018.02', '2017.04'])
+        self.page.locator('#alt-sterilizer-electric').screenshot(path=screenshot_path('alternative-sterilizer-mobile.png'))
+        self.page.set_viewport_size({'width': 320, 'height': 720})
+        self.assertTrue(self.page.locator('.srcbar').evaluate('bar => bar.scrollWidth <= bar.clientWidth'))
+        self.page.locator('[data-src="b24"]').click()
+        self.page.locator('#q').fill('뉴얼 최하점')
+        self.page.locator('#q').press('Enter')
+        escalator = self.page.locator('[id="b24-5.6.4.1"]')
+        escalator.locator('[data-alt-clause]').click()
+        self.assertEqual(set(escalator.locator('.alt-panel h3').all_text_contents()), {
+            '에스컬레이터 핸드레일 살균기 · 전기식', '에스컬레이터 핸드레일 살균기 · 자가발전식'})
+
     def test_all_toc_groups_using_published_html(self):
         entries = {e['id']:e for src in ('b22','b23','b24','std','fail') for e in self.data[src]}
         clauses = {e['id'] for src in ('b22','b23','b24') for e in self.data[src]}
@@ -338,7 +410,7 @@ class PublishedPage(unittest.TestCase):
                         self.assertTrue(allowed,(entry['id'],match[0]))
                         targets.append(allowed)
                 expected[entry['id']] = targets
-        groups = self.page.locator('.tocitem[data-view]').evaluate_all('(es)=>es.map(e=>({src:e.dataset.view,key:e.dataset.key}))')
+        groups = self.page.locator('.tocitem[data-view]:not([data-view="alt"])').evaluate_all('(es)=>es.map(e=>({src:e.dataset.view,key:e.dataset.key}))')
         seen = set()
         ledger = []
         for group in groups:
