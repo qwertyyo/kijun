@@ -313,6 +313,12 @@ class PublishedPage(unittest.TestCase):
             card_id: {f'{card_id}-annex1-{num}' for num in doc['clauses']}
             for card_id, doc in self.data.get('std_legacy_refs', {}).items()
         }
+        citations = self.data['clause_citations']
+        archived_clauses = {f'archive-{doc}-{num}' for doc, entries in citations['archives'].items() for num in entries}
+        for card_id, blocks in citations['rules'].items():
+            for occurrences in blocks.values():
+                for _, _, _, _, targets in occurrences:
+                    self.assertTrue(set(targets) <= clauses | archived_clauses, card_id)
         catalog = self.data['ref_assets']
         expected = {}
         for src in ('b22','b24'):
@@ -365,7 +371,7 @@ class PublishedPage(unittest.TestCase):
             for card in cards:
                 self.assertIn(card['id'],entries)
                 self.assertEqual(card['linked'],'1',card['id'])
-                self.assertEqual(set(card['clauses']) - clauses, legacy_clauses.get(card['id'], set()), card['id'])
+                self.assertEqual(set(card['clauses']) - clauses - archived_clauses, legacy_clauses.get(card['id'], set()), card['id'])
                 self.assertTrue(set(card['assets'])<=set(catalog),card['id'])
                 for allowed in expected.get(card['id'],[]):
                     self.assertTrue(set(card['assets'])&allowed,(card['id'],allowed))

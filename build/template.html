@@ -354,7 +354,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .ref-bar { display: flex; align-items: center; gap: 8px; min-height: 48px; flex-shrink: 0; padding: 6px 8px; background: var(--accent-soft); border-bottom: 1px solid var(--line); cursor: grab; touch-action: none; user-select: none }
 .ref-bar:active { cursor: grabbing }
 .ref-bar:focus-visible { outline: 2px solid var(--accent); outline-offset: -3px }
-.ref-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; overflow-wrap: anywhere }
+.ref-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 700; word-break: keep-all; overflow-wrap: anywhere }
 .ref-bar button { font: inherit; font-size: 13px; color: var(--fg); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; min-height: 36px; cursor: pointer; touch-action: manipulation }
 .ref-bar button:disabled { opacity: .4; cursor: default }
 .ref-content { overflow: auto; overscroll-behavior: contain; min-height: 0; padding: 12px; flex: 1 }
@@ -362,6 +362,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
 .ref-content .card .body { max-height: none }
 .ref-content .card .body::after, .ref-content .card > .more { display: none }
 .ref-note { margin: 0 0 10px; font-size: 13px; color: var(--muted) }
+.ref-note a { white-space: nowrap }
 .ref-choice { display: block; width: 100%; text-align: left; font: inherit; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 8px 0; cursor: pointer }
 .ref-table h3 { font-size: 17px; margin: 0 0 8px }
 .ref-table figure { margin: 0 0 18px }
@@ -452,6 +453,16 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const CLAUSE_SOURCES = ['b22', 'b23', 'b24'];
   const isClause = e => CLAUSE_SOURCES.includes(e.src);
   const REF_ENTRIES = Object.fromEntries(CLAUSE_SOURCES.flatMap(s => DATA[s]).map(e => [e.id, e]));
+  const CITATIONS = DATA.clause_citations || {};
+  const ARCHIVE_DOCS = CITATIONS.documents || {};
+  // 카드와 본문 블록마다 [표기, 위치, 앞 문구, 뒤 문구, 조항 ID 목록]을 보관한다.
+  const REVIEWED_CITATIONS = CITATIONS.rules || {};
+  for (const [doc, clauses] of Object.entries(CITATIONS.archives || {})) {
+    for (const [num, clause] of Object.entries(clauses)) {
+      const id = `archive-${doc}-${num}`;
+      REF_ENTRIES[id] = { ...clause, id, num, src: 'old', archiveDoc: doc };
+    }
+  }
   const STD_LEGACY_REFS = DATA.std_legacy_refs || {};
   for (const [cardId, doc] of Object.entries(STD_LEGACY_REFS)) {
     for (const [num, clause] of Object.entries(doc.clauses)) {
@@ -1243,7 +1254,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       ? `<span class="badge" title="승강기 설치검사 및 안전검사 결과 판정 및 확인검사 지침${e.path ? ' · ' + escHtml(e.path) : ''}">불합격${failKind(e) ? ' · ' + failKind(e) : ''}</span>${e.num ? `<span class="num">${escHtml(e.num)}</span>` : ''}`
       : isStd
       ? `<span class="badge">표준화</span><span>${escHtml(e.path)}</span>${e.num ? `<span class="num">#${e.num}</span>` : ''}`
-      : isOld ? `<span class="badge">엘리베이터 · ${APPLY && AV() < NV && e.vers.includes(AV()) ? '당시 기준' : '개정 전'}</span><span class="num">${escHtml(e.num)}</span><span class="vr" title="이 본문이 그대로 실린 판(시행일)">${verRange(e.vers)}</span>`
+      : isOld ? `<span class="badge">${escHtml(ARCHIVE_DOCS[e.archiveDoc]?.name || '엘리베이터')} · ${e.archiveDoc ? '원문' : APPLY && AV() < NV && e.vers.includes(AV()) ? '당시 기준' : '개정 전'}</span><span class="num">${escHtml(e.num)}</span><span class="vr" title="이 본문이 그대로 실린 판(시행일)">${verRange(e.vers)}</span>`
       : `<span class="badge" title="${e.src === 'b23' ? '경사형 연혁집 · ' + escHtml(e.collection || '안전기준') : e.src === 'b22' ? '별표22 엘리베이터 안전기준' : '별표24 에스컬레이터 안전기준'}">${e.src === 'b23' ? '경사형' : e.src === 'b22' ? '엘리베이터' : '에스컬레이터'}</span>${e.src === 'b23' && e.group ? '' : `<span class="num">${escHtml(e.num)}</span>`}`;
     const ai = null;
     // 검색어가 현행 문구엔 없고 연혁에만 있으면 어디서 찾았는지 한 줄
@@ -1529,9 +1540,13 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // ---- 조문 참조: 현재 페이지와 검색 상태를 유지하는 비모달 창
   const REF_NAME = { b22: '엘리베이터', b23: '경사형 엘리베이터', b24: '에스컬레이터', old: '엘리베이터' };
   const refRoman = { ...romanA, XI: 'Ⅺ', XII: 'Ⅻ', XIII: 'XⅢ', XIV: 'XⅣ' };
-  const refNum = n => n.replace(/^부속서\s*/, '').replace(/\s+/g, '').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
+  const romanToken = '[Ⅰ-ⅫIVX]+';
+  const refNum = n => n.replace(/^부속서\s*/, '').replace(/\s+/g, '').normalize('NFKC').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
   const assetLabel = kind => kind === 'table' ? '표' : '그림';
-  const assetNumber = '(?:(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)\\s*\\.\\s*)?\\d+(?:\\.\\d+)*';
+  const assetNumber = `(?:${romanToken}\\s*\\.\\s*)?\\d+(?:\\.\\d+)*`;
+  const clausePattern = new RegExp(`(?:부속서\\s*${romanToken}(?:\\.\\d+)*|${romanToken}(?:\\.\\d+)+|\\d+(?:\\.\\d+)+)`, 'g');
+  const citationBlock = 'p,h2,h3,h4,td,th,li,.ht,.hd,.hn,.hfoot,.gist,.hsum,.path,.body,.fsum,.hfound,.esfigs';
+  const refName = e => ARCHIVE_DOCS[e.archiveDoc]?.name || REF_NAME[e.src];
   function assetMentions(text) {
     const result = [];
     for (const m of text.matchAll(new RegExp('(?<!별)(표|그\\s*림)\\s*(' + assetNumber + ')(?![\\d.])', 'g'))) {
@@ -1570,6 +1585,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   function assetTargets(kind, num, e, text, at) {
     if (e && e.src === 'std') return { assets: (STD_ASSET_LINKS[e.id] || {})[kind + '-' + num] || [] };
+    if (e?.archiveDoc || e?.legacyRefCard) return { assets: [] };
     const source = referenceSource(e, text.slice(0, at));
     const alias = REF_ALIASES.find(a => e && a.entry === e.id && a.kind === kind && a.num === num);
     if (alias && source === e.src) return { assets: [alias.target], note: alias.note };
@@ -1596,9 +1612,17 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function referenceTargets(num, e, text, at) {
     const before = text.slice(0, at), after = text.slice(at + num.length);
     // 날짜·치수·그림/표 번호와 외부 규격의 번호를 조문으로 오인하지 않는다.
-    if (/^(?:19|20)\d{2}\./.test(num) || /^\s*(?:mm|cm|m(?:\s|$|[²³/])|kN|N(?:\s|$)|kg|㎜|㎝|㎟|㎠|㎡|㎥|㎧|㎏|㏓|lx|Hz|MPa|kPa|Pa|V(?:\s|$)|A(?:\s|$)|%|초|배|도|년|월|일)/i.test(after)) return [];
+    if (/^(?:19|20)\d{2}\./.test(num) || /^\s*(?:mm|cm|m(?:\s|$|[²³/])|kN|N(?:\s|$)|kg|㎜|㎝|㎟|㎠|㎡|㎥|㎧|㎏|㏓|lx|Hz|MPa|kPa|Pa|kW|㎾|kVA|kWh|V(?:\s|$)|A(?:\s|$)|%|°|초|배|도|년|월|일)/i.test(after)) return [];
     if (/(?:그림|표)\s*$/.test(before)) return [];
     const n = refNum(num);
+    if (e?.archiveDoc) {
+      const marker = Array.from(before.matchAll(/별표\s*(\d+)/g)).at(-1);
+      const part = /^(20\d{2})-b(2[234])$/.exec(e.archiveDoc);
+      const archive = marker && part ? `${part[1]}-b${marker[1]}` : e.archiveDoc;
+      if (marker && !part && Number(marker[1]) !== ARCHIVE_DOCS[archive]?.annex) return [];
+      const target = REF_ENTRIES[`archive-${archive}-${n}`];
+      return target ? [target] : [];
+    }
     const legacyCard = e?.legacyRefCard || (STD_LEGACY_REFS[e?.id] && e.id);
     if (legacyCard) {
       const target = REF_ENTRIES[`${legacyCard}-annex1-${n}`];
@@ -1620,10 +1644,20 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       const entry = citationSource ? { ...e, _refSource: citationSource } : e;
       const mentions = assetMentions(text);
       const history = group[0].parentElement.closest('[data-ref-history]');
+      const reviewed = REVIEWED_CITATIONS[e?.id]?.[history ? history.dataset.refHistory.split(':').at(-1) : 'card'];
+      let citationText = '', citationStart = 0;
+      if (reviewed) {
+        const block = group[0].parentElement.closest(citationBlock) || group[0].parentElement;
+        const range = document.createRange();
+        range.selectNodeContents(block); range.setEnd(group[0], 0);
+        citationText = block.textContent; citationStart = range.toString().length;
+      }
       const historical = !!history || group.some(n => n.parentElement.closest('.hist, .ht, .hbody, .hup'));
-      const legacyNumbering = history && e && e.h && e.h.blocks[+history.dataset.refHistory.split(':').pop()]?.legacy_numbering;
+      const historyBlock = history && e?.h?.blocks[+history.dataset.refHistory.split(':').pop()];
+      const historyDate = historyBlock && (historyBlock.from || historyBlock.to);
+      const legacyNumbering = historyBlock?.legacy_numbering || (historyDate && historyDate < '2019' && group[0].parentElement.closest('.ht'));
       const targetFor = m => historical ? { assets: history ? (HISTORY_ASSET_LINKS[history.dataset.refHistory] || {})[m.kind + '-' + m.num] || [] : [] } : assetTargets(m.kind, m.num, entry, text, m.at);
-      const matches = Array.from(text.matchAll(/(?:부속서\s*(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)*|(?:XⅢ|XⅣ|[Ⅰ-Ⅻ]|[IVX]+)(?:\.\d+)+|\d+(?:\.\d+)+)/g));
+      const matches = Array.from(text.matchAll(clausePattern));
       // '표 Ⅱ.1의 3.1 및 3.6'은 표의 행 번호다. 일반 조문으로 연결하지 않는다.
       const links = matches.flatMap(m => {
         if (mentions.some(t => m.index >= t.at && m.index < t.end)) return [];
@@ -1632,8 +1666,11 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
           const target = targetFor(table), asset = REF_ASSETS[target.assets[0]];
           return target.assets.length ? [{ at: m.index, text: m[0], ...target, page: (asset.row_pages || {})[m[0]] || 0 }] : [];
         }
-        if (/[\d.A-Za-z]/.test(text[m.index - 1] || '') || /^[\dA-Za-z]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) return [];
-        const targets = legacyNumbering ? [] : referenceTargets(m[0], entry, text, m.index);
+        if (/[\d.A-Za-z_Ⅰ-Ⅻ]/.test(text[m.index - 1] || '') || /^[\dA-Za-z_Ⅰ-Ⅻ]/.test(text.slice(m.index + m[0].length, m.index + m[0].length + 1))) return [];
+        const start = citationStart + m.index, end = start + m[0].length;
+        const rule = reviewed?.find(([label, offset, before, after]) => label === m[0] && offset === start
+          && citationText.slice(0, start).endsWith(before) && citationText.startsWith(after, end));
+        const targets = rule ? rule[4].map(id => REF_ENTRIES[id]).filter(Boolean) : legacyNumbering ? [] : referenceTargets(m[0], entry, text, m.index);
         return targets.length ? [{ at: m.index, text: m[0], targets }] : [];
       });
       mentions.forEach(m => { const target = targetFor(m); if (target.assets.length) links.push({ at: m.at, text: m.text, ...target }); });
@@ -1655,7 +1692,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
           button.title = m.assets.length > 1 ? `${label} ${asset.num} — 수록 자료 선택` : `${REF_NAME[asset.src] || '표준화'} ${label} ${asset.num} ${asset.title} 보기`;
         } else {
           button.dataset.refIds = m.targets.map(t => t.id).join(','); button.dataset.refNum = refNum(m.text);
-          button.title = m.targets.length === 1 ? `${REF_NAME[m.targets[0].src]} ${refNum(m.text)} 조문 보기` : `${refNum(m.text)} 조문 — 기준 선택`;
+          button.title = m.targets.length === 1 ? `${refName(m.targets[0])} ${m.targets[0].num} 조문 보기` : `${refNum(m.text)} 조문 — 기준 선택`;
         }
         button.setAttribute('aria-haspopup', 'dialog');
         button.appendChild(range.extractContents()); range.insertNode(button);
@@ -1664,7 +1701,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     function walk(node) {
       if (node.nodeType === Node.TEXT_NODE) { nodes.push(node); return; }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
-      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex, .esfigs')) { flush(); return; }
+      if (node.matches('button, a, script, style, .meta, .meq, .meqb, .katex, .esfigs, .hfound')) { flush(); return; }
       const block = blocks.has(node.tagName); if (block) flush();
       const section = e && e.src === 'std' && node.matches('.sec');
       const savedSection = citationSection, savedSource = citationSource;
@@ -1781,15 +1818,18 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       refContent.innerHTML = `<section class="ref-table" data-asset-key="${a.key}"><h3>${label} ${a.num} · ${escHtml(a.title)}</h3>${state.note ? `<p class="ref-note">${escHtml(state.note)}</p>` : ''}<p class="ref-note">${label} 전체 ${a.pages.length}쪽 · 누르면 확대할 수 있습니다.<br>${escHtml(a.source)}${a.src === 'std' ? ' · PDF ' + a.pages.map(p => p.page_label || p.page).join('·') + '쪽' : ''}</p>${a.pages.map((p, i) => `<figure data-table-page="${i}"><figcaption>${i + 1}/${a.pages.length}${p.title ? ' · ' + escHtml(p.title) : ''}</figcaption><button type="button" data-fz="${p.folder || 'fig'}/${p.file}" aria-label="${label} ${a.num} ${i + 1}쪽 크게 보기"><img src="${p.folder || 'fig'}/${p.file}" width="${p.width}" height="${p.height}" alt="${label} ${a.num} ${escHtml(p.title || a.title)}"></button></figure>`).join('')}</section>`;
     } else if (entries.length > 1) {
       refTitle.textContent = state.num + ' · 기준 선택';
-      refContent.innerHTML = '<p class="ref-note">같은 번호의 조문이 있습니다. 확인할 기준을 선택하세요.</p>' + entries.map(e => `<button type="button" class="ref-choice" data-ref-ids="${e.id}" data-ref-num="${escHtml(e.num)}">${REF_NAME[e.src]} · ${escHtml(e.num)}${e.title ? ' ' + escHtml(e.title) : ''}</button>`).join('');
+      refContent.innerHTML = '<p class="ref-note">같은 번호의 조문이 있습니다. 확인할 기준을 선택하세요.</p>' + entries.map(e => `<button type="button" class="ref-choice" data-ref-ids="${e.id}" data-ref-num="${escHtml(e.num)}">${refName(e)} · ${escHtml(e.num)}${e.title ? ' ' + escHtml(e.title) : ''}${e.archiveDoc ? ' · ' + escHtml(ARCHIVE_DOCS[e.archiveDoc].label) : ''}</button>`).join('');
     } else {
       const e = entries[0]; if (!e) return;
       const legacy = STD_LEGACY_REFS[e.legacyRefCard];
-      refTitle.textContent = `${REF_NAME[e.src]} · ${e.num} (${legacy ? '종전 별표 1' : '현행'})`;
-      const children = e.text.trim() ? [] : Object.values(REF_ENTRIES).filter(c => c.src === e.src && c.num.startsWith(e.num + '.') && c.text.trim());
-      const note = legacy ? `<p class="ref-note">${escHtml(legacy.source)} · <a href="${escHtml(legacy.url)}" target="_blank" rel="noopener noreferrer">고시 원문</a></p>`
+      const archived = ARCHIVE_DOCS[e.archiveDoc];
+      const source = legacy || archived;
+      refTitle.textContent = `${refName(e)} · ${e.num} (${legacy ? '종전 별표 1' : archived ? archived.label : '현행'})`;
+      const children = e.text.trim() || archived ? [] : Object.values(REF_ENTRIES).filter(c => c.src === e.src && c.num.startsWith(e.num + '.') && c.text.trim());
+      const note = source ? `<p class="ref-note">${escHtml(source.source)}${e.excerpt && !source.source.includes('발췌') ? ' · 원문 발췌' : ''}${source.url ? ` · <a href="${escHtml(source.url)}" target="_blank" rel="noopener noreferrer">고시 원문</a>` : ''}</p>`
         : children.length ? `<p class="ref-note">${escHtml(e.num)} ${escHtml(e.title || '')}의 하위 조문입니다.</p>` : '';
-      refContent.innerHTML = note + (children.length ? children : [e]).map(c => card(c, null)).join('');
+      const alias = state.num && state.num !== e.num ? `<p class="ref-note">인용 표기 ${escHtml(state.num)} · 연결 조항 ${escHtml(e.num)}</p>` : '';
+      refContent.innerHTML = alias + note + (children.length ? children : [e]).map(c => card(c, null)).join('');
       refContent.querySelectorAll('.card').forEach(c => { const entry = REF_ENTRIES[c.id]; c.removeAttribute('id'); linkClauseRefs(c, entry); });
     }
     refContent.scrollTop = scroll || 0;

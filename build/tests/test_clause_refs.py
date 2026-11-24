@@ -257,7 +257,10 @@ class ClauseReferences(unittest.TestCase):
         self.search('핸드레일')
         refs = self.page.locator('#results .card.b24 [data-ref-ids]')
         self.assertGreater(refs.count(), 0)
-        self.assertTrue(all(r.startswith('b24-') for r in refs.evaluate_all('(es)=>es.map(e=>e.dataset.refIds)')))
+        self.assertTrue(refs.evaluate_all('''es => es.every(el => el.dataset.refIds.split(',').every(id => {
+          const target = __refTest.REF_ENTRIES[id];
+          return target.src === 'b24' || /-(?:escalator|b24)$/.test(target.archiveDoc || '');
+        }))'''))
         refs.first.click()
         self.assertIn('에스컬레이터', self.page.locator('.ref-title').inner_text())
 
@@ -300,6 +303,30 @@ class ClauseReferences(unittest.TestCase):
           return [...root.querySelectorAll('p')].map(p => p.querySelector('button')?.dataset.refIds || null);
         }''')
         self.assertEqual(targets, [None, 'b23-6.3.3.1'])
+
+    def test_reviewed_citation_opens_the_original_edition_and_scope(self):
+        self.page.evaluate('KIJUN.setSource("std")')
+        self.search('균형추측 추락방지안전장치')
+        card = self.page.locator('#std-452')
+        card.locator('.bgtoggle').click()
+        quoted = card.locator('.bg [data-ref-num="9.9.3"]')
+        self.assertEqual(quoted.get_attribute('data-ref-ids'), 'archive-2018-electric-9.9.3')
+        quoted.click()
+        self.assertIn('전기식 엘리베이터 · 9.9.3', self.page.locator('.ref-title').inner_text())
+        self.assertIn('2018년 3월 23일 시행본', self.page.locator('.ref-title').inner_text())
+        self.assertIn('조속기의 작동속도', self.page.locator('.ref-content').inner_text())
+        self.page.locator('.ref-content [data-ref-num="9.9.1"]').first.click()
+        self.assertIn('전기식 엘리베이터 · 9.9.1', self.page.locator('.ref-title').inner_text())
+
+    def test_compound_annexes_kept_whole_and_decimal_power_left_as_text(self):
+        targets = self.page.evaluate('''() => {
+          const t = __refTest, root = document.createElement('div');
+          root.innerHTML = '<p>부속서ⅩⅣ에 따른다.</p><p>7.5 kW 이상</p>';
+          const entry = t.REF_ENTRIES['b22-14.11'];
+          t.linkClauseRefs(root, entry);
+          return [...root.querySelectorAll('.clause-ref')].map(a => [a.textContent, a.dataset.refIds]);
+        }''')
+        self.assertEqual(targets, [['부속서ⅩⅣ', 'b22-XⅣ']])
 
     def open_table_card(self):
         self.page.evaluate('KIJUN.setSource("b24")')
@@ -464,6 +491,7 @@ class ClauseReferences(unittest.TestCase):
         audit = self.page.evaluate('''() => {
           const t=__refTest, missing=[], external=[];let checked=0;
           for (const e of Object.values(t.REF_ENTRIES)) {
+            if (!['b22', 'b23', 'b24'].includes(e.src)) continue;
             const text=(e.title+'\\n'+e.text).replace(/\\x10[^\\x11]*\\x11/g,'').replace(/\\[[^\\]]*\\]/g,'');
             for (const line of text.split('\\n')) for (const m of t.assetMentions(line)) {
               checked++;
