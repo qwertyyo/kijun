@@ -309,6 +309,13 @@ class PublishedPage(unittest.TestCase):
     def test_monitor_opens_alternative_next_to_history(self):
         self.page.locator('#q').fill('모니터')
         self.page.locator('#q').press('Enter')
+        results = self.page.locator('#results .card')
+        self.assertEqual(results.first.get_attribute('id'), 'b22-6.1.2.1')
+        result_ids = results.evaluate_all('cards => cards.map(card => card.id)')
+        self.assertIn('std-536', result_ids)
+        self.assertIn('alt-wireless', result_ids)
+        self.assertNotIn('b22-XⅢ.3', result_ids)
+        self.assertNotIn('b22-XⅢ.2', result_ids)
         card = self.page.locator('[id="b22-6.1.2.1"]')
         button = card.locator('[data-hist] + [data-alt-clause]')
         body = card.locator('.body').inner_text()
@@ -337,6 +344,11 @@ class PublishedPage(unittest.TestCase):
         incline.locator('.alt-panel').get_by_text('대체기준 문구 보기', exact=True).click()
         self.assertEqual(incline.locator('.alt-panel h4').all_text_contents(), ['경사형 엘리베이터'])
         self.assertIn('6.8.1 승강로에', incline.locator('.alt-panel .ht').inner_text())
+        self.page.locator('[data-src="all"]').click()
+        for query, first in (('카 내 모니터', 'b22-6.1.2.1'), ('모니터링', 'b22-XⅢ.3')):
+            self.page.locator('#q').fill(query)
+            self.page.locator('#q').press('Enter')
+            self.assertEqual(results.first.get_attribute('id'), first)
 
     def test_all_alternative_criteria_and_editions(self):
         catalog = self.data['alternative_criteria']

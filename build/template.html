@@ -894,7 +894,10 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   }
   function norm(s) { return normSp(s).replace(/ /g, ''); }
   // 낱말 첫머리에서 시작하는 매치만 세는 정규식: '행거'는 '행거 롤러'·'도어 행거를'엔 걸리되 '운행거리'의 가운데는 낱말 첫머리가 아님
-  function wordStartRe(nv) { return new RegExp('(?:^|[^가-힣a-z0-9])' + Array.from(nv).map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' ?'), 'g'); }
+  function wordStartRe(nv) {
+    const letters = Array.from(nv).map(esc).join(' ?');
+    return new RegExp('(?:^|[^가-힣a-z0-9])' + letters + (nv === '모니터' ? '(?! ?링)' : ''), 'g');
+  }
   // 따옴표로 감싼 말("잠")은 낱말로만 찾는다: '잠', '(잠)' 처럼 앞뒤가 한글이 아닐 때만 — '잠금'·'잠김' 속 '잠'엔 안 걸림
   // 사전·내 용어·공유 제안에는 곧은 큰따옴표 "…" 로 통일해 저장(휴대폰의 둥근 따옴표·작은따옴표도 받음)
   const QRE = /^["'‘’“”＂]\s*(.+?)\s*["'‘’“”＂]$/;
@@ -905,6 +908,15 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function wholeRe(nv) { return new RegExp('(?:^|[^가-힣a-z0-9])' + Array.from(nv).map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join(' ?') + '(?![가-힣])', 'g'); }
   const dw = w => isWhole(w) ? `${escHtml(bare(w))}<span class="wtag" title="따로 쓴 낱말로만 찾음">낱말</span>` : escHtml(w);
   function countRe(re, s, max) { re.lastIndex = 0; let n = 0; while (n < max && re.exec(s)) n++; return n; }
+  function countTerm(text, term, max) {
+    let count = 0;
+    let i = text.indexOf(term);
+    while (i !== -1 && count < max) {
+      if (term !== '모니터' || text[i + term.length] !== '링') count++;
+      i = text.indexOf(term, i + 1);
+    }
+    return count;
+  }
   // 초성 추출
   const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
   function cho(s) {
@@ -1026,6 +1038,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   function search(q) {
     const terms = joinSynPhrases(q.trim().split(/\s+/).filter(Boolean)).map(canonW);
     if (!terms.length) return { hits: [], groups: [] };
+    const preferred = terms.includes('모니터') ? 'b22-6.1.2.1' : null;
     const groups = terms.map(t => {
       let vars = expandTerm(t);
       // '3로'처럼 숫자가 섞인 아주 짧은 현장용어는 사전 확장어로만 찾는다 (조문번호 '…5.3로'에 걸리는 것 방지)
@@ -1049,7 +1062,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
           else if (isWhole(v)) { cnt = countRe(g.res[vi], e.s, 20); if (cnt) strong = true; if (withBg && e.nb) cnt += countRe(g.res[vi], e.nb, 10) * 0.3; if (countRe(g.res[vi], e.st, 1)) cnt += 6; if (wn(v) === wn(g.term)) cnt *= 1.3; }
           else {
             const nv = norm(v); if (!nv) continue;
-            let i = -1; while ((i = e.n.indexOf(nv, i + 1)) >= 0 && cnt < 20) cnt++;
+            cnt = countTerm(e.n, nv, 20);
             if (cnt) {
               // 낱말 가운데에 묻힌 매치(운행거리 속 '행거')는 0.25만 친다. 한 글자 검색어는 구분하지 않음
               if (nv.length >= 2) { const ws = countRe(g.res[vi], e.s, cnt); if (ws) strong = true; cnt = ws + (cnt - ws) * 0.25; } else strong = true;
@@ -1057,8 +1070,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
             // 연혁(옛 문구)도 낱말 첫머리만('비상정지장치' 속 '정지장치' X). 기준일 모드는 연혁이 그날 문구라 그대로 치고,
             // 현행 보기에선 현행 문구에 있으면 0.15배, 연혁에만 있으면 많아야 1점(옛 장애인 세부기준 전문 같은 긴 연혁이 1등 하던 것)
             if (e.hs) { const ch = countRe(g.res[vi], e.hs, 10); if (ch) { if (APPLY) { if (!cnt) histHit = true; cnt += ch; } else cnt += cnt ? ch * 0.15 : Math.min(ch, 2) * 0.25; strong = true; } }
-            if (e.nf && e.nf.includes(nv)) { cnt += 2; strong = true; }   // 이 조문의 불합격 내용에 검색어
-            if (withBg && e.nb) { let j = -1, cb = 0; while ((j = e.nb.indexOf(nv, j + 1)) >= 0 && cb < 10) cb++; cnt += cb * 0.3; }
+            if (e.nf && countTerm(e.nf, nv, 1)) { cnt += 2; strong = true; }   // 이 조문의 불합격 내용에 검색어
+            if (withBg && e.nb) cnt += countTerm(e.nb, nv, 10) * 0.3;
             if (e.nt.includes(nv) && (nv.length < 2 || countRe(g.res[vi], e.st, 1))) cnt += 6; if (v === g.term) cnt *= 1.3;
           }
           if (cnt > best) best = cnt;
@@ -1074,7 +1087,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       // 검색어가 낱말 가운데에만 묻혀 있는 조문(예: '행거' → 운행거리)은 맨 뒤로
       if (ok) hits.push({ e, score: score + (weak ? 0 : srcBonus(e, allAbout)) + (histHit ? 4 : 0) - (weak ? 100 : 0) - (notEs ? 20 : 0), weak });   // 에스컬레이터 말인데 엘리베이터 글이면(장애인용 카 '핸드레일' 등) 맨 뒤로   // 연혁에 검색어가 있으면(옛 용어) 그 기준 조문을 앞으로
     }
-    hits.sort((a, b) => b.score - a.score);
+    hits.sort((a, b) => Number(b.e.id === preferred) - Number(a.e.id === preferred) || b.score - a.score);
     return { hits, groups };
   }
 
@@ -1087,7 +1100,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       const chars = Array.from(v.replace(/\s+/g, ''));
       if (!chars.length) continue;
       if (isWhole(v)) { parts.push('(?<![가-힣a-zA-Z0-9])' + Array.from(wn(v)).map(esc).join('[\\s,]*') + '(?![가-힣])'); continue; }
-      parts.push(chars.map(c => { const u = { 'mm': '(?:mm|㎜)' }[c] || esc(c); return c === 'm' ? '[m㎜]' : u; }).join('[\\s,]*'));
+      const pattern = chars.map(c => { const u = { 'mm': '(?:mm|㎜)' }[c] || esc(c); return c === 'm' ? '[m㎜]' : u; }).join('[\\s,]*');
+      parts.push(pattern + (norm(v) === '모니터' ? '(?![\\s,]*링)' : ''));
     }
     if (!parts.length) return null;
     parts.sort((a, b) => b.length - a.length);
