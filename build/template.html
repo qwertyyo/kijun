@@ -196,6 +196,16 @@ main { padding-top: 14px }
 .alt-edition a, .alt-edition summary { color: var(--accent) }
 .alt-edition summary { cursor: pointer; padding: 4px 0 }
 .alt-edition h4 { margin: 8px 0 3px; font-size: 13px }
+.alt-copy .alt-line { margin: 0 0 4px }
+.alt-copy .alt-item { display: flex; gap: .35em; align-items: baseline }
+.alt-copy .alt-marker { flex: none }
+.alt-copy .alt-subitem { padding-inline-start: .9em }
+.alt-copy .tblwrap { margin-inline-start: .9em }
+.alt-copy :is(th, td) .tblwrap { margin-inline-start: 0 }
+.alt-copy :is(th, td) .alt-line:last-child { margin-bottom: 0 }
+.alt-pages { display: grid; gap: 8px; margin: 4px 0 8px }
+.alt-pages button { padding: 0; border: 1px solid var(--line); background: var(--surface); cursor: zoom-in }
+.alt-pages img { display: block; width: 100%; height: auto }
 .hist { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px }
 .hist h4 { margin: 0 0 6px; font-size: 13px; color: var(--old) }
 .hp { position: relative; padding: 0 0 12px 18px; border-left: 2px solid var(--line); margin-left: 5px }
@@ -1284,14 +1294,41 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (!figures.length) return '';
     return `<div class="esfigs"><h3>관련 원문 그림 · 누르면 확대</h3><div class="esfig-grid">${figures.map(({ r, f }) => `<figure data-es-figure="${f.id}"><button type="button" data-fz="fig/${f.file}" aria-label="그림 ${f.id} ${escHtml(f.title)} 크게 보기"><img src="fig/${f.file}" loading="lazy" width="${f.width}" height="${f.height}" alt="그림 ${f.id} ${escHtml(f.title)}"></button><figcaption>그림 ${f.id} · ${escHtml(f.title)}<span title="${escHtml(f.source)}">${escHtml(r.reason)} · 별표24(${f.edition})</span></figcaption></figure>`).join('')}</div></div>`;
   }
+  function alternativeParagraph(line, re) {
+    const item = /^([가-하][.)]|[0-9]{1,2}\)|\([0-9]{1,2}\)|[①-⑳]|[-·](?=\s))\s*(\S.*)$/.exec(line);
+    if (!item) return `<p class="alt-line">${hl(line, re)}</p>`;
+    const depth = /^[가-하]/.test(item[1]) ? '' : ' alt-subitem';
+    return `<p class="alt-line alt-item${depth}"><span class="alt-marker">${escHtml(item[1])}</span><span>${hl(item[2], re)}</span></p>`;
+  }
+  function alternativeText(version, start, end, tables, re) {
+    let from = start, html = '';
+    const paragraphs = (a, b) => version.body.slice(a, b).map(line => alternativeParagraph(line, re)).join('');
+    for (const table of tables) {
+      if (table.start < start || table.end > end) continue;
+      html += paragraphs(from, table.start);
+      const rows = table.rows.map((row, i) => {
+        const tag = i === 0 && table.heading ? 'th' : 'td';
+        return `<tr>${row.map(([a, b, rowSpan, colSpan, nested]) => {
+          const spans = `${rowSpan > 1 ? ` rowspan="${rowSpan}"` : ''}${colSpan > 1 ? ` colspan="${colSpan}"` : ''}`;
+          return `<${tag}${tag === 'th' ? ' scope="col"' : ''}${spans}>${alternativeText(version, a, b, nested || [], re)}</${tag}>`;
+        }).join('')}</tr>`;
+      });
+      html += `<div class="tblwrap"><table><tbody>${rows.join('')}</tbody></table></div>`;
+      from = table.end;
+    }
+    return html + paragraphs(from, end);
+  }
   function alternativeEdition(topic, version, re, kind) {
     const source = ALTERNATIVES.sources[version.source];
     const sections = version.sections?.filter(section => !kind || section.kind === kind);
     const kinds = sections?.map(section => section.title) || version.displayKinds;
-    const bodyText = lines => `<div class="ht">${hl(lines.join('\n'), re)}</div>`;
-    const body = sections
-      ? sections.map(section => `<h4>${escHtml(section.title)}</h4>${bodyText(version.body.slice(section.start, section.end))}`).join('')
-      : bodyText(version.body);
+    const bodyText = (a, b) => `<div class="ht alt-copy">${alternativeText(version, a, b, version.tables || [], re)}</div>`;
+    const body = version.pages
+      ? `<div class="alt-pages">${version.pages.map(([file, width, height], i) => `<button type="button" data-fz="alt-pages/${file}" aria-label="공단 원문 ${i + 1}쪽 확대"><img src="alt-pages/${file}" alt="공단 원문 ${i + 1}쪽" loading="lazy" width="${width}" height="${height}"></button>`).join('')}</div>
+        <details><summary>텍스트로 읽기</summary>${bodyText(0, version.body.length)}</details>`
+      : sections
+        ? sections.map(section => `<h4>${escHtml(section.title)}</h4>${bodyText(section.start, section.end)}`).join('')
+        : bodyText(0, version.body.length);
     return `<p><b>적용 조건</b> · ${hl(version.scope || topic.scope, re)}</p>
       ${kinds && !kind ? `<p class="alt-kinds">${kinds.map(escHtml).join(' · ')}</p>` : ''}
       ${version.applied ? `<p><b>시행·적합 기한</b> · ${escHtml(version.applied)}</p>` : ''}
@@ -1979,7 +2016,8 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     let el = document.getElementById('lb');
     if (!el) { el = document.createElement('div'); el.id = 'lb'; el.className = 'lb'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); document.body.appendChild(el); }
     lbState = null;
-    el.innerHTML = `<div class="lbscroll"><img src="${src}" alt=""></div><div class="lbbar"><span>${/fig\/h(el|es|in)_/.test(src) ? '연혁집 원문' : /stdimg\/stb_/.test(src) ? '표준화 원문 표' : '기준 원문 그림'} · 두 손가락으로 확대</span><button type="button" data-lbclose>닫기</button></div>`;
+    const label = src.startsWith('alt-pages/') ? '공단 대체기준 원문' : /fig\/h(el|es|in)_/.test(src) ? '연혁집 원문' : /stdimg\/stb_/.test(src) ? '표준화 원문 표' : '기준 원문 그림';
+    el.innerHTML = `<div class="lbscroll"><img src="${src}" alt=""></div><div class="lbbar"><span>${label} · 두 손가락으로 확대</span><button type="button" data-lbclose>닫기</button></div>`;
     el.hidden = false;
   }
   function closeLb() { const el = document.getElementById('lb'); if (el) el.hidden = true; lbState = null; }

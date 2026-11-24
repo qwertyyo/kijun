@@ -34,7 +34,7 @@ class PublishedPage(unittest.TestCase):
         cls.data = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>', original.decode(), re.S)[1])
         (site / 'config.json').write_text('{"synApi":""}')
         (site / 'release.json').write_bytes((ROOT / 'release.json').read_bytes())
-        for name in ('fig','stdimg','katex'):
+        for name in ('fig','stdimg','katex','alt-pages'):
             link_directory(site / name, ROOT / name)
         cls.server = http.server.ThreadingHTTPServer(('127.0.0.1',0), functools.partial(QuietHandler,directory=str(site)))
         threading.Thread(target=cls.server.serve_forever,daemon=True).start()
@@ -332,6 +332,13 @@ class PublishedPage(unittest.TestCase):
         panel.get_by_text('대체기준 문구 보기', exact=True).click()
         self.assertEqual(panel.locator('h4').all_text_contents(), ['엘리베이터'])
         self.assertIn('6.1.2.1.1 승강로는', panel.locator('.ht').inner_text())
+        self.assertEqual(panel.locator('.alt-copy table tr').evaluate_all(
+            'rows => rows.map(row => Array.from(row.cells, cell => cell.textContent))'), [
+                ['회로구분', '최대출력'], ['엘리베이터 카내', '-15 dbm(0.032 mW/MHz)'],
+                ['승강로', '0 dbm(1 mW/MHz)'],
+            ])
+        self.assertIn('1)', panel.locator('.alt-subitem').filter(has_text='무선 주파수').inner_text())
+        self.assertIn('2)', panel.locator('.alt-subitem').filter(has_text='적외선 통신').inner_text())
         panel.get_by_text('대체기준 문구 보기', exact=True).click()
         card.screenshot(path=screenshot_path('alternative-monitor-mobile.png'))
         button.click()
@@ -355,6 +362,8 @@ class PublishedPage(unittest.TestCase):
         self.page.get_by_role('button', name='대체기준', exact=True).click()
         self.assertEqual(self.page.locator('.card.alt').count(), 19)
         count = 0
+        table_count = 0
+        page_count = 0
         for topic in catalog['topics']:
             card = self.page.locator('#' + topic['id'])
             for version in topic['versions']:
@@ -366,13 +375,30 @@ class PublishedPage(unittest.TestCase):
                 if version.get('sections'):
                     self.assertEqual(card.locator('.alt-edition h4').all_text_contents(),
                                      ['엘리베이터', '경사형 엘리베이터', '수직형 휠체어리프트'])
-                    expected = ['\n'.join(version['body'][part['start']:part['end']]) for part in version['sections']]
+                    expected = [line for part in version['sections'] for line in version['body'][part['start']:part['end']]]
                 else:
-                    expected = ['\n'.join(version['body'])]
-                self.assertEqual(card.locator('.alt-edition .ht').all_text_contents(), expected)
+                    expected = version['body']
+                actual = card.locator('.alt-copy .alt-line').all_text_contents()
+                # Compare every paragraph even when the visual row order differs from HWP record order.
+                self.assertCountEqual([''.join(line.split()) for line in actual], [''.join(line.split()) for line in expected],
+                                      (topic['id'], version['source']))
+                table_count += card.locator('.alt-copy table').count()
+                if version.get('pages'):
+                    images = card.locator('.alt-pages img')
+                    self.assertEqual(images.count(), len(version['pages']))
+                    self.assertTrue(images.evaluate_all('''async images => {
+                        await Promise.all(images.map(img => { img.loading = 'eager'; return img.decode(); }));
+                        return images.every(img => img.naturalWidth > 1000);
+                    }'''))
+                    card.locator('.alt-pages button').first.click()
+                    self.assertEqual(self.page.locator('#lb img').get_attribute('src'), 'alt-pages/' + version['pages'][0][0])
+                    self.page.locator('[data-lbclose]').click()
+                    page_count += images.count()
                 card.get_by_text('대체기준 문구 보기', exact=True).click()
                 count += 1
         self.assertEqual(count, 63)
+        self.assertEqual(table_count, 132)
+        self.assertEqual(page_count, 21)
         self.page.locator('#q').fill('핸드레일 살균기')
         self.page.locator('#q').press('Enter')
         self.assertEqual(set(self.page.locator('.card.alt').evaluate_all('cards => cards.map(c => c.id)')),
