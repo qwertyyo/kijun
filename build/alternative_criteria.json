@@ -1678,7 +1678,41 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "45": [
+              [
+                13,
+                14,
+                "sup"
+              ]
+            ],
+            "47": [
+              [
+                19,
+                20,
+                "sup"
+              ]
+            ]
+          },
+          "objects": {
+            "1.1.1": [
+              [
+                40,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ],
+            "1.2.1": [
+              [
+                64,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ]
+          }
         },
         {
           "source": "1660",
@@ -1939,7 +1973,41 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "45": [
+              [
+                13,
+                14,
+                "sup"
+              ]
+            ],
+            "47": [
+              [
+                19,
+                20,
+                "sup"
+              ]
+            ]
+          },
+          "objects": {
+            "1.1.1": [
+              [
+                40,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ],
+            "1.2.1": [
+              [
+                64,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ]
+          }
         },
         {
           "source": "1671",
@@ -2200,7 +2268,41 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "45": [
+              [
+                13,
+                14,
+                "sup"
+              ]
+            ],
+            "47": [
+              [
+                19,
+                20,
+                "sup"
+              ]
+            ]
+          },
+          "objects": {
+            "1.1.1": [
+              [
+                40,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ],
+            "1.2.1": [
+              [
+                64,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ]
+          }
         },
         {
           "source": "1684",
@@ -2461,7 +2563,41 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "45": [
+              [
+                13,
+                14,
+                "sup"
+              ]
+            ],
+            "47": [
+              [
+                19,
+                20,
+                "sup"
+              ]
+            ]
+          },
+          "objects": {
+            "1.1.1": [
+              [
+                40,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ],
+            "1.2.1": [
+              [
+                64,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ]
+          }
         },
         {
           "source": "1735",
@@ -2652,7 +2788,23 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "": [
+              [
+                30,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ],
+              [
+                51,
+                0,
+                "image",
+                "0e80b651a6d5de0f"
+              ]
+            ]
+          }
         }
       ],
       "category": "엘리베이터"
@@ -3136,7 +3288,25 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "1.1.1.0.0.2": [
+              [
+                42,
+                null,
+                "image",
+                "4bd929b413ee8e41"
+              ]
+            ],
+            "1.1.1.0.0.5": [
+              [
+                43,
+                null,
+                "image",
+                "40bdaf55c11f3ce4"
+              ]
+            ]
+          }
         }
       ],
       "category": "엘리베이터"
@@ -4563,7 +4733,17 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "0.8.1": [
+              [
+                35,
+                null,
+                "image",
+                "b46d3cc74062e13d"
+              ]
+            ]
+          }
         },
         {
           "source": "1660",
@@ -5454,7 +5634,17 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "0.8.1": [
+              [
+                35,
+                null,
+                "image",
+                "b46d3cc74062e13d"
+              ]
+            ]
+          }
         },
         {
           "source": "1671",
@@ -6345,7 +6535,17 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "0.8.1": [
+              [
+                35,
+                null,
+                "image",
+                "b46d3cc74062e13d"
+              ]
+            ]
+          }
         },
         {
           "source": "1684",
@@ -7236,7 +7436,17 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "0.8.1": [
+              [
+                35,
+                null,
+                "image",
+                "b46d3cc74062e13d"
+              ]
+            ]
+          }
         }
       ],
       "category": "엘리베이터"
@@ -8725,7 +8935,65 @@
                 ]
               ]
             }
-          ]
+          ],
+          "objects": {
+            "4.2.1": [
+              [
+                184,
+                null,
+                "image",
+                "cbed3bd49930a43e"
+              ]
+            ],
+            "4.3.1": [
+              [
+                187,
+                null,
+                "image",
+                "9c1ef87f741d1e74"
+              ]
+            ],
+            "4.4.1": [
+              [
+                194,
+                null,
+                "image",
+                "af03e57c869feafd"
+              ]
+            ],
+            "4.5.1": [
+              [
+                198,
+                null,
+                "image",
+                "61fbede38bf0fc3c"
+              ]
+            ],
+            "4.6.1": [
+              [
+                204,
+                null,
+                "image",
+                "fa812279d1cb5d48"
+              ]
+            ],
+            "4.7.1": [
+              [
+                207,
+                null,
+                "image",
+                "08c8cf38dd78a4d2"
+              ]
+            ],
+            "4.8.1": [
+              [
+                213,
+                null,
+                "image",
+                "4686a529f7f7d97c"
+              ]
+            ]
+          }
         },
         {
           "source": "1660",
@@ -10202,7 +10470,65 @@
                 ]
               ]
             }
-          ]
+          ],
+          "objects": {
+            "4.2.1": [
+              [
+                184,
+                null,
+                "image",
+                "cbed3bd49930a43e"
+              ]
+            ],
+            "4.3.1": [
+              [
+                187,
+                null,
+                "image",
+                "9c1ef87f741d1e74"
+              ]
+            ],
+            "4.4.1": [
+              [
+                194,
+                null,
+                "image",
+                "af03e57c869feafd"
+              ]
+            ],
+            "4.5.1": [
+              [
+                198,
+                null,
+                "image",
+                "61fbede38bf0fc3c"
+              ]
+            ],
+            "4.6.1": [
+              [
+                204,
+                null,
+                "image",
+                "fa812279d1cb5d48"
+              ]
+            ],
+            "4.7.1": [
+              [
+                207,
+                null,
+                "image",
+                "08c8cf38dd78a4d2"
+              ]
+            ],
+            "4.8.1": [
+              [
+                213,
+                null,
+                "image",
+                "4686a529f7f7d97c"
+              ]
+            ]
+          }
         },
         {
           "source": "1671",
@@ -11679,7 +12005,65 @@
                 ]
               ]
             }
-          ]
+          ],
+          "objects": {
+            "4.2.1": [
+              [
+                184,
+                null,
+                "image",
+                "cbed3bd49930a43e"
+              ]
+            ],
+            "4.3.1": [
+              [
+                187,
+                null,
+                "image",
+                "9c1ef87f741d1e74"
+              ]
+            ],
+            "4.4.1": [
+              [
+                194,
+                null,
+                "image",
+                "af03e57c869feafd"
+              ]
+            ],
+            "4.5.1": [
+              [
+                198,
+                null,
+                "image",
+                "61fbede38bf0fc3c"
+              ]
+            ],
+            "4.6.1": [
+              [
+                204,
+                null,
+                "image",
+                "fa812279d1cb5d48"
+              ]
+            ],
+            "4.7.1": [
+              [
+                207,
+                null,
+                "image",
+                "08c8cf38dd78a4d2"
+              ]
+            ],
+            "4.8.1": [
+              [
+                213,
+                null,
+                "image",
+                "4686a529f7f7d97c"
+              ]
+            ]
+          }
         },
         {
           "source": "1684",
@@ -13156,7 +13540,65 @@
                 ]
               ]
             }
-          ]
+          ],
+          "objects": {
+            "4.2.1": [
+              [
+                184,
+                null,
+                "image",
+                "cbed3bd49930a43e"
+              ]
+            ],
+            "4.3.1": [
+              [
+                187,
+                null,
+                "image",
+                "9c1ef87f741d1e74"
+              ]
+            ],
+            "4.4.1": [
+              [
+                194,
+                null,
+                "image",
+                "af03e57c869feafd"
+              ]
+            ],
+            "4.5.1": [
+              [
+                198,
+                null,
+                "image",
+                "61fbede38bf0fc3c"
+              ]
+            ],
+            "4.6.1": [
+              [
+                204,
+                null,
+                "image",
+                "fa812279d1cb5d48"
+              ]
+            ],
+            "4.7.1": [
+              [
+                207,
+                null,
+                "image",
+                "08c8cf38dd78a4d2"
+              ]
+            ],
+            "4.8.1": [
+              [
+                213,
+                null,
+                "image",
+                "4686a529f7f7d97c"
+              ]
+            ]
+          }
         }
       ],
       "category": "엘리베이터"
@@ -17955,7 +18397,18 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "1.4.1": [
+              [
+                44,
+                null,
+                "equation",
+                "S=\\frac{k\\times N\\times P_r}{P+Q+(k\\times N\\times W_r\\times H)}",
+                "S = (k × N × Pᵣ) / (P + Q + (k × N × Wᵣ × H))"
+              ]
+            ]
+          }
         },
         {
           "source": "1660",
@@ -18307,7 +18760,18 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "1.4.1": [
+              [
+                44,
+                null,
+                "equation",
+                "S=\\frac{k\\times N\\times P_r}{P+Q+(k\\times N\\times W_r\\times H)}",
+                "S = (k × N × Pᵣ) / (P + Q + (k × N × Wᵣ × H))"
+              ]
+            ]
+          }
         },
         {
           "source": "1671",
@@ -18659,7 +19123,18 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "1.4.1": [
+              [
+                44,
+                null,
+                "equation",
+                "S=\\frac{k\\times N\\times P_r}{P+Q+(k\\times N\\times W_r\\times H)}",
+                "S = (k × N × Pᵣ) / (P + Q + (k × N × Wᵣ × H))"
+              ]
+            ]
+          }
         },
         {
           "source": "1684",
@@ -19011,7 +19486,18 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "objects": {
+            "1.4.1": [
+              [
+                44,
+                null,
+                "equation",
+                "S=\\frac{k\\times N\\times P_r}{P+Q+(k\\times N\\times W_r\\times H)}",
+                "S = (k × N × Pᵣ) / (P + Q + (k × N × Wᵣ × H))"
+              ]
+            ]
+          }
         }
       ],
       "category": "엘리베이터"
@@ -19376,7 +19862,23 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "35": [
+              [
+                15,
+                17,
+                "sup"
+              ]
+            ],
+            "54": [
+              [
+                55,
+                57,
+                "sup"
+              ]
+            ]
+          }
         },
         {
           "source": "1660",
@@ -19729,7 +20231,23 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "35": [
+              [
+                15,
+                17,
+                "sup"
+              ]
+            ],
+            "54": [
+              [
+                55,
+                57,
+                "sup"
+              ]
+            ]
+          }
         },
         {
           "source": "1671",
@@ -20082,7 +20600,23 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "35": [
+              [
+                15,
+                17,
+                "sup"
+              ]
+            ],
+            "54": [
+              [
+                55,
+                57,
+                "sup"
+              ]
+            ]
+          }
         },
         {
           "source": "1684",
@@ -20435,7 +20969,23 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "35": [
+              [
+                15,
+                17,
+                "sup"
+              ]
+            ],
+            "54": [
+              [
+                55,
+                57,
+                "sup"
+              ]
+            ]
+          }
         }
       ],
       "category": "엘리베이터"
@@ -22148,7 +22698,65 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "145": [
+              [
+                3,
+                4,
+                "sub"
+              ]
+            ],
+            "150": [
+              [
+                1,
+                3,
+                "sub"
+              ]
+            ],
+            "154": [
+              [
+                3,
+                4,
+                "sub"
+              ]
+            ],
+            "155": [
+              [
+                3,
+                4,
+                "sub"
+              ]
+            ],
+            "159": [
+              [
+                1,
+                3,
+                "sub"
+              ]
+            ],
+            "226": [
+              [
+                31,
+                32,
+                "sub"
+              ]
+            ],
+            "228": [
+              [
+                8,
+                9,
+                "sub"
+              ]
+            ],
+            "242": [
+              [
+                31,
+                33,
+                "sub"
+              ]
+            ]
+          }
         },
         {
           "source": "1671",
@@ -23849,7 +24457,65 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "145": [
+              [
+                3,
+                4,
+                "sub"
+              ]
+            ],
+            "150": [
+              [
+                1,
+                3,
+                "sub"
+              ]
+            ],
+            "154": [
+              [
+                3,
+                4,
+                "sub"
+              ]
+            ],
+            "155": [
+              [
+                3,
+                4,
+                "sub"
+              ]
+            ],
+            "159": [
+              [
+                1,
+                3,
+                "sub"
+              ]
+            ],
+            "226": [
+              [
+                31,
+                32,
+                "sub"
+              ]
+            ],
+            "228": [
+              [
+                8,
+                9,
+                "sub"
+              ]
+            ],
+            "242": [
+              [
+                31,
+                33,
+                "sub"
+              ]
+            ]
+          }
         },
         {
           "source": "1684",
@@ -27179,7 +27845,16 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "22": [
+              [
+                61,
+                62,
+                "sub"
+              ]
+            ]
+          }
         },
         {
           "source": "1739",
@@ -27543,7 +28218,16 @@
               ],
               "heading": true
             }
-          ]
+          ],
+          "styles": {
+            "22": [
+              [
+                61,
+                62,
+                "sub"
+              ]
+            ]
+          }
         }
       ],
       "category": "에스컬레이터"
@@ -33122,5 +33806,84 @@
       ],
       "category": "수직형 휠체어리프트"
     }
-  ]
+  ],
+  "media": {
+    "b46d3cc74062e13d": {
+      "file": "object-b46d3cc74062e13d.webp",
+      "width": 204,
+      "height": 123,
+      "label": "더블데크 엘리베이터 정원 계산식",
+      "formula": true
+    },
+    "cbed3bd49930a43e": {
+      "file": "object-cbed3bd49930a43e.webp",
+      "width": 206,
+      "height": 255,
+      "label": "현수벨트 코드 파열",
+      "formula": false
+    },
+    "9c1ef87f741d1e74": {
+      "file": "object-9c1ef87f741d1e74.webp",
+      "width": 199,
+      "height": 190,
+      "label": "현수벨트 선 파열",
+      "formula": false
+    },
+    "af03e57c869feafd": {
+      "file": "object-af03e57c869feafd.webp",
+      "width": 337,
+      "height": 249,
+      "label": "현수벨트 코드 손상 (세로방향 균열)",
+      "formula": false
+    },
+    "61fbede38bf0fc3c": {
+      "file": "object-61fbede38bf0fc3c.webp",
+      "width": 137,
+      "height": 145,
+      "label": "현수벨트 코팅 손상 (가로방향 균열)",
+      "formula": false
+    },
+    "fa812279d1cb5d48": {
+      "file": "object-fa812279d1cb5d48.webp",
+      "width": 190,
+      "height": 166,
+      "label": "현수벨트 코팅 손상 (찍힘이 심함)",
+      "formula": false
+    },
+    "08c8cf38dd78a4d2": {
+      "file": "object-08c8cf38dd78a4d2.webp",
+      "width": 161,
+      "height": 226,
+      "label": "현수벨트 산화 파열",
+      "formula": false
+    },
+    "4686a529f7f7d97c": {
+      "file": "object-4686a529f7f7d97c.webp",
+      "width": 309,
+      "height": 77,
+      "label": "현수벨트 손상 (가장 바깥쪽 소선이 보임)",
+      "formula": false
+    },
+    "0e80b651a6d5de0f": {
+      "file": "object-0e80b651a6d5de0f.webp",
+      "width": 8880,
+      "height": 3720,
+      "label": "플랫실 권상 로프 신장량 계산식",
+      "formula": true
+    },
+    "4bd929b413ee8e41": {
+      "file": "object-4bd929b413ee8e41.webp",
+      "width": 42,
+      "height": 43,
+      "label": "로봇 탑승용 승강기 정원 표지의 사람 그림",
+      "formula": false
+    },
+    "40bdaf55c11f3ce4": {
+      "file": "object-40bdaf55c11f3ce4.webp",
+      "width": 35,
+      "height": 40,
+      "label": "로봇 탑승용 승강기 정격하중 표지의 무게 그림",
+      "formula": false
+    }
+  }
 }

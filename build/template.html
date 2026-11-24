@@ -202,7 +202,12 @@ main { padding-top: 14px }
 .alt-copy .alt-subitem { padding-inline-start: .9em }
 .alt-copy .tblwrap { margin-inline-start: .9em }
 .alt-copy :is(th, td) .tblwrap { margin-inline-start: 0 }
+.alt-copy :is(th, td) .tblwrap :is(th, td) { min-width: 0; padding-inline: 3px }
 .alt-copy :is(th, td) .alt-line:last-child { margin-bottom: 0 }
+.alt-object { display: block; margin-block: 4px; max-width: 100%; overflow-x: auto }
+.alt-figure { padding: 0; border: 1px solid var(--line); background: #fff; max-width: 100%; vertical-align: middle; cursor: zoom-in }
+.alt-figure img { display: block; max-width: 100%; height: auto }
+.alt-formula { max-width: min(190px, 100%) }
 .alt-pages { display: grid; gap: 8px; margin: 4px 0 8px }
 .alt-pages button { padding: 0; border: 1px solid var(--line); background: var(--surface); cursor: zoom-in }
 .alt-pages img { display: block; width: 100%; height: auto }
@@ -484,7 +489,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const REF_ENTRIES = Object.fromEntries(CLAUSE_SOURCES.flatMap(s => DATA[s]).map(e => [e.id, e]));
   const CITATIONS = DATA.clause_citations || {};
   const ARCHIVE_DOCS = CITATIONS.documents || {};
-  const ALTERNATIVES = DATA.alternative_criteria || { topics: [], sources: {} };
+  const ALTERNATIVES = DATA.alternative_criteria || { topics: [], sources: {}, media: {} };
   DATA.alt = ALTERNATIVES.topics;
   const ALT_BY_ID = Object.fromEntries(DATA.alt.map(topic => [topic.id, topic]));
   const ALT_BY_CLAUSE = {};
@@ -1294,29 +1299,60 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     if (!figures.length) return '';
     return `<div class="esfigs"><h3>관련 원문 그림 · 누르면 확대</h3><div class="esfig-grid">${figures.map(({ r, f }) => `<figure data-es-figure="${f.id}"><button type="button" data-fz="fig/${f.file}" aria-label="그림 ${f.id} ${escHtml(f.title)} 크게 보기"><img src="fig/${f.file}" loading="lazy" width="${f.width}" height="${f.height}" alt="그림 ${f.id} ${escHtml(f.title)}"></button><figcaption>그림 ${f.id} · ${escHtml(f.title)}<span title="${escHtml(f.source)}">${escHtml(r.reason)} · 별표24(${f.edition})</span></figcaption></figure>`).join('')}</div></div>`;
   }
-  function alternativeParagraph(line, re) {
-    const item = /^([가-하][.)]|[0-9]{1,2}\)|\([0-9]{1,2}\)|[①-⑳]|[-·](?=\s))\s*(\S.*)$/.exec(line);
-    if (!item) return `<p class="alt-line">${hl(line, re)}</p>`;
-    const depth = /^[가-하]/.test(item[1]) ? '' : ' alt-subitem';
-    return `<p class="alt-line alt-item${depth}"><span class="alt-marker">${escHtml(item[1])}</span><span>${hl(item[2], re)}</span></p>`;
+  function alternativeObject([, , type, value, spoken]) {
+    if (type === 'equation') return `<span class="alt-equation" role="math" aria-label="${escHtml(spoken)}">${eqHtml(spoken, `\\displaystyle ${value}`)}</span>`;
+    const asset = ALTERNATIVES.media[value];
+    const src = `alt-pages/${asset.file}`;
+    return `<button type="button" class="alt-figure${asset.formula ? ' alt-formula' : ''}" data-fz="${src}"><img src="${src}" alt="${escHtml(asset.label)} 확대" width="${asset.width}" height="${asset.height}" loading="lazy"></button>`;
   }
-  function alternativeText(version, start, end, tables, re) {
+  function alternativeRuns(line, from, styles, items, re) {
+    if (!styles.length && !items.length) return hl(line.slice(from), re);
+    const positions = new Set([from, line.length]);
+    for (const [a, b] of styles) { if (a >= from) positions.add(a); if (b >= from) positions.add(b); }
+    for (const [, col] of items) if (col >= from) positions.add(col);
+    const ordered = Array.from(positions).sort((a, b) => a - b);
+    let html = '';
+    for (let i = 0; i < ordered.length; i++) {
+      const a = ordered[i], b = ordered[i + 1] ?? a;
+      html += items.filter(([, col]) => col === a).map(alternativeObject).join('');
+      const style = styles.find(([start, end]) => start <= a && a < end)?.[2];
+      const text = hl(line.slice(a, b), re);
+      html += style === 'sup' ? `<sup>${text}</sup>` : style === 'sub' ? `<sub>${text}</sub>` : text;
+    }
+    return html;
+  }
+  function alternativeParagraph(line, styles, items, re) {
+    const item = /^([가-하][.)]|[0-9]{1,2}\)|\([0-9]{1,2}\)|[①-⑳]|[-·](?=\s))\s*(\S.*)$/.exec(line);
+    if (!item) return `<p class="alt-line">${alternativeRuns(line, 0, styles, items, re)}</p>`;
+    const depth = /^[가-하]/.test(item[1]) ? '' : ' alt-subitem';
+    const content = alternativeRuns(line, line.length - item[2].length, styles, items, re);
+    return `<p class="alt-line alt-item${depth}"><span class="alt-marker">${escHtml(item[1])}</span><span>${content}</span></p>`;
+  }
+  function alternativeText(version, start, end, tables, re, slot = '') {
     let from = start, html = '';
-    const paragraphs = (a, b) => version.body.slice(a, b).map(line => alternativeParagraph(line, re)).join('');
-    for (const table of tables) {
+    const attached = version.objects?.[slot] || [];
+    const blocks = at => attached.filter(([idx, col]) => idx === at && col === null)
+      .map(object => `<div class="alt-object">${alternativeObject(object)}</div>`).join('');
+    const paragraphs = (a, b) => version.body.slice(a, b).map((line, i) => {
+      const idx = a + i;
+      return blocks(idx) + alternativeParagraph(line, version.styles?.[idx] || [],
+        attached.filter(([at, col]) => at === idx && col !== null), re);
+    }).join('');
+    const prefix = slot ? slot + '.' : '';
+    for (const [index, table] of tables.entries()) {
       if (table.start < start || table.end > end) continue;
-      html += paragraphs(from, table.start);
+      html += paragraphs(from, table.start) + blocks(table.start);
       const rows = table.rows.map((row, i) => {
         const tag = i === 0 && table.heading ? 'th' : 'td';
-        return `<tr>${row.map(([a, b, rowSpan, colSpan, nested]) => {
+        return `<tr>${row.map(([a, b, rowSpan, colSpan, nested], j) => {
           const spans = `${rowSpan > 1 ? ` rowspan="${rowSpan}"` : ''}${colSpan > 1 ? ` colspan="${colSpan}"` : ''}`;
-          return `<${tag}${tag === 'th' ? ' scope="col"' : ''}${spans}>${alternativeText(version, a, b, nested || [], re)}</${tag}>`;
+          return `<${tag}${tag === 'th' ? ' scope="col"' : ''}${spans}>${alternativeText(version, a, b, nested || [], re, `${prefix}${index}.${i}.${j}`)}</${tag}>`;
         }).join('')}</tr>`;
       });
       html += `<div class="tblwrap"><table><tbody>${rows.join('')}</tbody></table></div>`;
       from = table.end;
     }
-    return html + paragraphs(from, end);
+    return html + paragraphs(from, end) + blocks(end);
   }
   function alternativeEdition(topic, version, re, kind) {
     const source = ALTERNATIVES.sources[version.source];
@@ -1327,7 +1363,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       ? `<div class="alt-pages">${version.pages.map(([file, width, height], i) => `<button type="button" data-fz="alt-pages/${file}" aria-label="공단 원문 ${i + 1}쪽 확대"><img src="alt-pages/${file}" alt="공단 원문 ${i + 1}쪽" loading="lazy" width="${width}" height="${height}"></button>`).join('')}</div>
         <details><summary>텍스트로 읽기</summary>${bodyText(0, version.body.length)}</details>`
       : sections
-        ? sections.map(section => `<h4>${escHtml(section.title)}</h4>${bodyText(section.start, section.end)}`).join('')
+        ? (kind ? '' : bodyText(0, sections[0].start - 1)) + sections.map(section => `<h4>${escHtml(section.title)}</h4>${bodyText(section.start, section.end)}`).join('')
         : bodyText(0, version.body.length);
     return `<p><b>적용 조건</b> · ${hl(version.scope || topic.scope, re)}</p>
       ${kinds && !kind ? `<p class="alt-kinds">${kinds.map(escHtml).join(' · ')}</p>` : ''}

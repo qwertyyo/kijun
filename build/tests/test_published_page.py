@@ -364,6 +364,9 @@ class PublishedPage(unittest.TestCase):
         count = 0
         table_count = 0
         page_count = 0
+        image_count = 0
+        equation_count = 0
+        styled_line_count = 0
         for topic in catalog['topics']:
             card = self.page.locator('#' + topic['id'])
             for version in topic['versions']:
@@ -375,7 +378,8 @@ class PublishedPage(unittest.TestCase):
                 if version.get('sections'):
                     self.assertEqual(card.locator('.alt-edition h4').all_text_contents(),
                                      ['엘리베이터', '경사형 엘리베이터', '수직형 휠체어리프트'])
-                    expected = [line for part in version['sections'] for line in version['body'][part['start']:part['end']]]
+                    expected = version['body'][:version['sections'][0]['start'] - 1]
+                    expected += [line for part in version['sections'] for line in version['body'][part['start']:part['end']]]
                 else:
                     expected = version['body']
                 actual = card.locator('.alt-copy .alt-line').all_text_contents()
@@ -383,6 +387,42 @@ class PublishedPage(unittest.TestCase):
                 self.assertCountEqual([''.join(line.split()) for line in actual], [''.join(line.split()) for line in expected],
                                       (topic['id'], version['source']))
                 table_count += card.locator('.alt-copy table').count()
+                native_media = card.locator('.alt-copy img, .alt-copy [role="math"]')
+                media = native_media.evaluate_all('''async nodes => {
+                    function cellPath(node) {
+                        const cell = node.closest('td, th');
+                        if (!cell) return '';
+                        const row = cell.parentElement;
+                        const wrapper = cell.closest('table').parentElement;
+                        const wrappers = Array.from(wrapper.parentElement.children).filter(n => n.matches('.tblwrap'));
+                        const prefix = cellPath(wrapper);
+                        return [prefix, wrappers.indexOf(wrapper), row.rowIndex, cell.cellIndex]
+                            .filter(part => part !== '').join('.');
+                    }
+                    return Promise.all(nodes.map(async node => {
+                        const slot = cellPath(node);
+                        if (node.tagName === 'IMG') {
+                            node.loading = 'eager';
+                            await node.decode();
+                            return [slot, node.getAttribute('src'), node.naturalWidth, node.naturalHeight];
+                        }
+                        return [slot, node.getAttribute('aria-label'), !!node.querySelector('.katex')];
+                    }));
+                }''')
+                expected_media = []
+                for slot, objects in version.get('objects', {}).items():
+                    for _, _, kind, value, *spoken in objects:
+                        if kind == 'image':
+                            asset = catalog['media'][value]
+                            expected_media.append([slot, 'alt-pages/' + asset['file'], asset['width'], asset['height']])
+                            image_count += 1
+                        else:
+                            expected_media.append([slot, spoken[0], True])
+                            equation_count += 1
+                self.assertCountEqual(map(tuple, media), map(tuple, expected_media), (topic['id'], version['source']))
+                styled_lines = card.locator('.alt-copy .alt-line').filter(has=self.page.locator('sup, sub'))
+                self.assertEqual(styled_lines.count(), len(version.get('styles', {})), (topic['id'], version['source']))
+                styled_line_count += styled_lines.count()
                 if version.get('pages'):
                     images = card.locator('.alt-pages img')
                     self.assertEqual(images.count(), len(version['pages']))
@@ -399,6 +439,9 @@ class PublishedPage(unittest.TestCase):
         self.assertEqual(count, 63)
         self.assertEqual(table_count, 132)
         self.assertEqual(page_count, 21)
+        self.assertEqual(image_count, 44)
+        self.assertEqual(equation_count, 4)
+        self.assertEqual(styled_line_count, 34)
         self.page.locator('#q').fill('핸드레일 살균기')
         self.page.locator('#q').press('Enter')
         self.assertEqual(set(self.page.locator('.card.alt').evaluate_all('cards => cards.map(c => c.id)')),
