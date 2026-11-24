@@ -452,6 +452,13 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   const CLAUSE_SOURCES = ['b22', 'b23', 'b24'];
   const isClause = e => CLAUSE_SOURCES.includes(e.src);
   const REF_ENTRIES = Object.fromEntries(CLAUSE_SOURCES.flatMap(s => DATA[s]).map(e => [e.id, e]));
+  const STD_LEGACY_REFS = DATA.std_legacy_refs || {};
+  for (const [cardId, doc] of Object.entries(STD_LEGACY_REFS)) {
+    for (const [num, clause] of Object.entries(doc.clauses)) {
+      const id = `${cardId}-annex1-${num}`;
+      REF_ENTRIES[id] = { ...clause, id, num, src: 'old', legacyRefCard: cardId };
+    }
+  }
   const ES_FIGURES = DATA.es_figures || {};
   const ES_TABLES = DATA.es_tables || {};
   const REF_ASSETS = DATA.ref_assets || {};
@@ -1520,7 +1527,7 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
   // ---- 그림 확대 보기
   const byId = {}; ALL.forEach(e => { byId[e.id] = e; });
   // ---- 조문 참조: 현재 페이지와 검색 상태를 유지하는 비모달 창
-  const REF_NAME = { b22: '엘리베이터', b23: '경사형 엘리베이터', b24: '에스컬레이터' };
+  const REF_NAME = { b22: '엘리베이터', b23: '경사형 엘리베이터', b24: '에스컬레이터', old: '엘리베이터' };
   const refRoman = { ...romanA, XI: 'Ⅺ', XII: 'Ⅻ', XIII: 'XⅢ', XIV: 'XⅣ' };
   const refNum = n => n.replace(/^부속서\s*/, '').replace(/\s+/g, '').replace(/^([IVX]+)(?=\.|$)/, m => refRoman[m] || m);
   const assetLabel = kind => kind === 'table' ? '표' : '그림';
@@ -1591,8 +1598,17 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
     // 날짜·치수·그림/표 번호와 외부 규격의 번호를 조문으로 오인하지 않는다.
     if (/^(?:19|20)\d{2}\./.test(num) || /^\s*(?:mm|cm|m(?:\s|$|[²³/])|kN|N(?:\s|$)|kg|㎜|㎝|㎟|㎠|㎡|㎥|㎧|㎏|㏓|lx|Hz|MPa|kPa|Pa|V(?:\s|$)|A(?:\s|$)|%|초|배|도|년|월|일)/i.test(after)) return [];
     if (/(?:그림|표)\s*$/.test(before)) return [];
-    const source = referenceSource(e, before), n = refNum(num);
-    return (source ? [source] : CLAUSE_SOURCES).map(s => REF_ENTRIES[s + '-' + n]).filter(Boolean);
+    const n = refNum(num);
+    const legacyCard = e?.legacyRefCard || (STD_LEGACY_REFS[e?.id] && e.id);
+    if (legacyCard) {
+      const target = REF_ENTRIES[`${legacyCard}-annex1-${n}`];
+      return target ? [target] : [];
+    }
+    const source = referenceSource(e, before);
+    const targets = (source ? [source] : CLAUSE_SOURCES).map(s => REF_ENTRIES[s + '-' + n]).filter(Boolean);
+    // 종전 표준화 자료에서 출처 없는 번호 하나로 현행 경사형을 단정하지 않는다.
+    if (!source && e?.src === 'std' && e.year && Number(e.year) < 2019 && targets.length === 1 && targets[0].src === 'b23') return [];
+    return targets;
   }
   function linkClauseRefs(root, e) {
     const blocks = new Set(['DIV', 'P', 'SECTION', 'H2', 'H3', 'H4', 'LI', 'TD', 'TH', 'BR']);
@@ -1768,9 +1784,12 @@ mark { background: var(--mark); color: inherit; border-radius: 2px; padding: 0 1
       refContent.innerHTML = '<p class="ref-note">같은 번호의 조문이 있습니다. 확인할 기준을 선택하세요.</p>' + entries.map(e => `<button type="button" class="ref-choice" data-ref-ids="${e.id}" data-ref-num="${escHtml(e.num)}">${REF_NAME[e.src]} · ${escHtml(e.num)}${e.title ? ' ' + escHtml(e.title) : ''}</button>`).join('');
     } else {
       const e = entries[0]; if (!e) return;
-      refTitle.textContent = `${REF_NAME[e.src]} · ${e.num} (현행)`;
+      const legacy = STD_LEGACY_REFS[e.legacyRefCard];
+      refTitle.textContent = `${REF_NAME[e.src]} · ${e.num} (${legacy ? '종전 별표 1' : '현행'})`;
       const children = e.text.trim() ? [] : Object.values(REF_ENTRIES).filter(c => c.src === e.src && c.num.startsWith(e.num + '.') && c.text.trim());
-      refContent.innerHTML = (children.length ? `<p class="ref-note">${escHtml(e.num)} ${escHtml(e.title || '')}의 하위 조문입니다.</p>` : '') + (children.length ? children : [e]).map(c => card(c, null)).join('');
+      const note = legacy ? `<p class="ref-note">${escHtml(legacy.source)} · <a href="${escHtml(legacy.url)}" target="_blank" rel="noopener noreferrer">고시 원문</a></p>`
+        : children.length ? `<p class="ref-note">${escHtml(e.num)} ${escHtml(e.title || '')}의 하위 조문입니다.</p>` : '';
+      refContent.innerHTML = note + (children.length ? children : [e]).map(c => card(c, null)).join('');
       refContent.querySelectorAll('.card').forEach(c => { const entry = REF_ENTRIES[c.id]; c.removeAttribute('id'); linkClauseRefs(c, entry); });
     }
     refContent.scrollTop = scroll || 0;

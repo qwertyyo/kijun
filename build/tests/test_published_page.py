@@ -309,6 +309,10 @@ class PublishedPage(unittest.TestCase):
     def test_all_toc_groups_using_published_html(self):
         entries = {e['id']:e for src in ('b22','b23','b24','std','fail') for e in self.data[src]}
         clauses = {e['id'] for src in ('b22','b23','b24') for e in self.data[src]}
+        legacy_clauses = {
+            card_id: {f'{card_id}-annex1-{num}' for num in doc['clauses']}
+            for card_id, doc in self.data.get('std_legacy_refs', {}).items()
+        }
         catalog = self.data['ref_assets']
         expected = {}
         for src in ('b22','b24'):
@@ -361,7 +365,7 @@ class PublishedPage(unittest.TestCase):
             for card in cards:
                 self.assertIn(card['id'],entries)
                 self.assertEqual(card['linked'],'1',card['id'])
-                self.assertTrue(set(card['clauses'])<=clauses,card['id'])
+                self.assertEqual(set(card['clauses']) - clauses, legacy_clauses.get(card['id'], set()), card['id'])
                 self.assertTrue(set(card['assets'])<=set(catalog),card['id'])
                 for allowed in expected.get(card['id'],[]):
                     self.assertTrue(set(card['assets'])&allowed,(card['id'],allowed))

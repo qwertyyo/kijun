@@ -261,6 +261,46 @@ class ClauseReferences(unittest.TestCase):
         refs.first.click()
         self.assertIn('에스컬레이터', self.page.locator('.ref-title').inner_text())
 
+    def test_standardization_lighting_opens_cited_elevator_clauses(self):
+        self.page.evaluate('KIJUN.setSource("std")')
+        for card_id, query, refs in (
+            ('std-254', '기계실 조명 측정 위치', (
+                ('.gist', '6.3.3.1', '작업구역에서 유효 높이는 2 m'),
+                ('.gist', '6.3.3.2', '유효 공간으로 접근하는 통로'),
+                ('.sec', '6.3.3.1', '작업구역에서 유효 높이는 2 m'),
+                ('.sec', '6.3.3.2', '유효 공간으로 접근하는 통로'),
+                ('.bg', '6.3.7', '200 lx'),
+            )),
+            ('std-42', '승강로 내부 구동기의 유지보수', (
+                ('.bg', '6.4.2', '승강로 내부 작업구역의 치수'),
+                ('.bg', '6.4.6', '승강로 외부의 작업구역'),
+                ('.bg', '6.6', '50 lx'),
+            )),
+        ):
+            self.search(query)
+            card = self.page.locator('#' + card_id)
+            card.locator('.bgtoggle').click()
+            for scope, num, body in refs:
+                with self.subTest(card=card_id, scope=scope, num=num):
+                    ref = card.locator(f'{scope} [data-ref-num="{num}"]')
+                    self.assertEqual(ref.count(), 1)
+                    ref.click()
+                    try:
+                        self.assertEqual(self.page.locator('.ref-title').inner_text(),
+                                         f'엘리베이터 · {num} (종전 별표 1)')
+                        self.assertIn(body, self.page.locator('.ref-content').inner_text())
+                    finally:
+                        self.page.locator('[data-ref-close]').click()
+
+    def test_old_standardization_needs_a_source_for_incline_only_number(self):
+        targets = self.page.evaluate('''() => {
+          const root = document.createElement('div');
+          root.innerHTML = '<p>6.3.3.1 참조</p><p>별표 23의 6.3.3.1 참조</p>';
+          __refTest.linkClauseRefs(root, {src: 'std', title: '', year: '2018'});
+          return [...root.querySelectorAll('p')].map(p => p.querySelector('button')?.dataset.refIds || null);
+        }''')
+        self.assertEqual(targets, [None, 'b23-6.3.3.1'])
+
     def open_table_card(self):
         self.page.evaluate('KIJUN.setSource("b24")')
         self.search('안전회로 설계 지침')
